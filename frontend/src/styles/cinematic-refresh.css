@@ -701,3 +701,241 @@ input,
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ====================================================
+   MOBILE APPLICATION SCALABILITY SYSTEM
+   Native Mobile App UX, Touch Optimizations & PWA Layout
+   ==================================================== */
+
+/* Global Mobile Body & Shell Touch Tuning */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe Area Padding for notch devices (iPhone 12/13/14/15/16, Androids) */
+  .app-shell,
+  .movie-details-page {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Hide Desktop Horizontal Mouse Scroll Buttons on Touch Devices */
+  .movie-row-controls {
+    display: none !important;
+  }
+
+  /* Fluid Touch Snap Rows */
+  .movie-section {
+    margin-bottom: 24px !important;
+  }
+
+  .movie-section-header {
+    padding-inline: 16px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .movie-section-title {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+  }
+
+  .movie-section-subtitle {
+    font-size: 11px !important;
+  }
+
+  .movie-row {
+    padding: 4px 16px 14px !important;
+    gap: 10px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity !important;
+    overflow-x: auto !important;
+  }
+
+  .movie-row-item {
+    flex: 0 0 124px !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Prevent Sticky Hover Jumps on Mobile Touch */
+  .movie-card:hover {
+    transform: none !important;
+  }
+
+  /* Mobile App Search & Genre Results Grid */
+  .search-grid-wrapper {
+    padding: 0 16px 20px !important;
+  }
+
+  .search-grid-header {
+    margin-bottom: 16px !important;
+  }
+
+  .search-grid-title {
+    font-size: 1.25rem !important;
+  }
+
+  .search-grid-subtitle {
+    font-size: 11.5px !important;
+  }
+
+  .search-results-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px 8px !important;
+  }
+
+  /* Dedicated Mobile Details Page */
+  .details-header {
+    min-height: 54px !important;
+    padding: 0 14px !important;
+  }
+
+  .details-hero {
+    min-height: 48vh !important;
+    padding: 40px 16px 20px !important;
+  }
+
+  .details-title {
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+  }
+
+  .details-meta-bar {
+    gap: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .details-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .details-actions .btn-primary,
+  .details-actions .btn-secondary {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+    font-size: 13.5px !important;
+    min-height: 42px !important;
+  }
+
+  .details-body-container {
+    padding: 0 16px !important;
+  }
+
+  .details-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  /* Netflix Mobile Style Compact Episodes List */
+  .tv-episodes-section {
+    margin: 24px 0 !important;
+  }
+
+  .episodes-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .episode-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 8px !important;
+    gap: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .episode-thumbnail-wrap {
+    width: 105px !important;
+    aspect-ratio: 16/9 !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+  }
+
+  .episode-details {
+    padding: 0 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .episode-title {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+
+  .episode-overview {
+    font-size: 11px !important;
+    -webkit-line-clamp: 2 !important;
+    margin-top: 3px !important;
+  }
+
+  /* Mobile Video Player Overlay */
+  .player-overlay {
+    padding: 0 !important;
+    background: #000000 !important;
+  }
+
+  .player-header {
+    padding: 12px 14px !important;
+  }
+
+  .player-header h2 {
+    font-size: 14.5px !important;
+  }
+
+  .cine-server-pills-scroll {
+    gap: 6px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .cine-server-pill {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .cine-tv-control-bar {
+    padding: 6px 10px !important;
+    gap: 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .cine-tv-control-left {
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .cine-tv-control-right {
+    justify-content: flex-end !important;
+    width: 100% !important;
+  }
+
+  .cine-tv-select {
+    font-size: 11px !important;
+    padding: 4px 22px 4px 8px !important;
+  }
+
+  .cine-tv-step-btn {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Extra Small Phones (iPhone SE, smaller Android screens <= 390px) */
+@media (max-width: 390px) {
+  .search-results-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px 10px !important;
+  }
+
+  .movie-row-item {
+    flex: 0 0 110px !important;
+  }
+}

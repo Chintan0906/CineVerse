@@ -11,6 +11,7 @@ import {
   History,
   ChevronDown,
   LogOut,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import CineVerseLogo from "../common/CineVerseLogo";
@@ -200,6 +201,80 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
+
+      {/* MOBILE BOTTOM APP NAVIGATION BAR (NATIVE STREAMING APP EXPERIENCE) */}
+      <nav className="mobile-bottom-bar" aria-label="Mobile application navigation">
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeLink === "Home" ? "active" : ""}`}
+          onClick={() => {
+            setActiveLink("Home");
+            onHome?.();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          <Home size={19} strokeWidth={activeLink === "Home" ? 2.4 : 1.8} />
+          <span>Home</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeLink === "Trending" ? "active" : ""}`}
+          onClick={() => {
+            setActiveLink("Trending");
+            onTrending?.();
+          }}
+        >
+          <Sparkles size={19} strokeWidth={activeLink === "Trending" ? 2.4 : 1.8} />
+          <span>Trending</span>
+        </button>
+
+        <button
+          type="button"
+          className="mobile-tab-btn"
+          onClick={() => {
+            onSearch?.();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          <Search size={19} strokeWidth={2} />
+          <span>Search</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeLink === "Watchlist" ? "active" : ""}`}
+          onClick={() => {
+            setActiveLink("Watchlist");
+            onWatchlist?.();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          <Bookmark size={19} strokeWidth={activeLink === "Watchlist" ? 2.4 : 1.8} />
+          <span>My List</span>
+        </button>
+
+        <button
+          type="button"
+          className="mobile-tab-btn"
+          onClick={() => {
+            if (user) {
+              onHistory?.();
+            } else {
+              navigate("/login");
+            }
+          }}
+        >
+          {user ? (
+            <span className="mobile-avatar-icon">
+              {user.name?.charAt(0).toUpperCase() || "U"}
+            </span>
+          ) : (
+            <User size={19} strokeWidth={1.8} />
+          )}
+          <span>{user ? "History" : "Sign In"}</span>
+        </button>
+      </nav>
     </header>
   );
 }

@@ -47,6 +47,31 @@ function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay })
     setTimeout(() => setIsTransitioning(false), 700);
   };
 
+  // Touch gesture support for mobile swiping
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchEndX, setTouchEndX] = useState(0);
+
+  const handleTouchStart = (e) => {
+    if (e.targetTouches?.[0]) {
+      setTouchStartX(e.targetTouches[0].clientX);
+      setTouchEndX(e.targetTouches[0].clientX);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.targetTouches?.[0]) {
+      setTouchEndX(e.targetTouches[0].clientX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) handleNext();
+      else handlePrev();
+    }
+  };
+
   if (!currentMovie) return null;
 
   return (
@@ -54,6 +79,9 @@ function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay })
       className="hero-slideshow"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Background Images with Fade Transition */}
       <div className="hero-slideshow-backgrounds">
