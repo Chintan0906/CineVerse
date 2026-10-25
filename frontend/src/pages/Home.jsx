@@ -23,7 +23,7 @@ import VidLinkPlayer from "../components/player/VidLinkPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
-import { searchMovies } from "../services/movieService";
+import { searchMovies, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
 import "../components/hero/HeroSlideshow.css";
 
 function Home() {
@@ -53,6 +53,10 @@ function Home() {
   const [activeGenre, setActiveGenre] = useState("All");
   const [activeTab, setActiveTab] = useState("Home");
   const [playerMovie, setPlayerMovie] = useState(null);
+  const [playerSeasons, setPlayerSeasons] = useState([]);
+  const [playerEpisodes, setPlayerEpisodes] = useState([]);
+  const [playerSeason, setPlayerSeason] = useState(1);
+  const [playerEpisode, setPlayerEpisode] = useState(1);
   const [heroIndex, setHeroIndex] = useState(0);
   const [pendingSection, setPendingSection] = useState("");
 
@@ -282,9 +286,71 @@ function Home() {
   // Open the video player
   function handlePlay(movie) {
     setSelectedMovie(null);
-    recordPlay(movie, { season: movie.season, episode: movie.episode });
-    setPlayerMovie(movie);
+    const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+    const initialSeason = Number(movie.season || 1);
+    const initialEpisode = Number(movie.episode || 1);
+
+    setPlayerSeason(initialSeason);
+    setPlayerEpisode(initialEpisode);
+    setPlayerSeasons(movie.seasons || []);
+    setPlayerEpisodes(movie.episodes || []);
+
+    const playMedia = {
+      ...movie,
+      season: initialSeason,
+      episode: initialEpisode,
+      isTV: isTv,
+      mediaType: isTv ? "tv" : "movie",
+    };
+    recordPlay(playMedia, { season: initialSeason, episode: initialEpisode });
+    setPlayerMovie(playMedia);
   }
+
+  // Load TV show seasons and episodes if playerMovie is TV series
+  useEffect(() => {
+    if (!playerMovie) return undefined;
+    const isTv = Boolean(playerMovie.mediaType === "tv" || playerMovie.isTV);
+    if (!isTv) {
+      setPlayerSeasons([]);
+      setPlayerEpisodes([]);
+      return undefined;
+    }
+
+    let active = true;
+    getTVShowById(playerMovie.id)
+      .then((data) => {
+        if (!active) return;
+        const validSeasons = (data?.seasons || []).filter((s) => s.season_number >= 0);
+        if (validSeasons.length > 0) {
+          setPlayerSeasons(validSeasons);
+        }
+      })
+      .catch(() => {});
+
+    getTVSeasonEpisodes(playerMovie.id, playerSeason)
+      .then((eps) => {
+        if (!active) return;
+        if (eps && eps.length > 0) {
+          setPlayerEpisodes(eps);
+        } else {
+          setPlayerEpisodes(Array.from({ length: 10 }, (_, i) => ({
+            episodeNumber: i + 1,
+            name: `Episode ${i + 1}`,
+          })));
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setPlayerEpisodes(Array.from({ length: 10 }, (_, i) => ({
+          episodeNumber: i + 1,
+          name: `Episode ${i + 1}`,
+        })));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [playerMovie?.id, playerMovie?.mediaType, playerMovie?.isTV, playerSeason]);
 
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {
     saveProgress(media, currentTime, duration, episode);
@@ -781,7 +847,12 @@ function Home() {
 
                 <button
                   className="btn-secondary"
-                  onClick={() => navigate(`/movie/${selectedMovie.id}`)}
+                  onClick={() => {
+                    const isTv = Boolean(selectedMovie.mediaType === "tv" || selectedMovie.isTV);
+                    navigate(`/movie/${selectedMovie.id}${isTv ? "?type=tv" : ""}`, {
+                      state: { mediaType: isTv ? "tv" : "movie", isTV: isTv },
+                    });
+                  }}
                 >
                   <Info size={18} />
                   View Full Details
@@ -826,7 +897,34 @@ function Home() {
 
           <div className="player-content">
             <div className="player-window">
-              <VidLinkPlayer media={playerMovie} onProgress={handlePlayerProgress} />
+              <VidLinkPlayer
+                media={{
+                  ...playerMovie,
+                  season: playerSeason,
+                  episode: playerEpisode,
+                  isTV: Boolean(playerMovie.mediaType === "tv" || playerMovie.isTV),
+                }}
+                onProgress={handlePlayerProgress}
+                seasons={playerSeasons}
+                episodes={playerEpisodes}
+                onSeasonChange={(newSeason) => {
+                  setPlayerSeason(newSeason);
+                  setPlayerEpisode(1);
+                  setPlayerMovie((prev) => ({
+                    ...prev,
+                    season: newSeason,
+                    episode: 1,
+                  }));
+                }}
+                onEpisodeChange={(newEpisode) => {
+                  setPlayerEpisode(newEpisode);
+                  setPlayerMovie((prev) => ({
+                    ...prev,
+                    season: playerSeason,
+                    episode: newEpisode,
+                  }));
+                }}
+              />
             </div>
             <StreamRecommendations
               movies={streamRecommendations}

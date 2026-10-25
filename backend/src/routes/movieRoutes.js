@@ -106,8 +106,8 @@ router.get("/genre/:genre", async (req, res) => {
   }
 });
 
-// GET /api/movies/:id/seasons/:seasonNumber
-router.get("/:id/seasons/:seasonNumber", async (req, res) => {
+// GET /api/movies/:id/seasons/:seasonNumber (also supports /tv/:id/seasons/:seasonNumber)
+router.get(["/:id/seasons/:seasonNumber", "/tv/:id/seasons/:seasonNumber"], async (req, res) => {
   const showId = String(req.params.id);
   const seasonNumber = Number(req.params.seasonNumber);
   if (!/^\d+$/.test(showId) || !Number.isInteger(seasonNumber) || seasonNumber < 0) {
@@ -123,6 +123,19 @@ router.get("/:id/seasons/:seasonNumber", async (req, res) => {
   }
 });
 
+// GET /api/movies/tv/:id
+// Explicit TV show details endpoint
+router.get("/tv/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const details = await getTVShowDetails(id);
+    res.json({ success: true, data: details });
+  } catch (error) {
+    console.error("TV Details error:", error.message);
+    res.status(404).json({ success: false, message: "TV Show not found." });
+  }
+});
+
 // GET /api/movies/:id
 // Get details for a movie or TV show
 router.get("/:id", async (req, res) => {
@@ -133,12 +146,32 @@ router.get("/:id", async (req, res) => {
     let details;
     if (type === 'tv') {
       details = await getTVShowDetails(id);
+    } else if (type === 'movie') {
+      details = await getMovieDetails(id);
     } else {
-      // Try movie first, fallback to TV if not found
+      // Check if known in Netflix catalogue as TV
+      let knownAsTv = false;
       try {
-        details = await getMovieDetails(id);
-      } catch (error) {
-        details = await getTVShowDetails(id);
+        const catalogue = await getNetflixCatalogue();
+        const found = catalogue.allMovies.find((m) => String(m.id) === String(id));
+        if (found && (found.isTV || found.mediaType === "tv")) {
+          knownAsTv = true;
+        }
+      } catch (_) {}
+
+      if (knownAsTv) {
+        try {
+          details = await getTVShowDetails(id);
+        } catch (_) {
+          details = await getMovieDetails(id);
+        }
+      } else {
+        // Try movie first, fallback to TV if not found
+        try {
+          details = await getMovieDetails(id);
+        } catch (error) {
+          details = await getTVShowDetails(id);
+        }
       }
     }
 

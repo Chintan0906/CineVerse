@@ -26,9 +26,10 @@ export async function getNetflixCatalogue() {
   return response.json();
 }
 
-export async function getMovieById(id) {
+export async function getMovieById(id, type) {
+  const query = type ? `?type=${encodeURIComponent(type)}` : "";
   const response = await fetch(
-    `${API_BASE_URL}/movies/${encodeURIComponent(id)}`
+    `${API_BASE_URL}/movies/${encodeURIComponent(id)}${query}`
   );
 
   if (!response.ok) {
@@ -38,6 +39,21 @@ export async function getMovieById(id) {
   const result = await response.json();
 
   return result.data;
+}
+
+export async function getTVShowById(id) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`
+    );
+    if (response.ok) {
+      const result = await response.json();
+      return result.data;
+    }
+  } catch (_) {}
+
+  // Fallback to query param
+  return getMovieById(id, "tv");
 }
 
 export async function getTVSeasonEpisodes(id, seasonNumber) {

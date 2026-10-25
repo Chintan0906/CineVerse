@@ -122,26 +122,40 @@ function VidLinkPlayer({
 
   const tmdbId = String(media?.tmdbId || media?.id || "");
   const isTv = Boolean(media?.mediaType === "tv" || media?.isTV);
-  const season = Number(media?.season || 1);
-  const episode = Number(media?.episode || 1);
+  const propSeason = Number(media?.season || 1);
+  const propEpisode = Number(media?.episode || 1);
+
+  const [currSeason, setCurrSeason] = useState(propSeason);
+  const [currEpisode, setCurrEpisode] = useState(propEpisode);
+
+  useEffect(() => {
+    setCurrSeason(propSeason);
+  }, [propSeason]);
+
+  useEffect(() => {
+    setCurrEpisode(propEpisode);
+  }, [propEpisode]);
 
   // Available seasons list
-  const seasonList = seasons?.length
-    ? seasons
-    : media?.availableSeasons?.length
-    ? media.availableSeasons
-    : [{ season_number: season, name: `Season ${season}` }];
+  const rawSeasons = (seasons?.length ? seasons : media?.seasons || media?.availableSeasons || [])
+    .filter((s) => s.season_number >= 0);
+  const seasonList = rawSeasons.length > 0
+    ? rawSeasons
+    : [{ season_number: currSeason, name: `Season ${currSeason}` }];
 
-  // Available episodes list
-  const episodeList = episodes?.length
-    ? episodes
-    : media?.episodes?.length
-    ? media.episodes
-    : [{ episodeNumber: episode, name: `Episode ${episode}` }];
+  // Fallback episodes if TMDB episode list is still fetching or empty
+  const currentSeasonObj = seasonList.find((s) => s.season_number === currSeason);
+  const epCount = currentSeasonObj?.episode_count || 10;
+  const fallbackEpisodes = Array.from({ length: epCount }, (_, i) => ({
+    episodeNumber: i + 1,
+    name: `Episode ${i + 1}`,
+  }));
+
+  const episodeList = episodes?.length > 0 ? episodes : fallbackEpisodes;
 
   // Current episode title
-  const currentEpData = episodeList.find((e) => e.episodeNumber === episode);
-  const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${episode}`;
+  const currentEpData = episodeList.find((e) => e.episodeNumber === currEpisode);
+  const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${currEpisode}`;
 
   // Listen for playback events (VidLink telemetry)
   useEffect(() => {
@@ -163,14 +177,14 @@ function VidLinkPlayer({
         currentMedia,
         playerEvent.currentTime,
         playerEvent.duration,
-        { season: currentMedia.season, episode: currentMedia.episode }
+        { season: currSeason, episode: currEpisode }
       );
       lastSavedAt = Date.now();
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [currSeason, currEpisode]);
 
   const handleSelectServer = (server) => {
     if (server.id === activeServer.id) return;
@@ -204,19 +218,34 @@ function VidLinkPlayer({
     }
   };
 
-  const handlePrevEpisode = () => {
-    if (episode <= 1) return;
-    if (onEpisodeChange) {
-      onEpisodeChange(episode - 1);
+  const handleSeasonSelect = (newSeason) => {
+    setCurrSeason(newSeason);
+    setCurrEpisode(1);
+    setReloadKey((prev) => prev + 1);
+    if (onSeasonChange) {
+      onSeasonChange(newSeason);
     }
   };
 
-  const handleNextEpisode = () => {
-    const maxEp = episodeList.length ? Math.max(...episodeList.map((e) => e.episodeNumber)) : episode + 1;
-    if (episode >= maxEp) return;
+  const handleEpisodeSelect = (newEpisode) => {
+    setCurrEpisode(newEpisode);
+    setReloadKey((prev) => prev + 1);
     if (onEpisodeChange) {
-      onEpisodeChange(episode + 1);
+      onEpisodeChange(newEpisode);
     }
+  };
+
+  const handlePrevEpisode = () => {
+    if (currEpisode <= 1) return;
+    handleEpisodeSelect(currEpisode - 1);
+  };
+
+  const handleNextEpisode = () => {
+    const maxEp = episodeList.length
+      ? Math.max(...episodeList.map((e) => e.episodeNumber))
+      : currEpisode + 1;
+    if (currEpisode >= maxEp) return;
+    handleEpisodeSelect(currEpisode + 1);
   };
 
   if (!tmdbId || !/^\d+$/.test(tmdbId)) {
@@ -231,8 +260,8 @@ function VidLinkPlayer({
   const embedUrl = activeServer.getUrl(
     tmdbId,
     isTv,
-    season,
-    episode,
+    currSeason,
+    currEpisode,
     media?.currentTime || 0
   );
 
@@ -281,8 +310,8 @@ function VidLinkPlayer({
               <select
                 id="player-season-select"
                 className="cine-tv-select"
-                value={season}
-                onChange={(e) => onSeasonChange && onSeasonChange(Number(e.target.value))}
+                value={currSeason}
+                onChange={(e) => handleSeasonSelect(Number(e.target.value))}
               >
                 {seasonList.map((s) => (
                   <option key={s.id || s.season_number} value={s.season_number}>
@@ -298,8 +327,8 @@ function VidLinkPlayer({
               <select
                 id="player-episode-select"
                 className="cine-tv-select episode-select"
-                value={episode}
-                onChange={(e) => onEpisodeChange && onEpisodeChange(Number(e.target.value))}
+                value={currEpisode}
+                onChange={(e) => handleEpisodeSelect(Number(e.target.value))}
               >
                 {episodeList.map((ep) => (
                   <option key={ep.id || ep.episodeNumber} value={ep.episodeNumber}>
@@ -314,7 +343,7 @@ function VidLinkPlayer({
             <button
               type="button"
               className="cine-tv-step-btn"
-              disabled={episode <= 1}
+              disabled={currEpisode <= 1}
               onClick={handlePrevEpisode}
               title="Previous Episode"
             >
@@ -325,7 +354,7 @@ function VidLinkPlayer({
             <button
               type="button"
               className="cine-tv-step-btn"
-              disabled={episodeList.length ? episode >= Math.max(...episodeList.map((e) => e.episodeNumber)) : false}
+              disabled={episodeList.length ? currEpisode >= Math.max(...episodeList.map((e) => e.episodeNumber)) : false}
               onClick={handleNextEpisode}
               title="Next Episode"
             >
@@ -347,7 +376,7 @@ function VidLinkPlayer({
           <span className="cine-status-chip speed-chip">{activeServer.speed}</span>
           {isTv && (
             <span className="cine-status-chip tv-chip">
-              <Layers size={12} /> S{season} : E{episode} · {currentEpTitle}
+              <Layers size={12} /> S{currSeason} : E{currEpisode} · {currentEpTitle}
             </span>
           )}
         </div>
@@ -388,7 +417,7 @@ function VidLinkPlayer({
       {/* 16:9 STREAM SCREEN FRAME (AUTOMATICALLY CONSTRAINED TO VIEWPORT HEIGHT) */}
       <div ref={screenBoxRef} className={`cine-screen-box ${isChanging ? "switching" : ""}`}>
         <iframe
-          key={`${activeServer.id}-${reloadKey}-${tmdbId}-${isTv ? `${season}-${episode}` : "movie"}`}
+          key={`${activeServer.id}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}

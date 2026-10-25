@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Play,
@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 
-import { getMovieById, getTVSeasonEpisodes } from "../services/movieService";
+import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
 import MovieCard from "../components/movie/MovieCard";
 import VidLinkPlayer from "../components/player/VidLinkPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
@@ -24,6 +24,9 @@ import { useLibrary } from "../hooks/useLibrary";
 function MovieDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
   const {
     watchlist,
     toggleWatchlist: updateWatchlist,
@@ -41,6 +44,11 @@ function MovieDetails() {
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [episodes, setEpisodes] = useState([]);
 
+  // Detect whether this is a TV series from navigation or query parameter
+  const queryType = searchParams.get("type");
+  const stateType = location.state?.mediaType || (location.state?.isTV ? "tv" : null);
+  const requestedType = queryType || stateType || null;
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setLoading(true);
@@ -49,15 +57,34 @@ function MovieDetails() {
     setActiveStreamMovie(null);
     setShowTrailer(false);
 
-    getMovieById(id)
+    const fetcher = requestedType === "tv" ? getTVShowById(id) : getMovieById(id, requestedType);
+
+    fetcher
       .then((data) => {
-        setMovie(data);
-        if (data.mediaType === "tv") {
-          const seasons = (data.seasons || []).filter((season) => season.season_number >= 0);
-          setSelectedSeason(
-            seasons.find((season) => season.season_number > 0)?.season_number ??
-            seasons[0]?.season_number ?? 1
-          );
+        const isTv = Boolean(
+          requestedType === "tv" ||
+          data.mediaType === "tv" ||
+          data.isTV ||
+          (data.seasons && data.seasons.length > 0) ||
+          data.numberOfSeasons > 0
+        );
+
+        const normalizedData = {
+          ...data,
+          mediaType: isTv ? "tv" : "movie",
+          isTV: isTv,
+        };
+
+        setMovie(normalizedData);
+
+        if (isTv) {
+          const validSeasons = (normalizedData.seasons || []).filter((s) => s.season_number >= 0);
+          const firstSeason =
+            validSeasons.find((s) => s.season_number > 0)?.season_number ??
+            validSeasons[0]?.season_number ??
+            1;
+          setSelectedSeason(firstSeason);
+          setSelectedEpisode(1);
         }
       })
       .catch((err) => {
@@ -66,10 +93,12 @@ function MovieDetails() {
       .finally(() => {
         setLoading(false);
       });
-  }, [id]);
+  }, [id, requestedType]);
 
+  // Fetch episodes when selectedSeason changes for a TV show
   useEffect(() => {
-    if (!movie || movie.mediaType !== "tv") {
+    const isTv = Boolean(movie?.mediaType === "tv" || movie?.isTV || (movie?.seasons && movie.seasons.length > 0));
+    if (!movie || !isTv) {
       setEpisodes([]);
       return undefined;
     }
@@ -78,19 +107,51 @@ function MovieDetails() {
     getTVSeasonEpisodes(movie.id, selectedSeason)
       .then((data) => {
         if (!active) return;
-        setEpisodes(data);
-        setSelectedEpisode((current) =>
-          data.some((episode) => episode.episodeNumber === current)
-            ? current
-            : data[0]?.episodeNumber || 1
-        );
+        if (data && data.length > 0) {
+          setEpisodes(data);
+          setSelectedEpisode((current) =>
+            data.some((ep) => ep.episodeNumber === current)
+              ? current
+              : data[0]?.episodeNumber || 1
+          );
+        } else {
+          // Provide fallback episodes so user can still play any episode
+          const currentSeasonObj = (movie.seasons || []).find((s) => s.season_number === selectedSeason);
+          const epCount = currentSeasonObj?.episode_count || 10;
+          const fallbackList = Array.from({ length: epCount }, (_, i) => ({
+            id: `s${selectedSeason}e${i + 1}`,
+            name: `Episode ${i + 1}`,
+            episodeNumber: i + 1,
+            seasonNumber: selectedSeason,
+            overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
+            still: movie.backdrop || movie.poster,
+            rating: movie.rating || 8.0,
+            runtime: 45,
+          }));
+          setEpisodes(fallbackList);
+          setSelectedEpisode(1);
+        }
       })
       .catch(() => {
-        if (active) setEpisodes([]);
+        if (!active) return;
+        const currentSeasonObj = (movie.seasons || []).find((s) => s.season_number === selectedSeason);
+        const epCount = currentSeasonObj?.episode_count || 10;
+        const fallbackList = Array.from({ length: epCount }, (_, i) => ({
+          id: `s${selectedSeason}e${i + 1}`,
+          name: `Episode ${i + 1}`,
+          episodeNumber: i + 1,
+          seasonNumber: selectedSeason,
+          overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
+          still: movie.backdrop || movie.poster,
+          rating: movie.rating || 8.0,
+          runtime: 45,
+        }));
+        setEpisodes(fallbackList);
+        setSelectedEpisode(1);
       });
 
     return () => { active = false; };
-  }, [movie?.id, movie?.mediaType, selectedSeason]);
+  }, [movie?.id, movie?.mediaType, movie?.isTV, selectedSeason]);
 
   const toggleWatchlist = (media) => updateWatchlist(media);
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {
@@ -100,14 +161,25 @@ function MovieDetails() {
   const isSaved = movie
     ? watchlist.some((saved) => String(saved.id) === String(movie.id))
     : false;
-  const playerMedia = movie?.mediaType === "tv"
-    ? { ...movie, season: selectedSeason, episode: selectedEpisode }
-    : movie;
-  const streamMedia = activeStreamMovie || playerMedia;
+
+  const isTvShow = Boolean(movie?.mediaType === "tv" || movie?.isTV || (movie?.seasons && movie.seasons.length > 0));
+
+  // Ensure current episode and season are correctly bound
+  const playerMedia = {
+    ...movie,
+    ...(activeStreamMovie || {}),
+    season: selectedSeason,
+    episode: selectedEpisode,
+    isTV: isTvShow,
+    mediaType: isTvShow ? "tv" : "movie",
+  };
+
+  const streamMedia = playerMedia;
 
   function playRecommendation(recommendedMovie) {
-    const media = recommendedMovie.mediaType === "tv" || recommendedMovie.isTV
-      ? { ...recommendedMovie, season: 1, episode: 1 }
+    const isRecTv = Boolean(recommendedMovie.mediaType === "tv" || recommendedMovie.isTV);
+    const media = isRecTv
+      ? { ...recommendedMovie, season: 1, episode: 1, isTV: true, mediaType: "tv" }
       : recommendedMovie;
     recordPlay(media, { season: media.season, episode: media.episode });
     setActiveStreamMovie(media);
@@ -140,7 +212,12 @@ function MovieDetails() {
     );
   }
 
-  const availableSeasons = (movie.seasons || []).filter((season) => season.season_number >= 0);
+  const rawSeasons = (movie.seasons || []).filter((season) => season.season_number >= 0);
+  const availableSeasons = rawSeasons.length > 0
+    ? rawSeasons
+    : isTvShow
+    ? [{ id: 1, season_number: 1, name: "Season 1", episode_count: 10 }]
+    : [];
 
   return (
     <div className="movie-details-page">
@@ -237,16 +314,20 @@ function MovieDetails() {
               ))}
             </div>
 
-            {movie.mediaType === "tv" && availableSeasons.length > 0 && (
+            {isTvShow && availableSeasons.length > 0 && (
               <div className="episode-picker" aria-label="Choose a TV episode">
                 <label>
                   <span>Season</span>
                   <select
                     value={selectedSeason}
-                    onChange={(event) => setSelectedSeason(Number(event.target.value))}
+                    onChange={(event) => {
+                      const s = Number(event.target.value);
+                      setSelectedSeason(s);
+                      setSelectedEpisode(1);
+                    }}
                   >
                     {availableSeasons.map((season) => (
-                      <option key={season.id} value={season.season_number}>
+                      <option key={season.id || season.season_number} value={season.season_number}>
                         {season.name || `Season ${season.season_number}`}
                       </option>
                     ))}
@@ -260,7 +341,7 @@ function MovieDetails() {
                     disabled={!episodes.length}
                   >
                     {episodes.map((episode) => (
-                      <option key={episode.id} value={episode.episodeNumber}>
+                      <option key={episode.id || episode.episodeNumber} value={episode.episodeNumber}>
                         {String(episode.episodeNumber).padStart(2, "0")} · {episode.name}
                       </option>
                     ))}
@@ -274,8 +355,15 @@ function MovieDetails() {
               <button
                 className="btn-primary"
                 onClick={() => {
-                  recordPlay(playerMedia, { season: playerMedia.season, episode: playerMedia.episode });
-                  setActiveStreamMovie(playerMedia);
+                  const playMedia = {
+                    ...movie,
+                    season: selectedSeason,
+                    episode: selectedEpisode,
+                    isTV: isTvShow,
+                    mediaType: isTvShow ? "tv" : "movie",
+                  };
+                  recordPlay(playMedia, { season: selectedSeason, episode: selectedEpisode });
+                  setActiveStreamMovie(playMedia);
                   setShowPlayer(true);
                 }}
               >
@@ -348,7 +436,7 @@ function MovieDetails() {
         </div>
 
         {/* WEBSERIES EPISODES & SEASONS GRID */}
-        {movie.mediaType === "tv" && availableSeasons.length > 0 && (
+        {isTvShow && availableSeasons.length > 0 && (
           <section className="tv-episodes-section">
             <div className="tv-episodes-header">
               <div className="tv-episodes-heading-left">
@@ -363,7 +451,11 @@ function MovieDetails() {
                 <select
                   className="season-dropdown-pill"
                   value={selectedSeason}
-                  onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                  onChange={(e) => {
+                    const s = Number(e.target.value);
+                    setSelectedSeason(s);
+                    setSelectedEpisode(1);
+                  }}
                 >
                   {availableSeasons.map((season) => (
                     <option key={season.id || season.season_number} value={season.season_number}>
@@ -389,6 +481,8 @@ function MovieDetails() {
                         season: selectedSeason,
                         episode: ep.episodeNumber,
                         episodeTitle: ep.name,
+                        isTV: isTvShow,
+                        mediaType: isTvShow ? "tv" : "movie",
                       };
                       recordPlay(playMedia, { season: selectedSeason, episode: ep.episodeNumber });
                       setActiveStreamMovie(playMedia);

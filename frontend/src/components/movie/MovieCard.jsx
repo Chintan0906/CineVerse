@@ -23,6 +23,8 @@ function MovieCard({
 
   if (!movie) return null;
 
+  const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+
   const handleCardClick = () => {
     if (onSelect) {
       onSelect(movie);
@@ -31,7 +33,9 @@ function MovieCard({
 
   const handleViewDetails = (event) => {
     event.stopPropagation();
-    navigate(`/movie/${movie.id}`);
+    navigate(`/movie/${movie.id}${isTv ? "?type=tv" : ""}`, {
+      state: { mediaType: isTv ? "tv" : "movie", isTV: isTv },
+    });
   };
 
   const handleWatchlistClick = (event) => {

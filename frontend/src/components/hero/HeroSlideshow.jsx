@@ -134,7 +134,12 @@ function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay })
 
           <button
             className="hero-btn-info"
-            onClick={() => navigate(`/movie/${currentMovie.id}`)}
+            onClick={() => {
+              const isTv = Boolean(currentMovie.mediaType === "tv" || currentMovie.isTV);
+              navigate(`/movie/${currentMovie.id}${isTv ? "?type=tv" : ""}`, {
+                state: { mediaType: isTv ? "tv" : "movie", isTV: isTv },
+              });
+            }}
           >
             <Info size={18} />
             <span>More Info</span>
