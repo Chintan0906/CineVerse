@@ -90,18 +90,15 @@ function MovieCard({
             </div>
           )}
 
-          {/* Top Badges */}
+          {/* Top Badges - Single Clean Priority Badge */}
           <div className="movie-card-badges">
-            {/* TV Show Badge */}
-            {movie.isTV && (
-              <span className="movie-badge tv-badge">
-                TV SERIES
-              </span>
-            )}
-
             {rank ? (
               <span className="movie-badge top10-badge">
                 TOP 10
+              </span>
+            ) : movie.isTV ? (
+              <span className="movie-badge tv-badge">
+                TV SERIES
               </span>
             ) : movie.trending ? (
               <span className="movie-badge trending-badge">

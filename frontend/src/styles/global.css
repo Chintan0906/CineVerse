@@ -4174,6 +4174,33 @@ main {
 }
 
 @media (max-width: 768px) {
+  .player-overlay {
+    align-items: stretch !important;
+    padding: 0 !important;
+  }
+  .player-content {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 0 0 30px !important;
+    margin: 0 !important;
+  }
+  .player-window {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .cine-screen-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: 16 / 9 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin: 0 !important;
+  }
   .cine-server-status-bar {
     flex-direction: column !important;
     align-items: flex-start !important;
