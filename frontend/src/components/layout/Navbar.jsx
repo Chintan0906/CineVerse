@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import CineVerseLogo from "../common/CineVerseLogo";
 import "./Navbar.css";
 
 function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrending }) {
@@ -89,23 +90,14 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
       {/* BRAND */}
       <a
         href="#home"
-        className="brand"
+        className="brand-logo-link"
         aria-label="CineVerse home"
         onClick={(event) => {
           event.preventDefault();
           handleNavigation("Home", "#home");
         }}
       >
-        <span className="brand-icon">
-          <span />
-          <span />
-          <span />
-        </span>
-
-        <span className="brand-name">
-          CINE<span>VERSE</span>
-          <span className="brand-dot">.</span>
-        </span>
+        <CineVerseLogo size="md" />
       </a>
 
       {/* DESKTOP NAVIGATION */}

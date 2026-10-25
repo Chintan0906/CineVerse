@@ -19,6 +19,7 @@ import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/mo
 import MovieCard from "../components/movie/MovieCard";
 import VidLinkPlayer from "../components/player/VidLinkPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
+import CineVerseLogo from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
 
 function MovieDetails() {
@@ -232,9 +233,8 @@ function MovieDetails() {
           Back to Browse
         </button>
 
-        <Link className="brand" to="/">
-          CINE<span>VERSE</span>
-          <span className="brand-dot">.</span>
+        <Link className="brand-logo-link" to="/" aria-label="CineVerse home">
+          <CineVerseLogo size="md" />
         </Link>
 
         <button

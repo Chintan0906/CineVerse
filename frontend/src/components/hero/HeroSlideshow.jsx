@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CineVerseEmblem } from "../common/CineVerseLogo";
 
 function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay }) {
   const navigate = useNavigate();
@@ -76,8 +77,8 @@ function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay })
       <div className="hero-slideshow-content">
         {/* Top Badge */}
         <div className="hero-slideshow-badge">
-          <span className="badge-dot" />
-          <span>CINEVERSE SPOTLIGHT</span>
+          <CineVerseEmblem size={15} />
+          <span>SPOTLIGHT</span>
         </div>
 
         {/* Rank Badge */}

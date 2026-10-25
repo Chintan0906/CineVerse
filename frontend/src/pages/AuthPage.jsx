@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bookmark, Clapperboard, Film, LoaderCircle, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import CineVerseLogo from "../components/common/CineVerseLogo";
 import "./AuthPage.css";
 
 function AuthPage({ mode }) {
@@ -33,9 +34,8 @@ function AuthPage({ mode }) {
     <main className="auth-page">
       <div className="auth-atmosphere" />
       <header className="auth-navbar">
-        <Link className="auth-brand" to="/" aria-label="CineVerse home">
-          <span className="brand-icon"><span /><span /><span /></span>
-          <span className="brand-name">CINE<span>VERSE</span><span className="brand-dot">.</span></span>
+        <Link className="auth-brand-logo" to="/" aria-label="CineVerse home">
+          <CineVerseLogo size="md" />
         </Link>
         <Link className="auth-home-link" to="/">Back to Home</Link>
       </header>

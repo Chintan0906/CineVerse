@@ -4489,3 +4489,11 @@ main {
 }
 
 
+
+.brand-logo-link,
+.auth-brand-logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}

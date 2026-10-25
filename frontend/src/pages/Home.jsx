@@ -21,6 +21,7 @@ import MovieCard from "../components/movie/MovieCard";
 import HeroSlideshow from "../components/hero/HeroSlideshow";
 import VidLinkPlayer from "../components/player/VidLinkPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
+import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
 import { searchMovies, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
@@ -394,8 +395,8 @@ function Home() {
   if (loading) {
     return (
       <div className="app-shell loading-screen">
+        <CineVerseLogo size="xl" />
         <div className="loading-spinner" />
-        <h2>Entering CineVerse...</h2>
         <p>Connecting to global cinematic streaming archive.</p>
       </div>
     );
@@ -405,8 +406,7 @@ function Home() {
   if (error) {
     return (
       <div className="app-shell error-screen">
-        <Film size={42} />
-        <h2>Unable to load CineVerse</h2>
+        <CineVerseLogo size="lg" />
         <p>{error}</p>
         <p>Check that your backend is running at http://localhost:3000.</p>
         <button
@@ -738,9 +738,8 @@ function Home() {
 
       {/* FOOTER */}
       <footer className="footer">
-        <a className="brand" href="#home">
-          CINE<span>VERSE</span>
-          <span className="brand-dot">.</span>
+        <a className="brand-logo-link" href="#home" aria-label="Back to top">
+          <CineVerseLogo size="md" />
         </a>
         <p>Discover movies and web series with live TMDB data.</p>
         <span>© 2026 CineVerse · Powered by The Movie Database</span>
@@ -784,8 +783,8 @@ function Home() {
             <div className="modal-body">
               <div className="modal-badge-row">
                 <span className="section-eyebrow">
-                  <Sparkles size={12} />
-                  CINEVERSE SPOTLIGHT
+                  <CineVerseEmblem size={13} />
+                  SPOTLIGHT
                 </span>
                 <span className="match-score">
                   {Math.min(
