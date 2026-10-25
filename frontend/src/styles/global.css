@@ -2573,13 +2573,15 @@ main {
   z-index: 3;
 }
 
-/* Netflix Badges */
+/* Badges */
 .movie-badge.top10-badge {
-  background: linear-gradient(135deg, #e50914, #b20710);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.5);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .match-score {
