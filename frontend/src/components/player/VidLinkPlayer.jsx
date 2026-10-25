@@ -98,6 +98,54 @@ const STREAM_SERVERS = [
         : `https://www.2embed.cc/embed/${tmdbId}`;
     },
   },
+  {
+    id: "vortex",
+    name: "Server Vortex",
+    quality: "1080p Ultra HD",
+    speed: "Direct Cloud CDN",
+    badge: "Fast Load",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vixsrc.to/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vixsrc.to/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "titan",
+    name: "Server Titan",
+    quality: "1080p Multi-Source",
+    speed: "Auto-Failover",
+    badge: "Multi-Host",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://www.superembed.stream/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
+        : `https://www.superembed.stream/movie?tmdb=${tmdbId}`;
+    },
+  },
+  {
+    id: "orion",
+    name: "Server Orion",
+    quality: "1080p Global",
+    speed: "Global Edge",
+    badge: "Archive Hub",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
+        : `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`;
+    },
+  },
+  {
+    id: "nebula",
+    name: "Server Nebula",
+    quality: "1080p HD v2",
+    speed: "Express Link",
+    badge: "Mirror v2",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
+    },
+  },
 ];
 
 function VidLinkPlayer({
