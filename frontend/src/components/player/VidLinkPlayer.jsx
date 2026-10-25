@@ -8,6 +8,7 @@ import {
   Tv,
   Film,
   Info,
+  Maximize2,
 } from "lucide-react";
 
 // Disguised high-performance streaming servers (Real provider names are completely hidden)
@@ -103,6 +104,7 @@ function VidLinkPlayer({ media, onProgress }) {
   const [isChanging, setIsChanging] = useState(false);
 
   const iframeRef = useRef(null);
+  const screenBoxRef = useRef(null);
   const mediaRef = useRef(media);
   const onProgressRef = useRef(onProgress);
 
@@ -161,6 +163,18 @@ function VidLinkPlayer({ media, onProgress }) {
     const currentIndex = STREAM_SERVERS.findIndex((s) => s.id === activeServer.id);
     const nextServer = STREAM_SERVERS[(currentIndex + 1) % STREAM_SERVERS.length];
     handleSelectServer(nextServer);
+  };
+
+  const handleFullscreen = () => {
+    const el = screenBoxRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
   };
 
   if (!tmdbId || !/^\d+$/.test(tmdbId)) {
@@ -230,11 +244,21 @@ function VidLinkPlayer({ media, onProgress }) {
           <button
             type="button"
             className="cine-server-action-btn"
+            onClick={handleFullscreen}
+            title="Full Screen Theater Mode"
+          >
+            <Maximize2 size={13} />
+            <span>Fullscreen</span>
+          </button>
+
+          <button
+            type="button"
+            className="cine-server-action-btn"
             onClick={handleReload}
             title="Reload video stream"
           >
             <RotateCcw size={13} className={isChanging ? "spin-icon" : ""} />
-            <span>Reload Stream</span>
+            <span>Reload</span>
           </button>
 
           <button
@@ -249,8 +273,8 @@ function VidLinkPlayer({ media, onProgress }) {
         </div>
       </div>
 
-      {/* 16:9 STREAM SCREEN FRAME - NO SANDBOX RESTRICTIONS */}
-      <div className={`cine-screen-box ${isChanging ? "switching" : ""}`}>
+      {/* 16:9 STREAM SCREEN FRAME (AUTOMATICALLY CONSTRAINED TO VIEWPORT HEIGHT) */}
+      <div ref={screenBoxRef} className={`cine-screen-box ${isChanging ? "switching" : ""}`}>
         <iframe
           key={`${activeServer.id}-${reloadKey}-${tmdbId}-${isTv ? `${season}-${episode}` : "movie"}`}
           ref={iframeRef}
@@ -271,7 +295,7 @@ function VidLinkPlayer({ media, onProgress }) {
         </div>
         <div className="cine-hint-item">
           <Info size={14} />
-          <span>Quality Tip: Use the gear/settings icon inside the player to select 1080p, 720p, or Auto.</span>
+          <span>Quality Tip: Use the gear/settings icon inside player to select 1080p, 720p, or Auto.</span>
         </div>
         <div className="cine-hint-item">
           <Sparkles size={14} />

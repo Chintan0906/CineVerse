@@ -4038,12 +4038,15 @@ main {
   to { transform: rotate(360deg); }
 }
 
-/* 16:9 Cinema Screen Frame */
+/* 16:9 Cinema Screen Frame - Dynamically fitted to viewport height */
 .cine-screen-box {
   position: relative !important;
   width: 100% !important;
+  max-width: min(100%, calc((100vh - 210px) * (16 / 9))) !important;
+  max-height: calc(100vh - 210px) !important;
   aspect-ratio: 16 / 9 !important;
-  border-radius: 20px !important;
+  margin: 0 auto !important;
+  border-radius: 18px !important;
   overflow: hidden !important;
   background: #000000 !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
@@ -4110,6 +4113,62 @@ main {
   0% { transform: scale(0.95); opacity: 0.8; }
   50% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* LAPTOP & COMPACT SCREEN OPTIMIZATION (Fixes cut-off / oversized player) */
+@media (max-height: 900px), (max-width: 1366px) {
+  .player-header {
+    min-height: 52px !important;
+    padding-inline: 16px !important;
+  }
+  .player-header h2 {
+    font-size: 1.15rem !important;
+  }
+  .player-content {
+    gap: 10px !important;
+    padding: 10px 16px 20px !important;
+  }
+  .cine-stream-container {
+    gap: 8px !important;
+  }
+  .cine-server-bar-wrapper {
+    padding: 8px 14px !important;
+    gap: 6px !important;
+    border-radius: 14px !important;
+  }
+  .cine-server-label {
+    margin-bottom: 0 !important;
+    font-size: 11px !important;
+  }
+  .cine-server-pills-scroll {
+    padding: 2px 0 4px !important;
+    gap: 6px !important;
+  }
+  .cine-server-pill {
+    padding: 5px 13px !important;
+    font-size: 11.5px !important;
+  }
+  .cine-server-status-bar {
+    padding: 6px 14px !important;
+    border-radius: 12px !important;
+    gap: 8px !important;
+  }
+  .cine-status-text {
+    font-size: 12px !important;
+  }
+  .cine-server-action-btn {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+  .cine-screen-box {
+    max-height: calc(100vh - 195px) !important;
+    max-width: min(100%, calc((100vh - 195px) * (16 / 9))) !important;
+    border-radius: 14px !important;
+  }
+  .cine-stream-hint-bar {
+    font-size: 11px !important;
+    padding: 2px 4px !important;
+  }
 }
 
 @media (max-width: 768px) {
