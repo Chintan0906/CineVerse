@@ -8,6 +8,7 @@ const {
   getMovieDetails,
   getTVShowDetails,
   getTVSeasonEpisodes,
+  discoverByGenre,
 } = require("../../services/tmdbService");
 
 // GET /api/movies/netflix
@@ -83,19 +84,16 @@ router.get("/search", async (req, res) => {
 });
 
 // GET /api/movies/genre/:genre
+// Discover movies and series by genre from TMDB + catalogue
 router.get("/genre/:genre", async (req, res) => {
   try {
-    const requestedGenre = req.params.genre.toLowerCase();
-    const catalogue = await getNetflixCatalogue();
-
-    const filtered = catalogue.allMovies.filter((movie) =>
-      movie.genres.some((g) => g.toLowerCase() === requestedGenre)
-    );
+    const requestedGenre = req.params.genre;
+    const results = await discoverByGenre(requestedGenre);
 
     res.json({
       success: true,
-      count: filtered.length,
-      data: filtered,
+      count: results.length,
+      data: results,
     });
   } catch (error) {
     console.error("Genre filter error:", error.message);

@@ -294,6 +294,96 @@ async function getUpcomingMovies() {
   return (data.results || []).map((m) => normalizeMovie(m, { media_type: "movie" }));
 }
 
+const GENRE_MAP = {
+  action: { movieId: 28, tvId: 10759, name: "Action" },
+  adventure: { movieId: 12, tvId: 10759, name: "Adventure" },
+  animation: { movieId: 16, tvId: 16, name: "Animation" },
+  anime: { movieId: 16, tvId: 16, name: "Animation" },
+  comedy: { movieId: 35, tvId: 35, name: "Comedy" },
+  crime: { movieId: 80, tvId: 80, name: "Crime" },
+  documentary: { movieId: 99, tvId: 99, name: "Documentary" },
+  drama: { movieId: 18, tvId: 18, name: "Drama" },
+  family: { movieId: 10751, tvId: 10751, name: "Family" },
+  fantasy: { movieId: 14, tvId: 10765, name: "Fantasy" },
+  history: { movieId: 36, tvId: 10768, name: "History" },
+  horror: { movieId: 27, tvId: 9648, name: "Horror" },
+  music: { movieId: 10402, tvId: 10402, name: "Music" },
+  musical: { movieId: 10402, tvId: 10402, name: "Music" },
+  mystery: { movieId: 9648, tvId: 9648, name: "Mystery" },
+  romance: { movieId: 10749, tvId: 18, name: "Romance" },
+  "sci-fi": { movieId: 878, tvId: 10765, name: "Sci-Fi" },
+  "science fiction": { movieId: 878, tvId: 10765, name: "Sci-Fi" },
+  scifi: { movieId: 878, tvId: 10765, name: "Sci-Fi" },
+  thriller: { movieId: 53, tvId: 9648, name: "Thriller" },
+  war: { movieId: 10752, tvId: 10768, name: "War" },
+  western: { movieId: 37, tvId: 37, name: "Western" },
+};
+
+async function discoverByGenre(genreName) {
+  const key = String(genreName || "").toLowerCase().trim();
+  const genreInfo = GENRE_MAP[key];
+
+  let catalogueMatches = [];
+  try {
+    const catalogue = await getNetflixCatalogue();
+    catalogueMatches = (catalogue.allMovies || []).filter((m) =>
+      (m.genres || []).some((g) => g.toLowerCase() === key)
+    );
+  } catch (_) {}
+
+  if (!genreInfo) {
+    return catalogueMatches;
+  }
+
+  try {
+    const [moviePage1, moviePage2, tvPage1] = await Promise.all([
+      tmdbRequest("/discover/movie", {
+        with_genres: genreInfo.movieId,
+        sort_by: "popularity.desc",
+        "vote_count.gte": 25,
+        page: 1,
+      }).catch(() => ({ results: [] })),
+      tmdbRequest("/discover/movie", {
+        with_genres: genreInfo.movieId,
+        sort_by: "popularity.desc",
+        "vote_count.gte": 25,
+        page: 2,
+      }).catch(() => ({ results: [] })),
+      genreInfo.tvId
+        ? tmdbRequest("/discover/tv", {
+            with_genres: genreInfo.tvId,
+            sort_by: "popularity.desc",
+            "vote_count.gte": 15,
+            page: 1,
+          }).catch(() => ({ results: [] }))
+        : Promise.resolve({ results: [] }),
+    ]);
+
+    const moviesList = [
+      ...(moviePage1.results || []),
+      ...(moviePage2.results || []),
+    ].map((m) => normalizeMovie(m, { defaultGenre: genreInfo.name, media_type: "movie" }));
+
+    const tvList = (tvPage1.results || []).map((t) =>
+      normalizeMovie(t, { defaultGenre: genreInfo.name, media_type: "tv" })
+    );
+
+    const map = new Map();
+    catalogueMatches.forEach((item) => map.set(String(item.id), item));
+    moviesList.forEach((item) => {
+      if (!map.has(String(item.id))) map.set(String(item.id), item);
+    });
+    tvList.forEach((item) => {
+      if (!map.has(String(item.id))) map.set(String(item.id), item);
+    });
+
+    return Array.from(map.values());
+  } catch (error) {
+    console.error("discoverByGenre error:", error.message);
+    return catalogueMatches;
+  }
+}
+
 async function getMoviesByGenre(genreId, genreName) {
   const data = await tmdbRequest("/discover/movie", {
     with_genres: genreId,
@@ -580,5 +670,6 @@ module.exports = {
   getUpcomingMovies,
   getMoviesByGenre,
   getTVShowsByGenre,
+  discoverByGenre,
   getNetflixCatalogue,
 };

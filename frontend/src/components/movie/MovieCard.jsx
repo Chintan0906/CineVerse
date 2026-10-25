@@ -99,24 +99,15 @@ function MovieCard({
               </span>
             )}
 
-            {rank && (
+            {rank ? (
               <span className="movie-badge top10-badge">
                 TOP 10
               </span>
-            )}
-
-            {!rank && movie.trending && (
+            ) : movie.trending ? (
               <span className="movie-badge trending-badge">
                 TRENDING
               </span>
-            )}
-
-            {!rank && movie.featured && (
-              <span className="movie-badge featured-badge">
-                <Star size={11} fill="currentColor" />
-                FEATURED
-              </span>
-            )}
+            ) : null}
           </div>
 
           {movie.progressPercent > 0 && !movie.completed && (

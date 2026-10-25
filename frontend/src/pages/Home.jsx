@@ -24,7 +24,7 @@ import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
-import { searchMovies, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
+import { searchMovies, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre } from "../services/movieService";
 import "../components/hero/HeroSlideshow.css";
 
 function Home() {
@@ -64,6 +64,8 @@ function Home() {
   // Worldwide live search state
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+  const [genreResults, setGenreResults] = useState([]);
+  const [isLoadingGenre, setIsLoadingGenre] = useState(false);
 
   useEffect(() => {
     if (!pendingSection || !["Home", "Watchlist"].includes(activeTab)) return undefined;
@@ -230,13 +232,44 @@ function Home() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Local filtering when a genre chip is clicked without a global search query
+  // Live TMDB genre discovery across worldwide movies & series
+  useEffect(() => {
+    if (activeGenre === "All") {
+      setGenreResults([]);
+      setIsLoadingGenre(false);
+      return undefined;
+    }
+
+    let active = true;
+    setIsLoadingGenre(true);
+
+    getMoviesByGenre(activeGenre)
+      .then((data) => {
+        if (!active) return;
+        if (data && data.length > 0) {
+          setGenreResults(data.map(normalize).filter(Boolean));
+        }
+      })
+      .catch((err) => {
+        console.error("Genre fetch error:", err);
+      })
+      .finally(() => {
+        if (active) setIsLoadingGenre(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeGenre]);
+
+  // Local filtering when a genre chip is clicked + expanded TMDB genre results
   const genreFilteredMovies = useMemo(() => {
     if (activeGenre === "All") return movies;
+    if (genreResults.length > 0) return genreResults;
     return movies.filter((movie) =>
-      movie.genres.some((g) => g.toLowerCase() === activeGenre.toLowerCase())
+      (movie.genres || []).some((g) => g.toLowerCase() === activeGenre.toLowerCase())
     );
-  }, [movies, activeGenre]);
+  }, [movies, activeGenre, genreResults]);
 
   // Display results when searching or filtering
   const displayedSearchResults = useMemo(() => {
@@ -571,6 +604,8 @@ function Home() {
                   <p className="search-grid-subtitle">
                     {isSearchingGlobal
                       ? "Querying TMDB international database..."
+                      : isLoadingGenre
+                      ? `Searching TMDB worldwide archives for ${activeGenre}...`
                       : `Found ${displayedSearchResults.length} titles available to view`}
                   </p>
                 </div>
