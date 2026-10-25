@@ -4,11 +4,13 @@ import {
   Sparkles,
   Wifi,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   Tv,
   Film,
   Info,
   Maximize2,
+  Layers,
 } from "lucide-react";
 
 // Disguised high-performance streaming servers (Real provider names are completely hidden)
@@ -98,7 +100,14 @@ const STREAM_SERVERS = [
   },
 ];
 
-function VidLinkPlayer({ media, onProgress }) {
+function VidLinkPlayer({
+  media,
+  onProgress,
+  seasons = [],
+  episodes = [],
+  onSeasonChange,
+  onEpisodeChange,
+}) {
   const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
@@ -113,8 +122,26 @@ function VidLinkPlayer({ media, onProgress }) {
 
   const tmdbId = String(media?.tmdbId || media?.id || "");
   const isTv = Boolean(media?.mediaType === "tv" || media?.isTV);
-  const season = media?.season || 1;
-  const episode = media?.episode || 1;
+  const season = Number(media?.season || 1);
+  const episode = Number(media?.episode || 1);
+
+  // Available seasons list
+  const seasonList = seasons?.length
+    ? seasons
+    : media?.availableSeasons?.length
+    ? media.availableSeasons
+    : [{ season_number: season, name: `Season ${season}` }];
+
+  // Available episodes list
+  const episodeList = episodes?.length
+    ? episodes
+    : media?.episodes?.length
+    ? media.episodes
+    : [{ episodeNumber: episode, name: `Episode ${episode}` }];
+
+  // Current episode title
+  const currentEpData = episodeList.find((e) => e.episodeNumber === episode);
+  const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${episode}`;
 
   // Listen for playback events (VidLink telemetry)
   useEffect(() => {
@@ -177,6 +204,21 @@ function VidLinkPlayer({ media, onProgress }) {
     }
   };
 
+  const handlePrevEpisode = () => {
+    if (episode <= 1) return;
+    if (onEpisodeChange) {
+      onEpisodeChange(episode - 1);
+    }
+  };
+
+  const handleNextEpisode = () => {
+    const maxEp = episodeList.length ? Math.max(...episodeList.map((e) => e.episodeNumber)) : episode + 1;
+    if (episode >= maxEp) return;
+    if (onEpisodeChange) {
+      onEpisodeChange(episode + 1);
+    }
+  };
+
   if (!tmdbId || !/^\d+$/.test(tmdbId)) {
     return (
       <div className="cine-stream-empty">
@@ -224,6 +266,76 @@ function VidLinkPlayer({ media, onProgress }) {
         </div>
       </div>
 
+      {/* WEBSERIES EPISODE & SEASON SWITCHER BAR */}
+      {isTv && (
+        <div className="cine-tv-control-bar">
+          <div className="cine-tv-control-left">
+            <span className="cine-tv-indicator">
+              <Tv size={14} />
+              <span>Series Navigation:</span>
+            </span>
+
+            {/* Season Selector */}
+            <div className="cine-tv-select-wrap">
+              <label htmlFor="player-season-select" className="sr-only">Season</label>
+              <select
+                id="player-season-select"
+                className="cine-tv-select"
+                value={season}
+                onChange={(e) => onSeasonChange && onSeasonChange(Number(e.target.value))}
+              >
+                {seasonList.map((s) => (
+                  <option key={s.id || s.season_number} value={s.season_number}>
+                    {s.name || `Season ${s.season_number}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Episode Selector */}
+            <div className="cine-tv-select-wrap">
+              <label htmlFor="player-episode-select" className="sr-only">Episode</label>
+              <select
+                id="player-episode-select"
+                className="cine-tv-select episode-select"
+                value={episode}
+                onChange={(e) => onEpisodeChange && onEpisodeChange(Number(e.target.value))}
+              >
+                {episodeList.map((ep) => (
+                  <option key={ep.id || ep.episodeNumber} value={ep.episodeNumber}>
+                    {String(ep.episodeNumber).padStart(2, "0")} · {ep.name || `Episode ${ep.episodeNumber}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="cine-tv-control-right">
+            <button
+              type="button"
+              className="cine-tv-step-btn"
+              disabled={episode <= 1}
+              onClick={handlePrevEpisode}
+              title="Previous Episode"
+            >
+              <ChevronLeft size={14} />
+              <span>Prev Ep</span>
+            </button>
+
+            <button
+              type="button"
+              className="cine-tv-step-btn"
+              disabled={episodeList.length ? episode >= Math.max(...episodeList.map((e) => e.episodeNumber)) : false}
+              onClick={handleNextEpisode}
+              title="Next Episode"
+            >
+              <span>Next Ep</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ACTIVE STATUS BANNER */}
       <div className="cine-server-status-bar">
         <div className="cine-server-status-left">
@@ -235,7 +347,7 @@ function VidLinkPlayer({ media, onProgress }) {
           <span className="cine-status-chip speed-chip">{activeServer.speed}</span>
           {isTv && (
             <span className="cine-status-chip tv-chip">
-              <Tv size={12} /> S{season}:E{episode}
+              <Layers size={12} /> S{season} : E{episode} · {currentEpTitle}
             </span>
           )}
         </div>

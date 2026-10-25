@@ -347,6 +347,94 @@ function MovieDetails() {
           </div>
         </div>
 
+        {/* WEBSERIES EPISODES & SEASONS GRID */}
+        {movie.mediaType === "tv" && availableSeasons.length > 0 && (
+          <section className="tv-episodes-section">
+            <div className="tv-episodes-header">
+              <div className="tv-episodes-heading-left">
+                <h2 className="section-title">Episodes</h2>
+                <span className="episodes-count-tag">
+                  {episodes.length} {episodes.length === 1 ? "Episode" : "Episodes"}
+                </span>
+              </div>
+
+              {/* Season Selection Pill */}
+              <div className="season-select-wrapper">
+                <select
+                  className="season-dropdown-pill"
+                  value={selectedSeason}
+                  onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                >
+                  {availableSeasons.map((season) => (
+                    <option key={season.id || season.season_number} value={season.season_number}>
+                      {season.name || `Season ${season.season_number}`} {season.episode_count ? `(${season.episode_count} eps)` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Episodes List / Cards Grid */}
+            <div className="episodes-grid">
+              {episodes.map((ep) => {
+                const isCurrent = ep.episodeNumber === selectedEpisode;
+                return (
+                  <div
+                    key={ep.id || ep.episodeNumber}
+                    className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
+                    onClick={() => {
+                      setSelectedEpisode(ep.episodeNumber);
+                      const playMedia = {
+                        ...movie,
+                        season: selectedSeason,
+                        episode: ep.episodeNumber,
+                        episodeTitle: ep.name,
+                      };
+                      recordPlay(playMedia, { season: selectedSeason, episode: ep.episodeNumber });
+                      setActiveStreamMovie(playMedia);
+                      setShowPlayer(true);
+                    }}
+                  >
+                    <div className="episode-thumbnail-wrap">
+                      <img
+                        src={ep.still || movie.backdrop || movie.poster}
+                        alt={ep.name}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = movie.poster;
+                        }}
+                      />
+                      <div className="episode-play-overlay">
+                        <Play size={20} fill="#ffffff" />
+                      </div>
+                      <span className="episode-num-badge">
+                        E{String(ep.episodeNumber).padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    <div className="episode-details">
+                      <div className="episode-title-row">
+                        <h4 className="episode-title">
+                          {ep.episodeNumber}. {ep.name}
+                        </h4>
+                        {ep.runtime > 0 && (
+                          <span className="episode-runtime">
+                            <Clock size={12} />
+                            {ep.runtime}m
+                          </span>
+                        )}
+                      </div>
+                      <p className="episode-overview">
+                        {ep.overview || "No episode summary available."}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* TOP CAST & CREW */}
         {movie.cast && movie.cast.length > 0 && (
           <section className="cast-section">
@@ -412,7 +500,32 @@ function MovieDetails() {
           </div>
           <div className="player-content">
             <div className="player-window">
-              <VidLinkPlayer media={streamMedia} onProgress={handlePlayerProgress} />
+              <VidLinkPlayer
+                media={streamMedia}
+                onProgress={handlePlayerProgress}
+                seasons={availableSeasons}
+                episodes={episodes}
+                onSeasonChange={(newSeason) => {
+                  setSelectedSeason(newSeason);
+                  const updatedMedia = {
+                    ...streamMedia,
+                    season: newSeason,
+                    episode: 1,
+                  };
+                  recordPlay(updatedMedia, { season: newSeason, episode: 1 });
+                  setActiveStreamMovie(updatedMedia);
+                }}
+                onEpisodeChange={(newEpisode) => {
+                  setSelectedEpisode(newEpisode);
+                  const updatedMedia = {
+                    ...streamMedia,
+                    season: selectedSeason,
+                    episode: newEpisode,
+                  };
+                  recordPlay(updatedMedia, { season: selectedSeason, episode: newEpisode });
+                  setActiveStreamMovie(updatedMedia);
+                }}
+              />
             </div>
             <StreamRecommendations
               movies={movie.similar || []}
