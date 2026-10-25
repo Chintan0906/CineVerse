@@ -319,7 +319,14 @@ body {
 }
 
 .discovery-bar {
+  margin: 32px 5% 45px !important;
   scroll-margin-top: 94px;
+}
+
+@media (max-width: 768px) {
+  .discovery-bar {
+    margin: 24px 20px 35px !important;
+  }
 }
 
 .search-panel {

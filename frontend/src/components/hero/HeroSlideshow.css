@@ -6,9 +6,9 @@
 .hero-slideshow {
   position: relative;
   width: 100%;
-  height: 90vh;
-  min-height: 600px;
-  max-height: 1000px;
+  height: max(90vh, 720px);
+  min-height: 680px;
+  max-height: 980px;
   overflow: hidden;
   background: #08090d;
 }
@@ -97,12 +97,12 @@
   z-index: 2;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 60px;
+  padding: 90px 60px 60px;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 20px;
+  gap: 14px;
 }
 
 /* Top Badge */
@@ -167,12 +167,12 @@
 
 /* Title with Animation */
 .hero-slideshow-title {
-  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-size: clamp(2rem, 4.2vw, 3.8rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.05;
   color: #ffffff;
   margin: 0;
-  max-width: 700px;
+  max-width: 760px;
   text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.8);
   letter-spacing: -0.02em;
 }
@@ -249,11 +249,11 @@
 
 /* Description */
 .hero-slideshow-description {
-  max-width: 580px;
-  font-size: 18px;
-  line-height: 1.6;
+  max-width: 600px;
+  font-size: 16px;
+  line-height: 1.5;
   color: rgba(255, 255, 255, 0.95);
-  margin: 8px 0 0;
+  margin: 2px 0 0;
   text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -274,16 +274,16 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .genre-tag {
-  padding: 6px 14px;
+  padding: 5px 12px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
   transition: all 0.3s ease;
@@ -297,8 +297,8 @@
 /* Action Buttons - Oval Shape & Monochrome White */
 .hero-slideshow-actions {
   display: flex;
-  gap: 14px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 10px;
   flex-wrap: wrap;
 }
 
@@ -624,5 +624,43 @@
 
   .indicator.active {
     width: 30px;
+  }
+}
+
+
+/* Laptop & Short-Viewport Optimization */
+@media (max-height: 850px) {
+  .hero-slideshow {
+    min-height: 600px;
+    height: 90vh;
+  }
+
+  .hero-slideshow-content {
+    gap: 10px;
+    padding: 70px 40px 40px;
+  }
+
+  .hero-slideshow-title {
+    font-size: clamp(1.8rem, 3.6vw, 2.8rem);
+  }
+
+  .hero-slideshow-description {
+    -webkit-line-clamp: 2;
+    font-size: 14.5px;
+  }
+
+  .hero-slideshow-actions {
+    margin-top: 6px;
+    gap: 10px;
+  }
+
+  .hero-btn-play {
+    padding: 11px 24px;
+    font-size: 16px;
+  }
+
+  .hero-btn-info {
+    padding: 11px 20px;
+    font-size: 15px;
   }
 }
