@@ -14,10 +14,22 @@ import {
 // Disguised high-performance streaming servers (Real provider names are completely hidden)
 const STREAM_SERVERS = [
   {
+    id: "eclipse",
+    name: "Server Eclipse",
+    quality: "1080p Full HD",
+    speed: "Ultra Fast CDN",
+    badge: "Recommended",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
+  },
+  {
     id: "alpha",
     name: "Server Alpha",
     quality: "1080p / 4K UHD",
-    speed: "Ultra Fast",
+    speed: "High Speed",
     badge: "Clean Stream",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
@@ -29,7 +41,7 @@ const STREAM_SERVERS = [
     id: "nova",
     name: "Server Nova",
     quality: "1080p Full HD",
-    speed: "High Speed",
+    speed: "Direct Feed",
     badge: "Direct 1080p",
     getUrl: (tmdbId, isTv, season, episode, currentTime) => {
       const path = isTv
@@ -46,18 +58,6 @@ const STREAM_SERVERS = [
         params.set("startAt", String(Math.floor(currentTime)));
       }
       return `https://vidlink.pro${path}?${params.toString()}`;
-    },
-  },
-  {
-    id: "eclipse",
-    name: "Server Eclipse",
-    quality: "1080p FHD",
-    speed: "Fast CDN",
-    badge: "Fast Mirror",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
     },
   },
   {
