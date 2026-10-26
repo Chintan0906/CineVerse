@@ -17,7 +17,7 @@ import {
 
 import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
 import MovieCard from "../components/movie/MovieCard";
-import VidLinkPlayer from "../components/player/VidLinkPlayer";
+import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
@@ -594,7 +594,7 @@ function MovieDetails() {
           </div>
           <div className="player-content">
             <div className="player-window">
-              <VidLinkPlayer
+              <CineStreamPlayer
                 media={streamMedia}
                 onProgress={handlePlayerProgress}
                 seasons={availableSeasons}

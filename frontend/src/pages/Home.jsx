@@ -19,7 +19,7 @@ import Navbar from "../components/layout/Navbar";
 import MovieRow from "../components/movie/MovieRow";
 import MovieCard from "../components/movie/MovieCard";
 import HeroSlideshow from "../components/hero/HeroSlideshow";
-import VidLinkPlayer from "../components/player/VidLinkPlayer";
+import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
@@ -931,7 +931,7 @@ function Home() {
 
           <div className="player-content">
             <div className="player-window">
-              <VidLinkPlayer
+              <CineStreamPlayer
                 media={{
                   ...playerMovie,
                   season: playerSeason,

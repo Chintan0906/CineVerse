@@ -148,7 +148,7 @@ const STREAM_SERVERS = [
   },
 ];
 
-function VidLinkPlayer({
+function CineStreamPlayer({
   media,
   onProgress,
   seasons = [],
@@ -495,4 +495,4 @@ function VidLinkPlayer({
   );
 }
 
-export default VidLinkPlayer;
+export default CineStreamPlayer;
