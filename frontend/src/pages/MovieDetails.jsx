@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,13 +20,15 @@ import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo from "../components/common/CineVerseLogo";
+import CinematicSplashScreen from "../components/common/CinematicSplashScreen";
 import { useLibrary } from "../hooks/useLibrary";
 
 function MovieDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasRestoredPlayRef = useRef(false);
 
   const {
     watchlist,
@@ -95,6 +97,35 @@ function MovieDetails() {
         setLoading(false);
       });
   }, [id, requestedType]);
+
+  // Automatic playback restoration on page reload
+  useEffect(() => {
+    if (!loading && movie && !hasRestoredPlayRef.current) {
+      hasRestoredPlayRef.current = true;
+      if (searchParams.get("play") === "true") {
+        const isTv = Boolean(
+          movie.mediaType === "tv" ||
+          movie.isTV ||
+          (movie.seasons && movie.seasons.length > 0)
+        );
+        const s = Number(searchParams.get("season") || selectedSeason || 1);
+        const e = Number(searchParams.get("episode") || selectedEpisode || 1);
+        if (s) setSelectedSeason(s);
+        if (e) setSelectedEpisode(e);
+
+        const playMedia = {
+          ...movie,
+          season: s,
+          episode: e,
+          isTV: isTv,
+          mediaType: isTv ? "tv" : "movie",
+        };
+        recordPlay(playMedia, { season: s, episode: e });
+        setActiveStreamMovie(playMedia);
+        setShowPlayer(true);
+      }
+    }
+  }, [loading, movie, searchParams]);
 
   // Fetch episodes when selectedSeason changes for a TV show
   useEffect(() => {
@@ -177,6 +208,39 @@ function MovieDetails() {
 
   const streamMedia = playerMedia;
 
+  const handleStartPlay = (s = selectedSeason, e = selectedEpisode) => {
+    const playMedia = {
+      ...movie,
+      season: s,
+      episode: e,
+      isTV: isTvShow,
+      mediaType: isTvShow ? "tv" : "movie",
+    };
+    recordPlay(playMedia, { season: s, episode: e });
+    setActiveStreamMovie(playMedia);
+    setShowPlayer(true);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("play", "true");
+      if (isTvShow) {
+        next.set("season", String(s));
+        next.set("episode", String(e));
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const handleClosePlayer = () => {
+    setShowPlayer(false);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("play");
+      next.delete("season");
+      next.delete("episode");
+      return next;
+    }, { replace: true });
+  };
+
   function playRecommendation(recommendedMovie) {
     const isRecTv = Boolean(recommendedMovie.mediaType === "tv" || recommendedMovie.isTV);
     const media = isRecTv
@@ -188,11 +252,7 @@ function MovieDetails() {
 
   if (loading) {
     return (
-      <div className="app-shell loading-screen">
-        <div className="loading-spinner" />
-        <h2>Loading Movie Details...</h2>
-        <p>Fetching international cinematic archives.</p>
-      </div>
+      <CinematicSplashScreen status="Loading cinematic details..." />
     );
   }
 
@@ -354,18 +414,7 @@ function MovieDetails() {
             <div className="details-actions">
               <button
                 className="btn-primary"
-                onClick={() => {
-                  const playMedia = {
-                    ...movie,
-                    season: selectedSeason,
-                    episode: selectedEpisode,
-                    isTV: isTvShow,
-                    mediaType: isTvShow ? "tv" : "movie",
-                  };
-                  recordPlay(playMedia, { season: selectedSeason, episode: selectedEpisode });
-                  setActiveStreamMovie(playMedia);
-                  setShowPlayer(true);
-                }}
+                onClick={() => handleStartPlay()}
               >
                 <Play size={18} fill="currentColor" />
                 Watch Now
@@ -474,20 +523,7 @@ function MovieDetails() {
                   <div
                     key={ep.id || ep.episodeNumber}
                     className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
-                    onClick={() => {
-                      setSelectedEpisode(ep.episodeNumber);
-                      const playMedia = {
-                        ...movie,
-                        season: selectedSeason,
-                        episode: ep.episodeNumber,
-                        episodeTitle: ep.name,
-                        isTV: isTvShow,
-                        mediaType: isTvShow ? "tv" : "movie",
-                      };
-                      recordPlay(playMedia, { season: selectedSeason, episode: ep.episodeNumber });
-                      setActiveStreamMovie(playMedia);
-                      setShowPlayer(true);
-                    }}
+                    onClick={() => handleStartPlay(selectedSeason, ep.episodeNumber)}
                   >
                     <div className="episode-thumbnail-wrap">
                       <img
@@ -586,7 +622,7 @@ function MovieDetails() {
             </div>
             <button
               className="icon-button"
-              onClick={() => setShowPlayer(false)}
+              onClick={handleClosePlayer}
               aria-label="Close video player"
             >
               <X size={24} />
@@ -608,6 +644,12 @@ function MovieDetails() {
                   };
                   recordPlay(updatedMedia, { season: newSeason, episode: 1 });
                   setActiveStreamMovie(updatedMedia);
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("season", String(newSeason));
+                    next.set("episode", "1");
+                    return next;
+                  }, { replace: true });
                 }}
                 onEpisodeChange={(newEpisode) => {
                   setSelectedEpisode(newEpisode);
@@ -618,6 +660,11 @@ function MovieDetails() {
                   };
                   recordPlay(updatedMedia, { season: selectedSeason, episode: newEpisode });
                   setActiveStreamMovie(updatedMedia);
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("episode", String(newEpisode));
+                    return next;
+                  }, { replace: true });
                 }}
               />
             </div>

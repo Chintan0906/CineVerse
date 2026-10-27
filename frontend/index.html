@@ -14,9 +14,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <meta name="description" content="Discover films and series, build your watchlist, and pick up where you left off." />
     <title>CineVerse | Beyond Entertainment</title>
+    <style>
+      /* Standalone Instant Startup Screen */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #06090e;
+        overflow-x: hidden;
+      }
+      #root:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle at center, #0e141e 0%, #06090e 65%, #020305 100%);
+      }
+      .cv-boot-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        animation: cvBootZoom 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .cv-boot-emblem {
+        width: 76px;
+        height: 76px;
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.45));
+      }
+      .cv-boot-orbit {
+        animation: cvBootSpin 8s linear infinite;
+        transform-origin: 32px 32px;
+      }
+      .cv-boot-text {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: clamp(24px, 4vw, 36px);
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+      }
+      .cv-boot-tagline {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .cv-boot-track {
+        width: 160px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+      .cv-boot-bar {
+        width: 45%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, #ffffff, transparent);
+        animation: cvBootSlide 1.5s infinite ease-in-out;
+      }
+      @keyframes cvBootZoom {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes cvBootSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes cvBootSlide {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+        100% { transform: translateX(250%); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="cv-boot-wrap">
+        <svg class="cv-boot-emblem" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="cv-boot-orbit" cx="32" cy="32" rx="27" ry="10" stroke="#ffffff" stroke-width="2" stroke-dasharray="60 14 26 8" opacity="0.8" />
+          <path d="M 46 16.5 C 39 10.5 28 10.5 19.5 17 C 9.5 24.5 9.5 39.5 19.5 47 C 28 53.5 39 53.5 46 47.5" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+          <path d="M 28.5 23.5 L 43.5 32 L 28.5 40.5 Z" fill="#ffffff" />
+          <circle cx="46" cy="16.5" r="2.2" fill="#ffffff" />
+        </svg>
+        <div class="cv-boot-text">
+          <span>CINE</span><span style="opacity: 0.85; margin-left: 1px;">VERSE</span><span style="width: 6px; height: 6px; border-radius: 50%; background: #fff; margin-left: 5px; box-shadow: 0 0 10px #fff;"></span>
+        </div>
+        <div class="cv-boot-tagline">Connecting to cinematic archive...</div>
+        <div class="cv-boot-track"><div class="cv-boot-bar"></div></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Play,
   Plus,
@@ -22,13 +22,16 @@ import HeroSlideshow from "../components/hero/HeroSlideshow";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLogo";
+import CinematicSplashScreen from "../components/common/CinematicSplashScreen";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
-import { searchMovies, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre } from "../services/movieService";
+import { searchMovies, getMovieById, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre } from "../services/movieService";
 import "../components/hero/HeroSlideshow.css";
 
 function Home() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasRestoredRef = useRef(false);
   const {
     watchlist,
     history,
@@ -317,12 +320,12 @@ function Home() {
     });
   }
 
-  // Open the video player
-  function handlePlay(movie) {
+  // Open the video player and persist to URL so reload stays on player
+  function handlePlay(movie, seasonParam, episodeParam) {
     setSelectedMovie(null);
     const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
-    const initialSeason = Number(movie.season || 1);
-    const initialEpisode = Number(movie.episode || 1);
+    const initialSeason = Number(seasonParam || movie.season || 1);
+    const initialEpisode = Number(episodeParam || movie.episode || 1);
 
     setPlayerSeason(initialSeason);
     setPlayerEpisode(initialEpisode);
@@ -338,6 +341,53 @@ function Home() {
     };
     recordPlay(playMedia, { season: initialSeason, episode: initialEpisode });
     setPlayerMovie(playMedia);
+
+    // Save playback info to URL parameters so page refresh does not close the player
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("watch", String(movie.id));
+      if (isTv) {
+        next.set("type", "tv");
+        next.set("season", String(initialSeason));
+        next.set("episode", String(initialEpisode));
+      } else {
+        next.delete("type");
+        next.delete("season");
+        next.delete("episode");
+      }
+      next.delete("movie");
+      return next;
+    }, { replace: true });
+  }
+
+  function handleClosePlayer() {
+    setPlayerMovie(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("watch");
+      next.delete("type");
+      next.delete("season");
+      next.delete("episode");
+      return next;
+    }, { replace: true });
+  }
+
+  function handleSelectMovie(movie) {
+    setSelectedMovie(movie);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("movie", String(movie.id));
+      return next;
+    }, { replace: true });
+  }
+
+  function handleCloseMovie() {
+    setSelectedMovie(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("movie");
+      return next;
+    }, { replace: true });
   }
 
   // Load TV show seasons and episodes if playerMovie is TV series
@@ -395,6 +445,11 @@ function Home() {
     setActiveGenre("All");
     setSearchQuery("");
     setSearchOpen(false);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", "History");
+      return next;
+    }, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -404,6 +459,11 @@ function Home() {
     setSearchQuery("");
     setSearchOpen(false);
     setPendingSection("");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("tab");
+      return next;
+    }, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -415,23 +475,86 @@ function Home() {
     setPendingSection(sectionId);
   }
 
+  // Automatic state restoration on page reload (preserves playback, active movie, tab, and genre)
+  useEffect(() => {
+    if (loading || hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+
+    const watchId = searchParams.get("watch");
+    const movieId = searchParams.get("movie");
+    const tabParam = searchParams.get("tab");
+    const genreParam = searchParams.get("genre");
+
+    if (tabParam && ["Watchlist", "History", "Trending", "Discover"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+
+    if (genreParam) {
+      setActiveGenre(genreParam);
+    }
+
+    if (watchId) {
+      const found = movies.find((m) => String(m.id) === String(watchId));
+      const watchType = searchParams.get("type");
+      const watchSeason = Number(searchParams.get("season") || 1);
+      const watchEpisode = Number(searchParams.get("episode") || 1);
+
+      if (found) {
+        handlePlay(found, watchSeason, watchEpisode);
+      } else {
+        const fetcher = watchType === "tv" ? getTVShowById(watchId) : getMovieById(watchId, watchType);
+        fetcher
+          .then((data) => {
+            if (data) {
+              const isTv = Boolean(
+                watchType === "tv" ||
+                data.mediaType === "tv" ||
+                data.isTV ||
+                (data.seasons && data.seasons.length > 0)
+              );
+              handlePlay(
+                {
+                  ...data,
+                  mediaType: isTv ? "tv" : "movie",
+                  isTV: isTv,
+                },
+                watchSeason,
+                watchEpisode
+              );
+            }
+          })
+          .catch((err) => console.warn("Could not restore playback on reload:", err));
+      }
+    } else if (movieId) {
+      const found = movies.find((m) => String(m.id) === String(movieId));
+      if (found) {
+        setSelectedMovie(found);
+      } else {
+        getMovieById(movieId)
+          .then((data) => {
+            if (data) setSelectedMovie(data);
+          })
+          .catch((err) => console.warn("Could not restore movie modal on reload:", err));
+      }
+    }
+  }, [loading, movies, searchParams]);
+
   // Handle Escape key
   function handleModalKeyDown(event) {
     if (event.key === "Escape") {
-      setSelectedMovie(null);
-      setPlayerMovie(null);
+      if (playerMovie) {
+        handleClosePlayer();
+      } else if (selectedMovie) {
+        handleCloseMovie();
+      }
       setSearchOpen(false);
     }
   }
 
-  // Loading state
+  // Loading state (Prime / Netflix cinematic boot animation)
   if (loading) {
     return (
-      <div className="app-shell loading-screen">
-        <CineVerseLogo size="xl" />
-        <div className="loading-spinner" />
-        <p>Connecting to global cinematic streaming archive.</p>
-      </div>
+      <CinematicSplashScreen status="Connecting to global cinematic archive..." />
     );
   }
 
@@ -472,6 +595,11 @@ function Home() {
           setSearchQuery("");
           setActiveGenre("All");
           setPendingSection("discovery");
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("tab", "Watchlist");
+            return next;
+          }, { replace: true });
         }}
         onHistory={showHistory}
       />
@@ -583,7 +711,7 @@ function Home() {
               title="My Watchlist"
               subtitle="Movies you've saved to watch later"
               movies={watchlistMovies}
-              onSelect={setSelectedMovie}
+              onSelect={handleSelectMovie}
               onPlay={handlePlay}
               watchlist={watchlist}
               onToggleWatchlist={toggleWatchlist}
@@ -628,7 +756,7 @@ function Home() {
                     <MovieCard
                       key={movie.id}
                       movie={movie}
-                      onSelect={setSelectedMovie}
+                      onSelect={handleSelectMovie}
                       onPlay={handlePlay}
                       isSaved={isSaved(movie.id)}
                       onToggleWatchlist={toggleWatchlist}
@@ -665,7 +793,7 @@ function Home() {
                   title="Continue Watching"
                   subtitle="Pick up where you left off"
                   movies={continueWatchingMovies}
-                  onSelect={setSelectedMovie}
+                  onSelect={handleSelectMovie}
                   onPlay={handlePlay}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -679,7 +807,7 @@ function Home() {
                   title="Continue Exploring Your Watchlist"
                   subtitle="Saved titles ready for your next movie night"
                   movies={watchlistMovies}
-                  onSelect={setSelectedMovie}
+                  onSelect={handleSelectMovie}
                   onPlay={handlePlay}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -696,7 +824,7 @@ function Home() {
                   subtitle={category.subtitle}
                   isTop10={category.isTop10}
                   movies={category.movies}
-                  onSelect={setSelectedMovie}
+                  onSelect={handleSelectMovie}
                   onPlay={handlePlay}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -713,7 +841,7 @@ function Home() {
                   id="history-continue"
                   title="Continue Watching"
                   movies={continueWatchingMovies}
-                  onSelect={setSelectedMovie}
+                  onSelect={handleSelectMovie}
                   onPlay={handlePlay}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -724,7 +852,7 @@ function Home() {
                 title="Recently Watched"
                 subtitle="Your latest titles are saved on this device"
                 movies={history}
-                onSelect={setSelectedMovie}
+                onSelect={handleSelectMovie}
                 onPlay={handlePlay}
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
@@ -786,7 +914,7 @@ function Home() {
           className="modal-backdrop"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
-              setSelectedMovie(null);
+              handleCloseMovie();
             }
           }}
         >
@@ -798,7 +926,7 @@ function Home() {
           >
             <button
               className="modal-close glass-button"
-              onClick={() => setSelectedMovie(null)}
+              onClick={handleCloseMovie}
               aria-label="Close movie details"
             >
               <X size={20} />
@@ -922,7 +1050,7 @@ function Home() {
 
             <button
               className="icon-button"
-              onClick={() => setPlayerMovie(null)}
+              onClick={handleClosePlayer}
               aria-label="Close video player"
             >
               <X size={24} />
@@ -949,6 +1077,12 @@ function Home() {
                     season: newSeason,
                     episode: 1,
                   }));
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("season", String(newSeason));
+                    next.set("episode", "1");
+                    return next;
+                  }, { replace: true });
                 }}
                 onEpisodeChange={(newEpisode) => {
                   setPlayerEpisode(newEpisode);
@@ -957,6 +1091,11 @@ function Home() {
                     season: playerSeason,
                     episode: newEpisode,
                   }));
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("episode", String(newEpisode));
+                    return next;
+                  }, { replace: true });
                 }}
               />
             </div>
