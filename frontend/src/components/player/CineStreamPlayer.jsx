@@ -93,30 +93,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "zenith",
-    name: "Server Zenith",
-    quality: "HD Stream",
-    speed: "Express Mirror",
-    badge: "Backup Mirror",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
-        : `https://www.2embed.cc/embed/${tmdbId}`;
-    },
-  },
-  {
-    id: "vortex",
-    name: "Server Vortex",
-    quality: "1080p Ultra HD",
-    speed: "Direct Cloud CDN",
-    badge: "Fast Load",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vixsrc.to/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vixsrc.to/movie/${tmdbId}`;
-    },
-  },
-  {
     id: "titan",
     name: "Server Titan",
     quality: "1080p Multi-Source",
@@ -124,32 +100,8 @@ const STREAM_SERVERS = [
     badge: "Multi-Host",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://www.superembed.stream/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
-        : `https://www.superembed.stream/movie?tmdb=${tmdbId}`;
-    },
-  },
-  {
-    id: "orion",
-    name: "Server Orion",
-    quality: "1080p Global",
-    speed: "Global Edge",
-    badge: "Archive Hub",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
-        : `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`;
-    },
-  },
-  {
-    id: "nebula",
-    name: "Server Nebula",
-    quality: "1080p HD v2",
-    speed: "Express Link",
-    badge: "Mirror v2",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
+        ? `https://autoembed.me/tv/tmdb/${tmdbId}-${season || 1}-${episode || 1}`
+        : `https://autoembed.me/movie/tmdb/${tmdbId}`;
     },
   },
 ];
@@ -608,7 +560,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "vortex"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "pulse"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -620,7 +572,7 @@ function CineStreamPlayer({
                             >
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
-                                <span className="s-badge">{s.id === "alpha" ? "Auto-Calibrated (SubDL)" : s.id === "nova" ? "Direct Subtitle Stream" : "Web-DL Calibrated"}</span>
+                                <span className="s-badge">{s.id === "alpha" ? "Auto-Calibrated (SubDL)" : s.id === "nova" ? "Direct Subtitle Stream" : "Cloud Mirror Sync"}</span>
                               </div>
                               {activeServer.id === s.id ? (
                                 <span className="s-status active-status"><Check size={12} /> Active</span>
@@ -662,7 +614,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "vortex", "titan", "nebula"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "titan", "nova"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -677,11 +629,9 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "alpha"
                                     ? "4K / Multi-Language Audio"
-                                    : s.id === "vortex"
-                                    ? "Dual Audio & Regional Dubs"
                                     : s.id === "titan"
-                                    ? "Multi-Host Audio Feeds"
-                                    : "Alternate Audio Master"}
+                                    ? "Auto-Failover Multi-Host"
+                                    : "Direct Audio Master"}
                                 </span>
                               </div>
                               {activeServer.id === s.id ? (
