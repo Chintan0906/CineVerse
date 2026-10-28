@@ -11,6 +11,12 @@ import {
   Info,
   Maximize2,
   Layers,
+  Languages,
+  Captions,
+  Volume2,
+  X,
+  Sliders,
+  Check,
 } from "lucide-react";
 
 // Disguised high-performance streaming servers (Real provider names are completely hidden)
@@ -159,6 +165,8 @@ function CineStreamPlayer({
   const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
+  const [showAudioSubModal, setShowAudioSubModal] = useState(false);
+  const [audioSubTab, setAudioSubTab] = useState("subtitles"); // "subtitles" | "audio"
 
   const iframeRef = useRef(null);
   const screenBoxRef = useRef(null);
@@ -432,6 +440,19 @@ function CineStreamPlayer({
         <div className="cine-server-status-actions">
           <button
             type="button"
+            className="cine-server-action-btn cine-audiosub-btn"
+            onClick={() => {
+              setAudioSubTab("subtitles");
+              setShowAudioSubModal(true);
+            }}
+            title="Fix Subtitle Timing Offset & Change Audio Track Language"
+          >
+            <Languages size={13} />
+            <span>Audio & Subtitles</span>
+          </button>
+
+          <button
+            type="button"
             className="cine-server-action-btn"
             onClick={handleFullscreen}
             title="Full Screen Theater Mode"
@@ -478,6 +499,18 @@ function CineStreamPlayer({
 
       {/* STREAM FOOTER HINT & RESOLUTION TIP */}
       <div className="cine-stream-hint-bar">
+        <div
+          className="cine-hint-item cine-hint-clickable"
+          onClick={() => {
+            setAudioSubTab("subtitles");
+            setShowAudioSubModal(true);
+          }}
+          title="Click to fix early/late subtitles or switch audio language"
+        >
+          <Languages size={14} className="accent-icon" />
+          <span>Subtitles ahead of speech or need another Audio Track? <strong className="hint-strong">Click for Audio & Subtitle tools</strong></span>
+        </div>
+
         <div className="cine-hint-item">
           <ShieldCheck size={14} className="green-text" />
           <span>Optimal 1080p / 4K Connection Active</span>
@@ -486,11 +519,188 @@ function CineStreamPlayer({
           <Info size={14} />
           <span>Quality Tip: Use the gear/settings icon inside player to select 1080p, 720p, or Auto.</span>
         </div>
-        <div className="cine-hint-item">
-          <Sparkles size={14} />
-          <span>Buffering? Select another server above for instant alternate streaming.</span>
-        </div>
       </div>
+
+      {/* AUDIO & SUBTITLES HELPER MODAL */}
+      {showAudioSubModal && (
+        <div
+          className="cine-audiosub-modal-backdrop"
+          onClick={() => setShowAudioSubModal(false)}
+        >
+          <div
+            className="cine-audiosub-modal glass-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="audiosub-modal-title"
+          >
+            <div className="cine-audiosub-header">
+              <div className="cine-audiosub-title-row">
+                <Languages size={18} className="audiosub-header-icon" />
+                <h3 id="audiosub-modal-title">Audio & Subtitles Assistant</h3>
+              </div>
+              <button
+                type="button"
+                className="cine-audiosub-close-btn"
+                onClick={() => setShowAudioSubModal(false)}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="cine-audiosub-nav">
+              <button
+                type="button"
+                className={`cine-audiosub-tab-btn ${audioSubTab === "subtitles" ? "active" : ""}`}
+                onClick={() => setAudioSubTab("subtitles")}
+              >
+                <Captions size={15} />
+                <span>Fix Subtitle Timing</span>
+              </button>
+              <button
+                type="button"
+                className={`cine-audiosub-tab-btn ${audioSubTab === "audio" ? "active" : ""}`}
+                onClick={() => setAudioSubTab("audio")}
+              >
+                <Volume2 size={15} />
+                <span>Change Audio Track</span>
+              </button>
+            </div>
+
+            <div className="cine-audiosub-body">
+              {audioSubTab === "subtitles" ? (
+                <div className="cine-sub-panel">
+                  <div className="cine-info-callout">
+                    <strong>Why do subtitles appear before the words are said?</strong>
+                    <p>
+                      Movies are released in multiple editions (Theatrical cuts with long 15-second studio logos vs Digital Web cuts starting at 2 seconds). If a theatrical subtitle track is loaded on a Web rip, the text runs 5–10 seconds ahead of speech.
+                    </p>
+                  </div>
+
+                  <div className="cine-steps-list">
+                    <div className="cine-step-item">
+                      <span className="step-num">1</span>
+                      <div className="step-content">
+                        <h4>Switch to Alternative Subtitle Track (Quickest)</h4>
+                        <p>
+                          Inside the video player's bottom control bar, click the <strong>CC (Subtitles)</strong> icon. Most movies include multiple English tracks: <strong>English (1)</strong>, <strong>English (2)</strong>, and <strong>English (SDH)</strong>. Switching to track 2 or 3 usually selects the perfectly synchronized track!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="cine-step-item">
+                      <span className="step-num">2</span>
+                      <div className="step-content">
+                        <h4>Adjust Subtitle Delay / Timing Offset</h4>
+                        <p>
+                          Inside the player controls, click the <strong>Gear (Settings)</strong> icon &rarr; look for <strong>Subtitle Offset / Timing</strong> &rarr; add <strong>+1.0s, +2.0s</strong> to delay the text so it matches the voices precisely.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="cine-step-item">
+                      <span className="step-num">3</span>
+                      <div className="step-content">
+                        <h4>Switch to an Auto-Synced Mirror Server</h4>
+                        <p>
+                          Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
+                        </p>
+                        <div className="cine-quick-servers">
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "vortex"].includes(s.id)).map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              className={`cine-quick-server-btn ${activeServer.id === s.id ? "current" : ""}`}
+                              onClick={() => {
+                                handleSelectServer(s);
+                                setShowAudioSubModal(false);
+                              }}
+                            >
+                              <div className="s-info">
+                                <span className="s-name">{s.name}</span>
+                                <span className="s-badge">{s.id === "alpha" ? "Auto-Calibrated (SubDL)" : s.id === "nova" ? "Direct Subtitle Stream" : "Web-DL Calibrated"}</span>
+                              </div>
+                              {activeServer.id === s.id ? (
+                                <span className="s-status active-status"><Check size={12} /> Active</span>
+                              ) : (
+                                <span className="s-status switch-status">Switch &rarr;</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="cine-audio-panel">
+                  <div className="cine-info-callout">
+                    <strong>How to Change Audio Language &amp; Dubs:</strong>
+                    <p>
+                      When movies and web series have dual-audio or multi-language audio tracks available (e.g., English, Hindi, Spanish, French, Japanese, or Original Audio), you can switch tracks inside the player controls or choose our dedicated Multi-Audio servers.
+                    </p>
+                  </div>
+
+                  <div className="cine-steps-list">
+                    <div className="cine-step-item">
+                      <span className="step-num">1</span>
+                      <div className="step-content">
+                        <h4>Select Audio Track in Player Controls</h4>
+                        <p>
+                          Inside the bottom control bar of the video player, click the <strong>Gear (Settings)</strong> icon or the <strong>Speaker / Audio Track</strong> icon &rarr; select <strong>Audio Track / Language</strong> &rarr; pick your desired audio feed.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="cine-step-item">
+                      <span className="step-num">2</span>
+                      <div className="step-content">
+                        <h4>Best Multi-Audio &amp; Dubbed Servers (Click to Switch)</h4>
+                        <p>
+                          These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
+                        </p>
+                        <div className="cine-quick-servers">
+                          {STREAM_SERVERS.filter((s) => ["alpha", "vortex", "titan", "nebula"].includes(s.id)).map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              className={`cine-quick-server-btn ${activeServer.id === s.id ? "current" : ""}`}
+                              onClick={() => {
+                                handleSelectServer(s);
+                                setShowAudioSubModal(false);
+                              }}
+                            >
+                              <div className="s-info">
+                                <span className="s-name">{s.name}</span>
+                                <span className="s-badge">
+                                  {s.id === "alpha"
+                                    ? "4K / Multi-Language Audio"
+                                    : s.id === "vortex"
+                                    ? "Dual Audio & Regional Dubs"
+                                    : s.id === "titan"
+                                    ? "Multi-Host Audio Feeds"
+                                    : "Alternate Audio Master"}
+                                </span>
+                              </div>
+                              {activeServer.id === s.id ? (
+                                <span className="s-status active-status"><Check size={12} /> Active</span>
+                              ) : (
+                                <span className="s-status switch-status">Switch &rarr;</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

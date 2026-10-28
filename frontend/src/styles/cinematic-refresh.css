@@ -1037,3 +1037,320 @@ input,
     flex: 0 0 110px !important;
   }
 }
+
+/* ====================================================
+   AUDIO & SUBTITLES ASSISTANT MODAL & CONTROLS
+   ==================================================== */
+.cine-audiosub-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.cine-audiosub-btn:hover {
+  background: #ffffff !important;
+  color: #08090d !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.35) !important;
+}
+
+.cine-hint-clickable {
+  cursor: pointer !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  transition: all 0.2s ease !important;
+}
+
+.cine-hint-clickable:hover {
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+.cine-hint-clickable .accent-icon {
+  color: #ffffff !important;
+}
+
+.hint-strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: #ffffff;
+}
+
+/* Modal Backdrop */
+.cine-audiosub-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: splashFadeIn 0.2s ease-out;
+}
+
+.cine-audiosub-modal {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(14, 18, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.cine-audiosub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cine-audiosub-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cine-audiosub-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.audiosub-header-icon {
+  color: #ffffff;
+}
+
+.cine-audiosub-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cine-audiosub-close-btn:hover {
+  background: #ffffff;
+  color: #08090d;
+}
+
+/* Modal Tabs */
+.cine-audiosub-nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cine-audiosub-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cine-audiosub-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cine-audiosub-tab-btn.active {
+  background: #ffffff;
+  color: #08090d;
+  border-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+/* Modal Body */
+.cine-audiosub-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cine-info-callout {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cine-info-callout strong {
+  display: block;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.cine-info-callout p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Steps List */
+.cine-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cine-step-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #08090d;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content h4 {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.step-content p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Quick Server Switch Buttons */
+.cine-quick-servers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cine-quick-server-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.cine-quick-server-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateX(2px);
+}
+
+.cine-quick-server-btn.current {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cine-quick-server-btn .s-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cine-quick-server-btn .s-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cine-quick-server-btn .s-badge {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.cine-quick-server-btn .s-status {
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cine-quick-server-btn .active-status {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.cine-quick-server-btn .switch-status {
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .cine-audiosub-modal {
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+  .cine-audiosub-header {
+    padding: 14px 16px;
+  }
+  .cine-audiosub-nav {
+    padding: 10px 16px;
+  }
+  .cine-audiosub-tab-btn {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .cine-audiosub-body {
+    padding: 14px 16px;
+  }
+}
+
