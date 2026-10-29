@@ -13,6 +13,7 @@ import {
   DollarSign,
   TrendingUp,
   X,
+  Loader2,
 } from "lucide-react";
 
 import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
@@ -20,8 +21,39 @@ import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import CineVerseLogo from "../components/common/CineVerseLogo";
-import CinematicSplashScreen from "../components/common/CinematicSplashScreen";
 import { useLibrary } from "../hooks/useLibrary";
+
+function MovieDetailsSkeleton({ onBack }) {
+  return (
+    <div className="movie-details-page details-skeleton-root" aria-busy="true" aria-label="Loading movie details">
+      <header className="details-header">
+        <button className="btn-secondary back-btn" onClick={onBack} aria-label="Back to Browse">
+          <ArrowLeft size={18} />
+          Back to Browse
+        </button>
+        <Link className="brand-logo-link" to="/" aria-label="CineVerse home">
+          <CineVerseLogo size="md" />
+        </Link>
+        <div className="skeleton-pill-box" />
+      </header>
+      <div className="skeleton-hero-backdrop">
+        <div className="skeleton-hero-inner">
+          <div className="skeleton-poster-box" />
+          <div className="skeleton-info-stack">
+            <div className="skeleton-shimmer skeleton-title-bar" />
+            <div className="skeleton-shimmer skeleton-meta-bar" />
+            <div className="skeleton-shimmer skeleton-desc-line" />
+            <div className="skeleton-shimmer skeleton-desc-line short" />
+            <div className="skeleton-btn-row">
+              <div className="skeleton-shimmer skeleton-action-btn" />
+              <div className="skeleton-shimmer skeleton-action-btn" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MovieDetails() {
   const { id } = useParams();
@@ -37,14 +69,28 @@ function MovieDetails() {
     saveProgress,
   } = useLibrary();
 
+  const isStreamingQuery = searchParams.get("play") === "true";
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showPlayer, setShowPlayer] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(() => isStreamingQuery);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [activeStreamMovie, setActiveStreamMovie] = useState(null);
-  const [selectedSeason, setSelectedSeason] = useState(1);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [activeStreamMovie, setActiveStreamMovie] = useState(() => {
+    if (isStreamingQuery) {
+      try {
+        const cached = sessionStorage.getItem("cineverse_current_stream");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (String(parsed.id) === String(id)) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
+  const [selectedSeason, setSelectedSeason] = useState(() => Number(searchParams.get("season") || 1));
+  const [selectedEpisode, setSelectedEpisode] = useState(() => Number(searchParams.get("episode") || 1));
   const [episodes, setEpisodes] = useState([]);
 
   // Detect whether this is a TV series from navigation or query parameter
@@ -56,8 +102,10 @@ function MovieDetails() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setLoading(true);
     setError("");
-    setShowPlayer(false);
-    setActiveStreamMovie(null);
+    if (!isStreamingQuery) {
+      setShowPlayer(false);
+      setActiveStreamMovie(null);
+    }
     setShowTrailer(false);
 
     const fetcher = requestedType === "tv" ? getTVShowById(id) : getMovieById(id, requestedType);
@@ -197,20 +245,20 @@ function MovieDetails() {
   const isTvShow = Boolean(movie?.mediaType === "tv" || movie?.isTV || (movie?.seasons && movie.seasons.length > 0));
 
   // Ensure current episode and season are correctly bound
-  const playerMedia = {
-    ...movie,
+  const playerMedia = (movie || activeStreamMovie) ? {
+    ...(movie || {}),
     ...(activeStreamMovie || {}),
     season: selectedSeason,
     episode: selectedEpisode,
     isTV: isTvShow,
     mediaType: isTvShow ? "tv" : "movie",
-  };
+  } : null;
 
   const streamMedia = playerMedia;
 
   const handleStartPlay = (s = selectedSeason, e = selectedEpisode) => {
     const playMedia = {
-      ...movie,
+      ...(movie || activeStreamMovie || {}),
       season: s,
       episode: e,
       isTV: isTvShow,
@@ -219,6 +267,11 @@ function MovieDetails() {
     recordPlay(playMedia, { season: s, episode: e });
     setActiveStreamMovie(playMedia);
     setShowPlayer(true);
+    try {
+      sessionStorage.setItem("cineverse_current_stream", JSON.stringify(playMedia));
+    } catch {
+      // ignore
+    }
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("play", "true");
@@ -232,6 +285,11 @@ function MovieDetails() {
 
   const handleClosePlayer = () => {
     setShowPlayer(false);
+    try {
+      sessionStorage.removeItem("cineverse_current_stream");
+    } catch {
+      // ignore
+    }
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("play");
@@ -248,15 +306,47 @@ function MovieDetails() {
       : recommendedMovie;
     recordPlay(media, { season: media.season, episode: media.episode });
     setActiveStreamMovie(media);
+    try {
+      sessionStorage.setItem("cineverse_current_stream", JSON.stringify(media));
+    } catch {
+      // ignore
+    }
   }
 
   if (loading) {
-    return (
-      <CinematicSplashScreen status="Loading cinematic details..." />
-    );
+    if (showPlayer && streamMedia) {
+      // Allow rendering the active player directly without flashing details or splash
+    } else if (showPlayer) {
+      return (
+        <div className="player-overlay">
+          <div className="player-header">
+            <div>
+              <span className="section-eyebrow">NOW PLAYING</span>
+              <h2>Resuming playback...</h2>
+            </div>
+            <button
+              className="icon-button"
+              onClick={handleClosePlayer}
+              aria-label="Close video player"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <div className="player-content">
+            <div className="player-window player-stream-restoring">
+              <Loader2 size={40} className="cv-spin-loader" />
+              <h3>Resuming playback...</h3>
+              <p>Connecting to secure stream servers</p>
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      return <MovieDetailsSkeleton onBack={() => navigate("/")} />;
+    }
   }
 
-  if (error || !movie) {
+  if ((error || !movie) && !showPlayer) {
     return (
       <div className="app-shell error-screen">
         <Film size={44} />
@@ -273,7 +363,7 @@ function MovieDetails() {
     );
   }
 
-  const rawSeasons = (movie.seasons || []).filter((season) => season.season_number >= 0);
+  const rawSeasons = ((movie?.seasons) || []).filter((season) => season.season_number >= 0);
   const availableSeasons = rawSeasons.length > 0
     ? rawSeasons
     : isTvShow

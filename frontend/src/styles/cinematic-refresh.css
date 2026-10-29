@@ -1354,3 +1354,156 @@ input,
   }
 }
 
+/* ====================================================
+   SEAMLESS STREAM RESTORATION & SKELETON LOADERS
+   ==================================================== */
+
+.player-stream-restoring {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  min-height: 480px !important;
+  background: #000 !important;
+  color: #fff !important;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.player-stream-restoring h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #f4f4f5;
+}
+
+.player-stream-restoring p {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.cv-spin-loader {
+  animation: cvSpin 1s linear infinite;
+  color: #ffffff;
+}
+
+@keyframes cvSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Movie Details Skeleton Loading */
+.details-skeleton-root {
+  min-height: 100vh;
+  background: #070a0d;
+}
+
+.skeleton-hero-backdrop {
+  position: relative;
+  width: 100%;
+  min-height: 60vh;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, #070a0d 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 40px clamp(16px, 4vw, 48px);
+}
+
+.skeleton-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 32px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: flex-end;
+}
+
+.skeleton-poster-box {
+  width: clamp(140px, 20vw, 240px);
+  aspect-ratio: 2/3;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.03) 100%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: shimmerMove 1.8s ease-in-out infinite;
+}
+
+.skeleton-title-bar {
+  width: clamp(200px, 50%, 420px);
+  height: 38px;
+  border-radius: 10px;
+}
+
+.skeleton-meta-bar {
+  width: clamp(150px, 35%, 260px);
+  height: 20px;
+}
+
+.skeleton-desc-line {
+  width: 90%;
+  height: 15px;
+}
+
+.skeleton-desc-line.short {
+  width: 65%;
+}
+
+.skeleton-btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.skeleton-action-btn {
+  width: 130px;
+  height: 44px;
+  border-radius: 9999px;
+}
+
+.skeleton-pill-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmerMove {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 768px) {
+  .skeleton-hero-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .skeleton-info-stack {
+    align-items: center;
+    width: 100%;
+  }
+}
+
+

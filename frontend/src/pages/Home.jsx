@@ -51,18 +51,84 @@ function Home() {
   } = useMovies();
 
   // Application state
+  const watchId = searchParams.get("watch");
+  const isStreamingQuery = Boolean(watchId);
+
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeGenre, setActiveGenre] = useState("All");
   const [activeTab, setActiveTab] = useState("Home");
-  const [playerMovie, setPlayerMovie] = useState(null);
+  const [playerMovie, setPlayerMovie] = useState(() => {
+    if (!watchId) return null;
+    try {
+      const cached = sessionStorage.getItem("cineverse_current_stream");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (String(parsed.id) === String(watchId)) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const [playerSeasons, setPlayerSeasons] = useState([]);
   const [playerEpisodes, setPlayerEpisodes] = useState([]);
-  const [playerSeason, setPlayerSeason] = useState(1);
-  const [playerEpisode, setPlayerEpisode] = useState(1);
+  const [playerSeason, setPlayerSeason] = useState(() => Number(searchParams.get("season") || 1));
+  const [playerEpisode, setPlayerEpisode] = useState(() => Number(searchParams.get("episode") || 1));
   const [heroIndex, setHeroIndex] = useState(0);
   const [pendingSection, setPendingSection] = useState("");
+
+  const [hasBooted, setHasBooted] = useState(() => {
+    try {
+      return sessionStorage.getItem("cineverse_booted") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (!loading && !hasBooted) {
+      try {
+        sessionStorage.setItem("cineverse_booted", "true");
+        setHasBooted(true);
+      } catch {
+        // ignore
+      }
+    }
+  }, [loading, hasBooted]);
+
+  // Immediate fetch to restore stream if not cached in sessionStorage
+  useEffect(() => {
+    if (!watchId || playerMovie) return;
+    const watchType = searchParams.get("type");
+    const s = Number(searchParams.get("season") || 1);
+    const e = Number(searchParams.get("episode") || 1);
+    const fetcher = watchType === "tv" ? getTVShowById(watchId) : getMovieById(watchId, watchType);
+    fetcher
+      .then((data) => {
+        if (data) {
+          const isTv = Boolean(
+            watchType === "tv" ||
+            data.mediaType === "tv" ||
+            data.isTV ||
+            (data.seasons && data.seasons.length > 0)
+          );
+          handlePlay(
+            {
+              ...data,
+              mediaType: isTv ? "tv" : "movie",
+              isTV: isTv,
+            },
+            s,
+            e
+          );
+        }
+      })
+      .catch((err) => console.warn("Could not restore stream on reload:", err));
+  }, [watchId, playerMovie]);
 
   // Worldwide live search state
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
@@ -341,6 +407,11 @@ function Home() {
     };
     recordPlay(playMedia, { season: initialSeason, episode: initialEpisode });
     setPlayerMovie(playMedia);
+    try {
+      sessionStorage.setItem("cineverse_current_stream", JSON.stringify(playMedia));
+    } catch {
+      // ignore
+    }
 
     // Save playback info to URL parameters so page refresh does not close the player
     setSearchParams((prev) => {
@@ -362,6 +433,11 @@ function Home() {
 
   function handleClosePlayer() {
     setPlayerMovie(null);
+    try {
+      sessionStorage.removeItem("cineverse_current_stream");
+    } catch {
+      // ignore
+    }
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("watch");
@@ -480,7 +556,6 @@ function Home() {
     if (loading || hasRestoredRef.current) return;
     hasRestoredRef.current = true;
 
-    const watchId = searchParams.get("watch");
     const movieId = searchParams.get("movie");
     const tabParam = searchParams.get("tab");
     const genreParam = searchParams.get("genre");
@@ -493,39 +568,7 @@ function Home() {
       setActiveGenre(genreParam);
     }
 
-    if (watchId) {
-      const found = movies.find((m) => String(m.id) === String(watchId));
-      const watchType = searchParams.get("type");
-      const watchSeason = Number(searchParams.get("season") || 1);
-      const watchEpisode = Number(searchParams.get("episode") || 1);
-
-      if (found) {
-        handlePlay(found, watchSeason, watchEpisode);
-      } else {
-        const fetcher = watchType === "tv" ? getTVShowById(watchId) : getMovieById(watchId, watchType);
-        fetcher
-          .then((data) => {
-            if (data) {
-              const isTv = Boolean(
-                watchType === "tv" ||
-                data.mediaType === "tv" ||
-                data.isTV ||
-                (data.seasons && data.seasons.length > 0)
-              );
-              handlePlay(
-                {
-                  ...data,
-                  mediaType: isTv ? "tv" : "movie",
-                  isTV: isTv,
-                },
-                watchSeason,
-                watchEpisode
-              );
-            }
-          })
-          .catch((err) => console.warn("Could not restore playback on reload:", err));
-      }
-    } else if (movieId) {
+    if (movieId) {
       const found = movies.find((m) => String(m.id) === String(movieId));
       if (found) {
         setSelectedMovie(found);
@@ -551,8 +594,10 @@ function Home() {
     }
   }
 
-  // Loading state (Prime / Netflix cinematic boot animation)
-  if (loading) {
+  // Loading state (Prime / Netflix cinematic boot animation - only on cold session boot and NEVER when streaming)
+  const isColdBoot = !hasBooted && !isStreamingQuery;
+
+  if (loading && isColdBoot) {
     return (
       <CinematicSplashScreen status="Connecting to global cinematic archive..." />
     );
@@ -1040,12 +1085,12 @@ function Home() {
       )}
 
       {/* VIDEO PLAYER */}
-      {playerMovie && (
+      {(playerMovie || isStreamingQuery) && (
         <div className="player-overlay">
           <div className="player-header">
             <div>
               <span className="section-eyebrow">NOW PLAYING</span>
-              <h2>{playerMovie.title}</h2>
+              <h2>{playerMovie?.title || "Resuming playback..."}</h2>
             </div>
 
             <button
@@ -1059,53 +1104,63 @@ function Home() {
 
           <div className="player-content">
             <div className="player-window">
-              <CineStreamPlayer
-                media={{
-                  ...playerMovie,
-                  season: playerSeason,
-                  episode: playerEpisode,
-                  isTV: Boolean(playerMovie.mediaType === "tv" || playerMovie.isTV),
-                }}
-                onProgress={handlePlayerProgress}
-                seasons={playerSeasons}
-                episodes={playerEpisodes}
-                onSeasonChange={(newSeason) => {
-                  setPlayerSeason(newSeason);
-                  setPlayerEpisode(1);
-                  setPlayerMovie((prev) => ({
-                    ...prev,
-                    season: newSeason,
-                    episode: 1,
-                  }));
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.set("season", String(newSeason));
-                    next.set("episode", "1");
-                    return next;
-                  }, { replace: true });
-                }}
-                onEpisodeChange={(newEpisode) => {
-                  setPlayerEpisode(newEpisode);
-                  setPlayerMovie((prev) => ({
-                    ...prev,
+              {playerMovie ? (
+                <CineStreamPlayer
+                  media={{
+                    ...playerMovie,
                     season: playerSeason,
-                    episode: newEpisode,
-                  }));
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.set("episode", String(newEpisode));
-                    return next;
-                  }, { replace: true });
-                }}
-              />
+                    episode: playerEpisode,
+                    isTV: Boolean(playerMovie.mediaType === "tv" || playerMovie.isTV),
+                  }}
+                  onProgress={handlePlayerProgress}
+                  seasons={playerSeasons}
+                  episodes={playerEpisodes}
+                  onSeasonChange={(newSeason) => {
+                    setPlayerSeason(newSeason);
+                    setPlayerEpisode(1);
+                    setPlayerMovie((prev) => ({
+                      ...prev,
+                      season: newSeason,
+                      episode: 1,
+                    }));
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("season", String(newSeason));
+                      next.set("episode", "1");
+                      return next;
+                    }, { replace: true });
+                  }}
+                  onEpisodeChange={(newEpisode) => {
+                    setPlayerEpisode(newEpisode);
+                    setPlayerMovie((prev) => ({
+                      ...prev,
+                      season: playerSeason,
+                      episode: newEpisode,
+                    }));
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("episode", String(newEpisode));
+                      return next;
+                    }, { replace: true });
+                  }}
+                />
+              ) : (
+                <div className="player-stream-restoring">
+                  <Loader2 size={40} className="cv-spin-loader" />
+                  <h3>Resuming playback...</h3>
+                  <p>Connecting to secure stream servers</p>
+                </div>
+              )}
             </div>
-            <StreamRecommendations
-              movies={streamRecommendations}
-              currentMovie={playerMovie}
-              onPlay={handlePlay}
-              isSaved={isSaved}
-              onToggleWatchlist={toggleWatchlist}
-            />
+            {playerMovie && (
+              <StreamRecommendations
+                movies={streamRecommendations}
+                currentMovie={playerMovie}
+                onPlay={handlePlay}
+                isSaved={isSaved}
+                onToggleWatchlist={toggleWatchlist}
+              />
+            )}
           </div>
         </div>
       )}
