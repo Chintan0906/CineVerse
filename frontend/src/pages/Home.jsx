@@ -53,6 +53,8 @@ function Home() {
   // Application state
   const watchId = searchParams.get("watch");
   const isStreamingQuery = Boolean(watchId);
+  const isPlayerClosedByUserRef = useRef(false);
+  const hasRestoredStreamOnMountRef = useRef(false);
 
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -100,16 +102,22 @@ function Home() {
     }
   }, [loading, hasBooted]);
 
-  // Immediate fetch to restore stream if not cached in sessionStorage
+  // Restore stream on page reload if not cached in sessionStorage (runs ONCE on mount)
   useEffect(() => {
-    if (!watchId || playerMovie) return;
+    if (hasRestoredStreamOnMountRef.current) return;
+    hasRestoredStreamOnMountRef.current = true;
+
+    if (playerMovie) return; // already restored synchronously from sessionStorage on initial render!
+    const initialWatchId = searchParams.get("watch");
+    if (!initialWatchId) return;
+
     const watchType = searchParams.get("type");
     const s = Number(searchParams.get("season") || 1);
     const e = Number(searchParams.get("episode") || 1);
-    const fetcher = watchType === "tv" ? getTVShowById(watchId) : getMovieById(watchId, watchType);
+    const fetcher = watchType === "tv" ? getTVShowById(initialWatchId) : getMovieById(initialWatchId, watchType);
     fetcher
       .then((data) => {
-        if (data) {
+        if (data && !isPlayerClosedByUserRef.current) {
           const isTv = Boolean(
             watchType === "tv" ||
             data.mediaType === "tv" ||
@@ -128,7 +136,7 @@ function Home() {
         }
       })
       .catch((err) => console.warn("Could not restore stream on reload:", err));
-  }, [watchId, playerMovie]);
+  }, []);
 
   // Worldwide live search state
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
@@ -388,6 +396,7 @@ function Home() {
 
   // Open the video player and persist to URL so reload stays on player
   function handlePlay(movie, seasonParam, episodeParam) {
+    isPlayerClosedByUserRef.current = false;
     setSelectedMovie(null);
     const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
     const initialSeason = Number(seasonParam || movie.season || 1);
@@ -432,6 +441,8 @@ function Home() {
   }
 
   function handleClosePlayer() {
+    isPlayerClosedByUserRef.current = true;
+    hasRestoredStreamOnMountRef.current = true;
     setPlayerMovie(null);
     try {
       sessionStorage.removeItem("cineverse_current_stream");
@@ -1085,7 +1096,7 @@ function Home() {
       )}
 
       {/* VIDEO PLAYER */}
-      {(playerMovie || isStreamingQuery) && (
+      {(playerMovie || (isStreamingQuery && !isPlayerClosedByUserRef.current)) && (
         <div className="player-overlay">
           <div className="player-header">
             <div>

@@ -61,6 +61,7 @@ function MovieDetails() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasRestoredPlayRef = useRef(false);
+  const isPlayerClosedByUserRef = useRef(false);
 
   const {
     watchlist,
@@ -150,7 +151,7 @@ function MovieDetails() {
   useEffect(() => {
     if (!loading && movie && !hasRestoredPlayRef.current) {
       hasRestoredPlayRef.current = true;
-      if (searchParams.get("play") === "true") {
+      if (searchParams.get("play") === "true" && !isPlayerClosedByUserRef.current) {
         const isTv = Boolean(
           movie.mediaType === "tv" ||
           movie.isTV ||
@@ -257,6 +258,7 @@ function MovieDetails() {
   const streamMedia = playerMedia;
 
   const handleStartPlay = (s = selectedSeason, e = selectedEpisode) => {
+    isPlayerClosedByUserRef.current = false;
     const playMedia = {
       ...(movie || activeStreamMovie || {}),
       season: s,
@@ -284,7 +286,10 @@ function MovieDetails() {
   };
 
   const handleClosePlayer = () => {
+    isPlayerClosedByUserRef.current = true;
+    hasRestoredPlayRef.current = true;
     setShowPlayer(false);
+    setActiveStreamMovie(null);
     try {
       sessionStorage.removeItem("cineverse_current_stream");
     } catch {
@@ -300,12 +305,14 @@ function MovieDetails() {
   };
 
   function playRecommendation(recommendedMovie) {
+    isPlayerClosedByUserRef.current = false;
     const isRecTv = Boolean(recommendedMovie.mediaType === "tv" || recommendedMovie.isTV);
     const media = isRecTv
       ? { ...recommendedMovie, season: 1, episode: 1, isTV: true, mediaType: "tv" }
       : recommendedMovie;
     recordPlay(media, { season: media.season, episode: media.episode });
     setActiveStreamMovie(media);
+    setShowPlayer(true);
     try {
       sessionStorage.setItem("cineverse_current_stream", JSON.stringify(media));
     } catch {
@@ -314,9 +321,9 @@ function MovieDetails() {
   }
 
   if (loading) {
-    if (showPlayer && streamMedia) {
+    if (showPlayer && streamMedia && !isPlayerClosedByUserRef.current) {
       // Allow rendering the active player directly without flashing details or splash
-    } else if (showPlayer) {
+    } else if (showPlayer && !isPlayerClosedByUserRef.current) {
       return (
         <div className="player-overlay">
           <div className="player-header">
@@ -703,7 +710,7 @@ function MovieDetails() {
       </div>
 
       {/* FULL-SCREEN VIDEO PLAYER */}
-      {showPlayer && (
+      {showPlayer && !isPlayerClosedByUserRef.current && streamMedia && (
         <div className="player-overlay">
           <div className="player-header">
             <div>
