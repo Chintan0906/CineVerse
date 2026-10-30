@@ -86,14 +86,26 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Ranked by subtitle reliability & speed)
+// Disguised high-performance streaming servers (Server Eclipse is primary default)
 const STREAM_SERVERS = [
+  {
+    id: "eclipse",
+    name: "Server Eclipse",
+    quality: "1080p Full HD",
+    speed: "Ultra Fast CDN",
+    badge: "Recommended",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
+  },
   {
     id: "alpha",
     name: "Server Alpha",
     quality: "1080p / 4K UHD",
     speed: "High Speed CDN",
-    badge: "Recommended",
+    badge: "Clean Stream",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://player.videasy.to/tv/${tmdbId}/${season || 1}/${episode || 1}`
@@ -158,18 +170,6 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://autoembed.me/tv/tmdb/${tmdbId}-${season || 1}-${episode || 1}`
         : `https://autoembed.me/movie/tmdb/${tmdbId}`;
-    },
-  },
-  {
-    id: "eclipse",
-    name: "Server Eclipse",
-    quality: "1080p Full HD",
-    speed: "Express CDN",
-    badge: "Fast Mirror",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
     },
   },
 ];
