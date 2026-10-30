@@ -161,18 +161,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "quantum",
-    name: "Server Quantum",
-    quality: "1080p Multi-Mirror",
-    speed: "Auto-Failover",
-    badge: "Multi-Mirror",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://superembed.stream/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://superembed.stream/?video_id=${tmdbId}&tmdb=1`;
-    },
-  },
-  {
     id: "legacy",
     name: "Server Legacy",
     quality: "1080p Classic",
@@ -1111,7 +1099,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "pulse", "quantum", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "pulse", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1128,8 +1116,6 @@ function CineStreamPlayer({
                                     ? "Auto-Calibrated (SubDL)"
                                     : s.id === "nova"
                                     ? "Direct Subtitle Stream"
-                                    : s.id === "quantum"
-                                    ? "Multi-Mirror Subtitles"
                                     : s.id === "pulse"
                                     ? "Cloud Mirror Sync"
                                     : "Deep Catalog Subtitles"}
@@ -1175,7 +1161,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "quantum", "apex", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "apex", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1190,8 +1176,6 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "alpha"
                                     ? "4K / Multi-Language Audio"
-                                    : s.id === "quantum"
-                                    ? "Multi-Stream Audio Selector"
                                     : s.id === "nova"
                                     ? "Direct Audio Master"
                                     : s.id === "apex"
