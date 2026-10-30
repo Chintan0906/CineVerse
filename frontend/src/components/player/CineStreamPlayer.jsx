@@ -161,30 +161,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "titan",
-    name: "Server Titan",
-    quality: "1080p Multi-Source",
-    speed: "Auto-Failover",
-    badge: "Multi-Host",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://autoembed.me/tv/tmdb/${tmdbId}-${season || 1}-${episode || 1}`
-        : `https://autoembed.me/movie/tmdb/${tmdbId}`;
-    },
-  },
-  {
-    id: "orbit",
-    name: "Server Orbit",
-    quality: "1080p Ultra HD",
-    speed: "Ultra Fast CDN",
-    badge: "Fast Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embed.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://embed.su/embed/movie/${tmdbId}`;
-    },
-  },
-  {
     id: "quantum",
     name: "Server Quantum",
     quality: "1080p Multi-Mirror",
@@ -192,56 +168,8 @@ const STREAM_SERVERS = [
     badge: "Multi-Mirror",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
-    },
-  },
-  {
-    id: "nexus",
-    name: "Server Nexus",
-    quality: "1080p Full HD",
-    speed: "Express CDN",
-    badge: "Subtitles & Dubs",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://player.smashy.stream/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}`
-        : `https://player.smashy.stream/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "chrono",
-    name: "Server Chrono",
-    quality: "1080p HD v2",
-    speed: "Direct CDN",
-    badge: "v2 Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "hyperion",
-    name: "Server Hyperion",
-    quality: "1080p Full HD",
-    speed: "High Uptime",
-    badge: "High-Speed",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://moviesapi.club/tv/${tmdbId}-${season || 1}-${episode || 1}`
-        : `https://moviesapi.club/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "horizon",
-    name: "Server Horizon",
-    quality: "1080p HLS",
-    speed: "Smooth Buffer",
-    badge: "Adaptive HLS",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidbinge.dev/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidbinge.dev/embed/movie/${tmdbId}`;
+        ? `https://superembed.stream/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
+        : `https://superembed.stream/?video_id=${tmdbId}&tmdb=1`;
     },
   },
   {
@@ -1183,7 +1111,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "orbit", "nova", "pulse", "nexus"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "pulse", "quantum", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1198,13 +1126,13 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "alpha"
                                     ? "Auto-Calibrated (SubDL)"
-                                    : s.id === "orbit"
-                                    ? "Ultra-Fast Multi-Sub"
-                                    : s.id === "nexus"
-                                    ? "Subtitles & CC Engine"
                                     : s.id === "nova"
                                     ? "Direct Subtitle Stream"
-                                    : "Cloud Mirror Sync"}
+                                    : s.id === "quantum"
+                                    ? "Multi-Mirror Subtitles"
+                                    : s.id === "pulse"
+                                    ? "Cloud Mirror Sync"
+                                    : "Deep Catalog Subtitles"}
                                 </span>
                               </div>
                               {activeServer.id === s.id ? (
@@ -1247,7 +1175,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nexus", "titan", "quantum", "nova"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "quantum", "apex", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1262,13 +1190,13 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "alpha"
                                     ? "4K / Multi-Language Audio"
-                                    : s.id === "nexus"
-                                    ? "Dual-Audio & Dub Tracks"
                                     : s.id === "quantum"
                                     ? "Multi-Stream Audio Selector"
-                                    : s.id === "titan"
-                                    ? "Auto-Failover Multi-Host"
-                                    : "Direct Audio Master"}
+                                    : s.id === "nova"
+                                    ? "Direct Audio Master"
+                                    : s.id === "apex"
+                                    ? "Multi-Source Audio"
+                                    : "Classic Stereo Master"}
                                 </span>
                               </div>
                               {activeServer.id === s.id ? (
