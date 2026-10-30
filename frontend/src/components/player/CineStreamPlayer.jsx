@@ -86,26 +86,14 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Real provider names are completely hidden)
+// Disguised high-performance streaming servers (Ranked by subtitle reliability & speed)
 const STREAM_SERVERS = [
-  {
-    id: "eclipse",
-    name: "Server Eclipse",
-    quality: "1080p Full HD",
-    speed: "Ultra Fast CDN",
-    badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
-    },
-  },
   {
     id: "alpha",
     name: "Server Alpha",
     quality: "1080p / 4K UHD",
-    speed: "High Speed",
-    badge: "Clean Stream",
+    speed: "High Speed CDN",
+    badge: "Recommended",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://player.videasy.to/tv/${tmdbId}/${season || 1}/${episode || 1}`
@@ -117,7 +105,7 @@ const STREAM_SERVERS = [
     name: "Server Nova",
     quality: "1080p Full HD",
     speed: "Direct Feed",
-    badge: "Direct 1080p",
+    badge: "Auto Subtitles",
     getUrl: (tmdbId, isTv, season, episode, currentTime) => {
       const path = isTv
         ? `/tv/${tmdbId}/${season || 1}/${episode || 1}`
@@ -137,18 +125,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "apex",
-    name: "Server Apex",
-    quality: "1080p HD",
-    speed: "Stable Feed",
-    badge: "Multi-Source",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&ds_lang=en`
-        : `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}&ds_lang=en`;
-    },
-  },
-  {
     id: "pulse",
     name: "Server Pulse",
     quality: "1080p Mirror",
@@ -161,6 +137,18 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "apex",
+    name: "Server Apex",
+    quality: "1080p HD",
+    speed: "Stable Feed",
+    badge: "Multi-Source",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&ds_lang=en`
+        : `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}&ds_lang=en`;
+    },
+  },
+  {
     id: "titan",
     name: "Server Titan",
     quality: "1080p Multi-Source",
@@ -170,6 +158,18 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://autoembed.me/tv/tmdb/${tmdbId}-${season || 1}-${episode || 1}`
         : `https://autoembed.me/movie/tmdb/${tmdbId}`;
+    },
+  },
+  {
+    id: "eclipse",
+    name: "Server Eclipse",
+    quality: "1080p Full HD",
+    speed: "Express CDN",
+    badge: "Fast Mirror",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
     },
   },
 ];
@@ -275,6 +275,54 @@ function CineStreamPlayer({
   const handleOffsetChange = (delta) => {
     setSubOffset((prev) => parseFloat((prev + delta).toFixed(2)));
   };
+
+  // Global window drag-and-drop listener so dropping files over the iframe works 100% of the time
+  useEffect(() => {
+    let dragCounter = 0;
+
+    const handleDragEnter = (e) => {
+      if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+        dragCounter++;
+        setIsDraggingFile(true);
+      }
+    };
+
+    const handleDragLeave = (e) => {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        setIsDraggingFile(false);
+      }
+    };
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
+      }
+    };
+
+    const handleDrop = (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      setIsDraggingFile(false);
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleSubtitleFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
 
   // Listen for playback events (VidLink telemetry and real-time video seconds)
   useEffect(() => {
@@ -605,11 +653,45 @@ function CineStreamPlayer({
           }
         }}
       >
+        {/* FLOATING QUICK-SUBTITLE ACTION PILL */}
+        <div className="cine-floating-sub-controls">
+          <button
+            type="button"
+            className={`cine-floating-sub-btn ${customCues.length > 0 ? "has-sub" : ""}`}
+            onClick={() => {
+              if (customCues.length > 0) {
+                setAudioSubTab("customSub");
+                setShowAudioSubModal(true);
+              } else {
+                fileInputRef.current?.click();
+              }
+            }}
+            title={customCues.length > 0 ? "Adjust Custom Subtitles & Timing" : "Upload your downloaded .srt or .vtt subtitle file"}
+          >
+            <Captions size={14} />
+            <span>{customCues.length > 0 ? "Subtitles: Active" : "Upload .SRT Subtitle"}</span>
+          </button>
+          {customCues.length > 0 && (
+            <button
+              type="button"
+              className="cine-floating-sub-btn sub-settings-btn"
+              onClick={() => {
+                setAudioSubTab("customSub");
+                setShowAudioSubModal(true);
+              }}
+              title="Subtitle Timing Offset & Settings"
+            >
+              <Sliders size={13} />
+              <span>{subOffset >= 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}</span>
+            </button>
+          )}
+        </div>
+
         {/* DRAG & DROP HUD INDICATOR */}
         {isDraggingFile && (
           <div className="cine-drag-drop-hud">
-            <Upload size={38} className="drag-icon-pulse" />
-            <h4>Drop Subtitle File (.srt / .vtt)</h4>
+            <Upload size={44} className="drag-icon-pulse" />
+            <h4>Drop Subtitle File (.srt / .vtt) Here</h4>
             <p>Will load and synchronize over your stream immediately</p>
           </div>
         )}
@@ -637,19 +719,34 @@ function CineStreamPlayer({
         />
       </div>
 
-      {/* STREAM FOOTER HINT & RESOLUTION TIP */}
+      {/* STREAM FOOTER HINT & SERVER SYNC TIP */}
       <div className="cine-stream-hint-bar">
-        <div
-          className="cine-hint-item cine-hint-clickable"
-          onClick={() => {
-            setAudioSubTab("subtitles");
-            setShowAudioSubModal(true);
-          }}
-          title="Click to fix early/late subtitles or switch audio language"
-        >
-          <Languages size={14} className="accent-icon" />
-          <span>Subtitles ahead of speech or need another Audio Track? <strong className="hint-strong">Click for Audio & Subtitle tools</strong></span>
-        </div>
+        {activeServer.id === "eclipse" ? (
+          <div
+            className="cine-hint-item cine-hint-clickable"
+            onClick={() => {
+              const alphaServer = STREAM_SERVERS.find((s) => s.id === "alpha");
+              if (alphaServer) handleSelectServer(alphaServer);
+            }}
+            title="Switch to Server Alpha for guaranteed working subtitles"
+            style={{ color: "#ffffff", background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)" }}
+          >
+            <Sparkles size={14} className="accent-icon" />
+            <span>Subtitles not appearing on Eclipse? <strong className="hint-strong">Click to switch to Server Alpha (Calibrated Subtitles)</strong></span>
+          </div>
+        ) : (
+          <div
+            className="cine-hint-item cine-hint-clickable"
+            onClick={() => {
+              setAudioSubTab("customSub");
+              setShowAudioSubModal(true);
+            }}
+            title="Click to upload subtitles or adjust offset"
+          >
+            <Languages size={14} className="accent-icon" />
+            <span>Need subtitles or audio tracks? <strong className="hint-strong">Click for Subtitle &amp; Audio tools</strong></span>
+          </div>
+        )}
 
         <div className="cine-hint-item">
           <ShieldCheck size={14} className="green-text" />
