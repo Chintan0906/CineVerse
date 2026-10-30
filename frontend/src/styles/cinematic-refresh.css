@@ -1506,4 +1506,308 @@ input,
   }
 }
 
+/* ====================================================
+   UNIVERSAL CUSTOM SUBTITLES ENGINE & HUD
+   ==================================================== */
+
+.cine-server-action-btn.active-sub {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Drag & Drop HUD Overlay */
+.cine-drag-drop-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(5, 8, 12, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease;
+}
+
+.cine-drag-drop-hud h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.cine-drag-drop-hud p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.drag-icon-pulse {
+  animation: bounceSlow 1.5s infinite;
+  color: #ffffff;
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Cinematic Video Subtitles Overlay */
+.cine-custom-subtitles-overlay {
+  position: absolute;
+  bottom: clamp(35px, 7vw, 65px);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 24px;
+  pointer-events: none;
+  z-index: 25;
+  user-select: none;
+}
+
+.cine-sub-pill {
+  max-width: min(88%, 960px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 18px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  transition: all 0.15s ease-out;
+}
+
+.cine-sub-line {
+  display: block;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+}
+
+.cine-custom-subtitles-overlay.size-normal .cine-sub-line {
+  font-size: clamp(14px, 2.1vw, 21px);
+}
+
+.cine-custom-subtitles-overlay.size-large .cine-sub-line {
+  font-size: clamp(17px, 2.7vw, 27px);
+}
+
+.cine-custom-subtitles-overlay.size-xlarge .cine-sub-line {
+  font-size: clamp(21px, 3.3vw, 33px);
+}
+
+/* Modal Subtitle Uploader & Controls */
+.cine-sub-uploader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.cine-sub-uploader-box:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.cine-sub-uploader-box h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cine-sub-uploader-box p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.cine-sub-meta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+.cine-sub-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.cine-sub-meta-texts {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cine-sub-meta-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.cine-sub-meta-details {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.cine-sub-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cine-sub-btn-pill {
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.cine-sub-btn-pill:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.cine-sub-btn-pill.danger {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.cine-sub-btn-pill.danger:hover {
+  background: rgba(248, 113, 113, 0.15);
+}
+
+/* Offset & Timing Adjuster Tool */
+.cine-sub-adjuster-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.cine-adjuster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cine-adjuster-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.cine-adjuster-label strong {
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.cine-adjuster-label span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cine-offset-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cine-offset-step-btn {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cine-offset-step-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cine-offset-current-val {
+  min-width: 62px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+}
+
+.cine-sub-search-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.cine-sub-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.cine-sub-search-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+
 

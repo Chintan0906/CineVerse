@@ -17,7 +17,74 @@ import {
   X,
   Sliders,
   Check,
+  Upload,
+  FileText,
+  Trash2,
+  ExternalLink,
+  Search,
 } from "lucide-react";
+
+// Robust SRT & WebVTT Subtitle Parser
+function parseSubtitles(content) {
+  if (!content) return [];
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const blocks = normalized.trim().split(/\n\n+/);
+  const cues = [];
+
+  const parseTime = (tStr) => {
+    if (!tStr) return 0;
+    const cleanStr = tStr.trim().replace(",", ".").split(" ")[0];
+    const parts = cleanStr.split(":");
+    if (parts.length === 3) {
+      return (
+        parseFloat(parts[0]) * 3600 +
+        parseFloat(parts[1]) * 60 +
+        parseFloat(parts[2])
+      );
+    } else if (parts.length === 2) {
+      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    }
+    return 0;
+  };
+
+  for (const block of blocks) {
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    if (
+      lines[0].startsWith("WEBVTT") ||
+      lines[0].startsWith("NOTE") ||
+      lines[0].startsWith("STYLE")
+    ) {
+      continue;
+    }
+
+    let timeLineIndex = 0;
+    if (!lines[0].includes("-->") && lines.length > 1) {
+      timeLineIndex = 1;
+    }
+
+    const timeLine = lines[timeLineIndex];
+    if (!timeLine || !timeLine.includes("-->")) continue;
+
+    const [startStr, endStr] = timeLine.split("-->");
+    const textLines = lines.slice(timeLineIndex + 1);
+
+    const start = parseTime(startStr);
+    const end = parseTime(endStr);
+    const text = textLines.join("\n").replace(/<[^>]*>/g, ""); // Strip HTML/formatting
+
+    if (!isNaN(start) && !isNaN(end) && text) {
+      cues.push({ start, end, text });
+    }
+  }
+  return cues;
+}
+
+function formatSeconds(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 // Disguised high-performance streaming servers (Real provider names are completely hidden)
 const STREAM_SERVERS = [
@@ -61,6 +128,7 @@ const STREAM_SERVERS = [
         secondaryColor: "202020",
         iconColor: "ffffff",
         icons: "vid",
+        ds_lang: "en",
       });
       if (currentTime > 15) {
         params.set("startAt", String(Math.floor(currentTime)));
@@ -76,8 +144,8 @@ const STREAM_SERVERS = [
     badge: "Multi-Source",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
-        : `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}`;
+        ? `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&ds_lang=en`
+        : `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}&ds_lang=en`;
     },
   },
   {
@@ -88,8 +156,8 @@ const STREAM_SERVERS = [
     badge: "Cloud Feed",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://vidsrc.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidsrc.su/embed/movie/${tmdbId}`;
+        ? `https://vidsrc.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?ds_lang=en`
+        : `https://vidsrc.su/embed/movie/${tmdbId}?ds_lang=en`;
     },
   },
   {
@@ -118,10 +186,21 @@ function CineStreamPlayer({
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
   const [showAudioSubModal, setShowAudioSubModal] = useState(false);
-  const [audioSubTab, setAudioSubTab] = useState("subtitles"); // "subtitles" | "audio"
+  const [audioSubTab, setAudioSubTab] = useState("customSub"); // "customSub" | "subtitles" | "audio"
+
+  // Universal Custom Subtitle Engine State
+  const [customCues, setCustomCues] = useState([]);
+  const [customSubName, setCustomSubName] = useState("");
+  const [subOffset, setSubOffset] = useState(0.0); // seconds offset
+  const [subEnabled, setSubEnabled] = useState(true);
+  const [subSize, setSubSize] = useState("normal"); // "normal" | "large" | "xlarge"
+  const [currentPlayTime, setCurrentPlayTime] = useState(0);
+  const [subPlaying, setSubPlaying] = useState(true);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const iframeRef = useRef(null);
   const screenBoxRef = useRef(null);
+  const fileInputRef = useRef(null);
   const mediaRef = useRef(media);
   const onProgressRef = useRef(onProgress);
 
@@ -165,7 +244,39 @@ function CineStreamPlayer({
   const currentEpData = episodeList.find((e) => e.episodeNumber === currEpisode);
   const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${currEpisode}`;
 
-  // Listen for playback events (VidLink telemetry)
+  // Handle custom subtitle file parsing
+  const handleSubtitleFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result;
+      if (typeof text === "string") {
+        const parsed = parseSubtitles(text);
+        if (parsed.length > 0) {
+          setCustomCues(parsed);
+          setCustomSubName(file.name);
+          setSubEnabled(true);
+          setAudioSubTab("customSub");
+          setShowAudioSubModal(true);
+        } else {
+          alert("Could not parse subtitle file. Please provide a standard .srt or .vtt file.");
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearSubtitles = () => {
+    setCustomCues([]);
+    setCustomSubName("");
+    setSubOffset(0.0);
+  };
+
+  const handleOffsetChange = (delta) => {
+    setSubOffset((prev) => parseFloat((prev + delta).toFixed(2)));
+  };
+
+  // Listen for playback events (VidLink telemetry and real-time video seconds)
   useEffect(() => {
     let lastSavedAt = 0;
     const handleMessage = (event) => {
@@ -177,22 +288,47 @@ function CineStreamPlayer({
       }
 
       const playerEvent = event.data?.type === "PLAYER_EVENT" ? event.data.data : null;
-      if (playerEvent?.event !== "timeupdate") return;
-      if (Date.now() - lastSavedAt < 15000) return;
+      if (!playerEvent) return;
 
-      const currentMedia = mediaRef.current;
-      onProgressRef.current?.(
-        currentMedia,
-        playerEvent.currentTime,
-        playerEvent.duration,
-        { season: currSeason, episode: currEpisode }
-      );
-      lastSavedAt = Date.now();
+      if (playerEvent.event === "timeupdate" && typeof playerEvent.currentTime === "number") {
+        setCurrentPlayTime(playerEvent.currentTime);
+        setSubPlaying(true);
+        if (Date.now() - lastSavedAt >= 15000) {
+          const currentMedia = mediaRef.current;
+          onProgressRef.current?.(
+            currentMedia,
+            playerEvent.currentTime,
+            playerEvent.duration,
+            { season: currSeason, episode: currEpisode }
+          );
+          lastSavedAt = Date.now();
+        }
+      } else if (playerEvent.event === "pause") {
+        setSubPlaying(false);
+      } else if (playerEvent.event === "play") {
+        setSubPlaying(true);
+      }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [currSeason, currEpisode]);
+
+  // Fallback timer for custom subtitles on servers without postMessage
+  useEffect(() => {
+    if (!customCues.length || !subPlaying || activeServer.id === "nova") return undefined;
+    const timer = setInterval(() => {
+      setCurrentPlayTime((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [customCues.length, subPlaying, activeServer.id]);
+
+  // Compute active subtitle line
+  const effectiveTime = currentPlayTime + subOffset;
+  const activeCue = customCues.find(
+    (cue) => effectiveTime >= cue.start && effectiveTime <= cue.end
+  );
+  const activeSubtitleText = activeCue ? activeCue.text : "";
 
   const handleSelectServer = (server) => {
     if (server.id === activeServer.id) return;
@@ -392,6 +528,19 @@ function CineStreamPlayer({
         <div className="cine-server-status-actions">
           <button
             type="button"
+            className={`cine-server-action-btn ${customCues.length > 0 ? "active-sub" : ""}`}
+            onClick={() => {
+              setAudioSubTab("customSub");
+              setShowAudioSubModal(true);
+            }}
+            title="Load Custom Subtitles (.srt / .vtt) or Adjust Timing"
+          >
+            <Captions size={13} />
+            <span>{customCues.length > 0 ? "Subtitles: Active" : "Add Subtitles"}</span>
+          </button>
+
+          <button
+            type="button"
             className="cine-server-action-btn cine-audiosub-btn"
             onClick={() => {
               setAudioSubTab("subtitles");
@@ -435,8 +584,47 @@ function CineStreamPlayer({
         </div>
       </div>
 
-      {/* 16:9 STREAM SCREEN FRAME (AUTOMATICALLY CONSTRAINED TO VIEWPORT HEIGHT) */}
-      <div ref={screenBoxRef} className={`cine-screen-box ${isChanging ? "switching" : ""}`}>
+      {/* 16:9 STREAM SCREEN FRAME (WITH DRAG & DROP & SUBTITLES OVERLAY) */}
+      <div
+        ref={screenBoxRef}
+        className={`cine-screen-box ${isChanging ? "switching" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDraggingFile(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setIsDraggingFile(false);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDraggingFile(false);
+          if (e.dataTransfer?.files?.[0]) {
+            handleSubtitleFile(e.dataTransfer.files[0]);
+          }
+        }}
+      >
+        {/* DRAG & DROP HUD INDICATOR */}
+        {isDraggingFile && (
+          <div className="cine-drag-drop-hud">
+            <Upload size={38} className="drag-icon-pulse" />
+            <h4>Drop Subtitle File (.srt / .vtt)</h4>
+            <p>Will load and synchronize over your stream immediately</p>
+          </div>
+        )}
+
+        {/* CINEMATIC SUBTITLE TEXT OVERLAY */}
+        {subEnabled && activeSubtitleText && (
+          <div className={`cine-custom-subtitles-overlay size-${subSize}`}>
+            <div className="cine-sub-pill">
+              {activeSubtitleText.split("\n").map((line, idx) => (
+                <span key={idx} className="cine-sub-line">{line}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <iframe
           key={`${activeServer.id}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
@@ -505,10 +693,18 @@ function CineStreamPlayer({
             <div className="cine-audiosub-nav">
               <button
                 type="button"
+                className={`cine-audiosub-tab-btn ${audioSubTab === "customSub" ? "active" : ""}`}
+                onClick={() => setAudioSubTab("customSub")}
+              >
+                <Upload size={14} />
+                <span>Custom Subtitles ({customCues.length ? "Active" : "Upload"})</span>
+              </button>
+              <button
+                type="button"
                 className={`cine-audiosub-tab-btn ${audioSubTab === "subtitles" ? "active" : ""}`}
                 onClick={() => setAudioSubTab("subtitles")}
               >
-                <Captions size={15} />
+                <Captions size={14} />
                 <span>Fix Subtitle Timing</span>
               </button>
               <button
@@ -516,12 +712,258 @@ function CineStreamPlayer({
                 className={`cine-audiosub-tab-btn ${audioSubTab === "audio" ? "active" : ""}`}
                 onClick={() => setAudioSubTab("audio")}
               >
-                <Volume2 size={15} />
+                <Volume2 size={14} />
                 <span>Change Audio Track</span>
               </button>
             </div>
 
             <div className="cine-audiosub-body">
+              {audioSubTab === "customSub" && (
+                <div className="cine-custom-sub-panel">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".srt,.vtt,.txt"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleSubtitleFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+
+                  {customCues.length === 0 ? (
+                    <>
+                      <div
+                        className="cine-sub-uploader-box"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload size={32} />
+                        <h4>Load .srt or .vtt Subtitles</h4>
+                        <p>Click to browse your device or drag &amp; drop any subtitle file directly onto the player</p>
+                      </div>
+
+                      <div className="cine-info-callout" style={{ marginTop: "14px" }}>
+                        <strong>Subtitles missing or out of sync on Season 2?</strong>
+                        <p>
+                          Download free, verified subtitles for <strong>{media?.title || "this title"} {isTv ? `(Season ${currSeason})` : ""}</strong> with 1 click, then select the downloaded file above:
+                        </p>
+                        <div className="cine-sub-search-links">
+                          <a
+                            href={`https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-${encodeURIComponent(media?.title || "")}+season+${currSeason}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="cine-sub-search-btn"
+                          >
+                            <Search size={13} />
+                            <span>Search OpenSubtitles</span>
+                            <ExternalLink size={12} />
+                          </a>
+                          <a
+                            href={`https://subdl.com/search/${encodeURIComponent(media?.title || "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="cine-sub-search-btn"
+                          >
+                            <Search size={13} />
+                            <span>Search SubDL</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Active Subtitle Info Card */}
+                      <div className="cine-sub-meta-card">
+                        <div className="cine-sub-meta-info">
+                          <FileText size={24} style={{ color: "#ffffff", flexShrink: 0 }} />
+                          <div className="cine-sub-meta-texts">
+                            <span className="cine-sub-meta-title" title={customSubName}>
+                              {customSubName}
+                            </span>
+                            <span className="cine-sub-meta-details">
+                              {customCues.length} dialogue lines loaded · Displaying over stream
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="cine-sub-actions-row">
+                          <button
+                            type="button"
+                            className="cine-sub-btn-pill"
+                            onClick={() => setSubEnabled(!subEnabled)}
+                          >
+                            <Check size={12} />
+                            <span>{subEnabled ? "Visible" : "Hidden"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="cine-sub-btn-pill"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Upload size={12} />
+                            <span>Replace</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="cine-sub-btn-pill danger"
+                            onClick={handleClearSubtitles}
+                            title="Remove subtitle file"
+                          >
+                            <Trash2 size={12} />
+                            <span>Clear</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Timing Offset Controller */}
+                      <div className="cine-sub-adjuster-card">
+                        <div className="cine-adjuster-row">
+                          <div className="cine-adjuster-label">
+                            <strong>Subtitle Sync Offset</strong>
+                            <span>Fix subtitles appearing too early or late</span>
+                          </div>
+                          <div className="cine-offset-btn-group">
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => handleOffsetChange(-2.0)}
+                              title="Speed up by 2 seconds"
+                            >
+                              -2s
+                            </button>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => handleOffsetChange(-0.5)}
+                              title="Speed up by 0.5 seconds"
+                            >
+                              -0.5s
+                            </button>
+                            <span className="cine-offset-current-val">
+                              {subOffset > 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}
+                            </span>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => handleOffsetChange(0.5)}
+                              title="Delay by 0.5 seconds"
+                            >
+                              +0.5s
+                            </button>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => handleOffsetChange(2.0)}
+                              title="Delay by 2 seconds"
+                            >
+                              +2s
+                            </button>
+                            {subOffset !== 0 && (
+                              <button
+                                type="button"
+                                className="cine-offset-step-btn"
+                                onClick={() => setSubOffset(0.0)}
+                                title="Reset timing offset"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Font Size Selector */}
+                        <div className="cine-adjuster-row" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "12px" }}>
+                          <div className="cine-adjuster-label">
+                            <strong>Subtitle Font Size</strong>
+                            <span>Change text size on video</span>
+                          </div>
+                          <div className="cine-offset-btn-group">
+                            {["normal", "large", "xlarge"].map((sz) => (
+                              <button
+                                key={sz}
+                                type="button"
+                                className={`cine-offset-step-btn ${subSize === sz ? "active" : ""}`}
+                                onClick={() => setSubSize(sz)}
+                                style={{
+                                  background: subSize === sz ? "rgba(255,255,255,0.25)" : undefined,
+                                  borderColor: subSize === sz ? "#ffffff" : undefined,
+                                }}
+                              >
+                                {sz === "normal" ? "Normal" : sz === "large" ? "Large" : "Extra Large"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Playback time status */}
+                        <div className="cine-adjuster-row" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "12px" }}>
+                          <div className="cine-adjuster-label">
+                            <strong>Current Video Timestamp</strong>
+                            <span>Subtitle clock: {formatSeconds(currentPlayTime)}</span>
+                          </div>
+                          <div className="cine-offset-btn-group">
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => setCurrentPlayTime((p) => Math.max(0, p - 5))}
+                            >
+                              -5s
+                            </button>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => setCurrentPlayTime((p) => Math.max(0, p - 1))}
+                            >
+                              -1s
+                            </button>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => setCurrentPlayTime((p) => p + 1)}
+                            >
+                              +1s
+                            </button>
+                            <button
+                              type="button"
+                              className="cine-offset-step-btn"
+                              onClick={() => setCurrentPlayTime((p) => p + 5)}
+                            >
+                              +5s
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {activeServer.id !== "nova" && (
+                        <div className="cine-info-callout">
+                          <strong>Want fully automatic video time synchronization?</strong>
+                          <p>
+                            Server Nova directly syncs with CineVerse to align custom subtitles frame-by-frame with zero manual adjustments.
+                          </p>
+                          <button
+                            type="button"
+                            className="cine-sub-btn-pill"
+                            style={{ marginTop: "8px" }}
+                            onClick={() => {
+                              const s = STREAM_SERVERS.find((srv) => srv.id === "nova");
+                              if (s) {
+                                handleSelectServer(s);
+                                setShowAudioSubModal(false);
+                              }
+                            }}
+                          >
+                            <Sparkles size={12} />
+                            <span>Switch to Server Nova (Auto-Synced)</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               {audioSubTab === "subtitles" ? (
                 <div className="cine-sub-panel">
                   <div className="cine-info-callout">
