@@ -101,6 +101,18 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "ronin",
+    name: "Server Ronin",
+    quality: "1080p Anime / Sub & Dub",
+    speed: "Ultra High-Speed",
+    badge: "Anime God Tier",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://nontongo.win/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://nontongo.win/embed/movie/${tmdbId}`;
+    },
+  },
+  {
     id: "alpha",
     name: "Server Alpha",
     quality: "1080p / 4K UHD",
@@ -1099,7 +1111,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "pulse", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["ronin", "alpha", "nova", "pulse", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1112,7 +1124,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "alpha"
+                                  {s.id === "ronin"
+                                    ? "Anime & Asian Soft Subtitles"
+                                    : s.id === "alpha"
                                     ? "Auto-Calibrated (SubDL)"
                                     : s.id === "nova"
                                     ? "Direct Subtitle Stream"
@@ -1161,7 +1175,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["alpha", "nova", "apex", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["ronin", "alpha", "nova", "apex", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1174,7 +1188,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "alpha"
+                                  {s.id === "ronin"
+                                    ? "Anime Japanese Audio & Dubs"
+                                    : s.id === "alpha"
                                     ? "4K / Multi-Language Audio"
                                     : s.id === "nova"
                                     ? "Direct Audio Master"
