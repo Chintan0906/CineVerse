@@ -1867,6 +1867,119 @@ input,
   }
 }
 
+/* Legacy Sub-Server Switcher Bar */
+.cine-subserver-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(25, 20, 35, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  backdrop-filter: blur(16px);
+  padding: 8px 14px;
+  border-radius: 12px;
+  margin: 6px 14px 10px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cine-subserver-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #c084fc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.cine-subserver-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.cine-subserver-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.cine-subserver-pill:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cine-subserver-pill.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(126, 34, 206, 0.35));
+  border-color: #a855f7;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+.cine-subserver-pill .subserver-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ca3af;
+  transition: all 0.2s;
+}
+
+.cine-subserver-pill.active .subserver-dot {
+  background: #a855f7;
+  box-shadow: 0 0 8px #a855f7;
+}
+
+.cine-subserver-pill .subserver-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+}
+
+.cine-subserver-pill.active .subserver-badge {
+  background: rgba(168, 85, 247, 0.3);
+  color: #f3e8ff;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+}
+
+.cine-status-subname {
+  color: #c084fc;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .cine-subserver-bar-wrapper {
+    margin: 4px 10px 8px 10px;
+    padding: 6px 10px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cine-subserver-pills {
+    width: 100%;
+  }
+  .cine-subserver-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
 
 
 

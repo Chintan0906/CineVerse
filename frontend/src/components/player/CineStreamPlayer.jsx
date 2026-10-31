@@ -176,12 +176,60 @@ const STREAM_SERVERS = [
     id: "legacy",
     name: "Server Legacy",
     quality: "1080p Classic",
-    speed: "Broad Catalog",
+    speed: "Multi-Mirror Network",
     badge: "Deep Catalog",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
         : `https://www.2embed.cc/embed/${tmdbId}`;
+    },
+  },
+];
+
+// Internal mirror servers available within Server Legacy (2Embed Network)
+const LEGACY_SUB_SERVERS = [
+  {
+    id: "hub",
+    name: "Legacy Hub",
+    badge: "Auto Player",
+    quality: "1080p Dynamic",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
+        : `https://www.2embed.cc/embed/${tmdbId}`;
+    },
+  },
+  {
+    id: "vsrc",
+    name: "Mirror Vsrc",
+    badge: "Fast HD",
+    quality: "1080p Direct",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidsrc.buzz/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidsrc.buzz/embed/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "videm",
+    name: "Mirror Videm",
+    badge: "Direct Stream",
+    quality: "1080p Stable",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://videm.xyz/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://videm.xyz/embed/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "vcr",
+    name: "Mirror Vcr",
+    badge: "Cloud Stream",
+    quality: "1080p Cloud",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://streamsrcs.2embed.cc/vcr-tv?tmdb=${tmdbId}&s=${season || 1}&e=${episode || 1}`
+        : `https://streamsrcs.2embed.cc/vcr?tmdb=${tmdbId}`;
     },
   },
 ];
@@ -195,6 +243,7 @@ function CineStreamPlayer({
   onEpisodeChange,
 }) {
   const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
+  const [legacySubServer, setLegacySubServer] = useState(LEGACY_SUB_SERVERS[0]);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
   const [showAudioSubModal, setShowAudioSubModal] = useState(false);
@@ -461,13 +510,15 @@ function CineStreamPlayer({
     );
   }
 
-  const embedUrl = activeServer.getUrl(
-    tmdbId,
-    isTv,
-    currSeason,
-    currEpisode,
-    media?.currentTime || 0
-  );
+  const embedUrl = activeServer.id === "legacy"
+    ? legacySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    : activeServer.getUrl(
+        tmdbId,
+        isTv,
+        currSeason,
+        currEpisode,
+        media?.currentTime || 0
+      );
 
   return (
     <div className="cine-stream-container">
@@ -498,6 +549,39 @@ function CineStreamPlayer({
           })}
         </div>
       </div>
+
+      {/* LEGACY SUB-SERVER SWITCHER BAR */}
+      {activeServer.id === "legacy" && (
+        <div className="cine-subserver-bar-wrapper">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>Legacy Server Mirrors:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {LEGACY_SUB_SERVERS.map((sub) => {
+              const isSubActive = legacySubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setLegacySubServer(sub);
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* WEBSERIES EPISODE & SEASON SWITCHER BAR */}
       {isTv && (
@@ -575,9 +659,16 @@ function CineStreamPlayer({
           <span className="cine-status-dot-live" />
           <span className="cine-status-text">
             Streaming via <strong>{activeServer.name}</strong>
+            {activeServer.id === "legacy" && (
+              <span className="cine-status-subname"> &bull; {legacySubServer.name}</span>
+            )}
           </span>
-          <span className="cine-status-chip">{activeServer.quality}</span>
-          <span className="cine-status-chip speed-chip">{activeServer.speed}</span>
+          <span className="cine-status-chip">
+            {activeServer.id === "legacy" ? legacySubServer.quality : activeServer.quality}
+          </span>
+          <span className="cine-status-chip speed-chip">
+            {activeServer.id === "legacy" ? legacySubServer.badge : activeServer.speed}
+          </span>
           {isTv && (
             <span className="cine-status-chip tv-chip">
               <Layers size={12} /> S{currSeason} : E{currEpisode} · {currentEpTitle}
@@ -720,11 +811,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           referrerPolicy="origin-when-cross-origin"
