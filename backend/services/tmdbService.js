@@ -23,6 +23,20 @@ const KNOWN_MOVIE_SYNOPSES = {
   "617126": "Marvel's First Family balances their roles as cosmic explorers with the responsibility of protecting an alternate retro-futuristic 1960s Earth from the planet-devouring Galactus.",
   // Superman (2025)
   "1064213": "Superman embarks on a journey to reconcile his Kryptonian heritage with his human upbringing as Clark Kent in Smallville, Kansas, standing as the embodiment of truth, justice, and kindness in a world that views kindness as old-fashioned.",
+  // Tron: Ares
+  "601467": "A highly sophisticated Program named Ares is sent from the digital realm into the real world on a perilous mission, marking humanity's momentous first contact with sentient artificial intelligence.",
+  // Avatar: Fire and Ash
+  "83533": "Jake Sully and Neytiri encounter the Ash People, a fiery and volatile Na'vi tribe led by Varang, putting the Sully family's unity and resilience to the ultimate test across uncharted territories of Pandora.",
+  // Gladiator II
+  "558449": "Years after witnessing the sacrifice of Maximus, Lucius enters the Colosseum after his homeland is conquered by tyrannical co-emperors, fighting to restore glory and honor to Rome.",
+  // Deadpool & Wolverine
+  "533535": "A listless Wade Wilson toils away in civilian life with his days as the mercenary Deadpool behind him. But when an existential crisis threatens his timeline, he must team up with an all-new Wolverine to save everything he holds dear.",
+  // Captain America: Brave New World
+  "823464": "Sam Wilson finds himself at the center of an escalating international conspiracy after meeting with President Thaddeus Ross, forcing him to uncover the truth behind a global plot before chaos consumes the world.",
+  // Thunderbolts*
+  "774370": "An irreverent team-up of Marvel's most unconventional antiheroes, assembled by covert intelligence to undertake dangerous black-ops missions where survival is far from guaranteed.",
+  // Mission: Impossible - The Final Reckoning
+  "575265": "Ethan Hunt and the IMF crew race against time across the globe to stop the rogue artificial intelligence Entity from securing absolute domination over world networks.",
 };
 
 // TMDB Genre ID to Name mapping (Movies & TV)
@@ -163,9 +177,20 @@ function normalizeMovie(movie, extraProps = {}) {
         description = KNOWN_MOVIE_SYNOPSES["1022789"];
       } else if (titleLower.includes("doomsday")) {
         description = KNOWN_MOVIE_SYNOPSES["1003596"];
+      } else if (titleLower.includes("tron") && titleLower.includes("ares")) {
+        description = KNOWN_MOVIE_SYNOPSES["601467"];
+      } else if (titleLower.includes("avatar") && titleLower.includes("ash")) {
+        description = KNOWN_MOVIE_SYNOPSES["83533"];
+      } else if (titleLower.includes("brave new world")) {
+        description = KNOWN_MOVIE_SYNOPSES["823464"];
+      } else if (titleLower.includes("thunderbolts")) {
+        description = KNOWN_MOVIE_SYNOPSES["774370"];
+      } else if (titleLower.includes("final reckoning")) {
+        description = KNOWN_MOVIE_SYNOPSES["575265"];
       } else {
         const gStr = genres.slice(0, 2).join(" & ");
-        description = `An epic ${gStr} production featuring high-stakes storytelling, compelling character journeys, and acclaimed visual craftsmanship.`;
+        const titleName = movie.title || movie.name || "This title";
+        description = `${titleName} is an acclaimed ${gStr} story exploring high-stakes conflict, profound emotional journeys, and celebrated cinematic storytelling.`;
       }
     }
   }
@@ -181,6 +206,7 @@ function normalizeMovie(movie, extraProps = {}) {
     genres,
     duration,
     description,
+    overview: description,
     poster,
     backdrop,
     logo: "",

@@ -140,7 +140,10 @@ function HeroSlideshow({ featuredMovies, watchlist, onToggleWatchlist, onPlay })
         </div>
 
         {/* Description */}
-        <p className={`hero-slideshow-description ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <p
+          className={`hero-slideshow-description ${isTransitioning ? 'fade-out' : 'fade-in'}`}
+          key={currentMovie.id}
+        >
           {currentMovie.description}
         </p>
 

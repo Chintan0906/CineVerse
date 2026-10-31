@@ -178,6 +178,20 @@ const KNOWN_MOVIE_SYNOPSES = {
   "617126": "Marvel's First Family balances their roles as cosmic explorers with the responsibility of protecting an alternate retro-futuristic 1960s Earth from the planet-devouring Galactus.",
   // Superman (2025)
   "1064213": "Superman embarks on a journey to reconcile his Kryptonian heritage with his human upbringing as Clark Kent in Smallville, Kansas, standing as the embodiment of truth, justice, and kindness in a world that views kindness as old-fashioned.",
+  // Tron: Ares
+  "601467": "A highly sophisticated Program named Ares is sent from the digital realm into the real world on a perilous mission, marking humanity's momentous first contact with sentient artificial intelligence.",
+  // Avatar: Fire and Ash
+  "83533": "Jake Sully and Neytiri encounter the Ash People, a fiery and volatile Na'vi tribe led by Varang, putting the Sully family's unity and resilience to the ultimate test across uncharted territories of Pandora.",
+  // Gladiator II
+  "558449": "Years after witnessing the sacrifice of Maximus, Lucius enters the Colosseum after his homeland is conquered by tyrannical co-emperors, fighting to restore glory and honor to Rome.",
+  // Deadpool & Wolverine
+  "533535": "A listless Wade Wilson toils away in civilian life with his days as the mercenary Deadpool behind him. But when an existential crisis threatens his timeline, he must team up with an all-new Wolverine to save everything he holds dear.",
+  // Captain America: Brave New World
+  "823464": "Sam Wilson finds himself at the center of an escalating international conspiracy after meeting with President Thaddeus Ross, forcing him to uncover the truth behind a global plot before chaos consumes the world.",
+  // Thunderbolts*
+  "774370": "An irreverent team-up of Marvel's most unconventional antiheroes, assembled by covert intelligence to undertake dangerous black-ops missions where survival is far from guaranteed.",
+  // Mission: Impossible - The Final Reckoning
+  "575265": "Ethan Hunt and the IMF crew race against time across the globe to stop the rogue artificial intelligence Entity from securing absolute domination over world networks.",
 };
 
 function getCleanMovieSynopsis(movie, genres = []) {
@@ -203,14 +217,32 @@ function getCleanMovieSynopsis(movie, genres = []) {
   if (titleLower.includes("doomsday")) {
     return KNOWN_MOVIE_SYNOPSES["1003596"];
   }
+  if (titleLower.includes("tron") && titleLower.includes("ares")) {
+    return KNOWN_MOVIE_SYNOPSES["601467"];
+  }
+  if (titleLower.includes("avatar") && titleLower.includes("ash")) {
+    return KNOWN_MOVIE_SYNOPSES["83533"];
+  }
+  if (titleLower.includes("brave new world")) {
+    return KNOWN_MOVIE_SYNOPSES["823464"];
+  }
+  if (titleLower.includes("thunderbolts")) {
+    return KNOWN_MOVIE_SYNOPSES["774370"];
+  }
+  if (titleLower.includes("final reckoning")) {
+    return KNOWN_MOVIE_SYNOPSES["575265"];
+  }
 
-  const raw = movie.description || movie.overview;
-  if (raw && !raw.toLowerCase().includes("cineverse") && raw.trim().length >= 20) {
+  const raw = movie.overview || movie.description;
+  if (raw && !raw.toLowerCase().includes("cineverse") && raw.trim().length >= 25) {
     return raw.trim();
   }
 
-  const gStr = genres && genres.length > 0 ? genres.slice(0, 2).join(" & ") : "Cinematic";
-  return `An epic ${gStr} production featuring high-stakes storytelling, compelling character journeys, and acclaimed visual craftsmanship.`;
+  const gList = Array.isArray(genres) && genres.length > 0 ? genres : ["Cinema"];
+  const gStr = gList.slice(0, 2).join(" & ");
+  const yearStr = movie.year ? ` (${movie.year})` : "";
+  const titleStr = movie.title || movie.name || "This title";
+  return `${titleStr}${yearStr} is an acclaimed ${gStr} story exploring high-stakes conflict, profound emotional journeys, and celebrated cinematic storytelling.`;
 }
 
   // Helper to normalize any movie object
@@ -228,6 +260,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
     return {
       ...movie,
       description,
+      overview: description,
       genre: genres[0] || "Cinema",
       genres,
       tags: movie.tags || genres.map((g) => g.toLowerCase()),
@@ -529,14 +562,49 @@ function getCleanMovieSynopsis(movie, genres = []) {
     }, { replace: true });
   }
 
-  function handleSelectMovie(movie) {
-    setSelectedMovie(movie);
+  const handleSelectMovie = useCallback(async (movie) => {
+    if (!movie) return;
+    const initialMovie = normalize(movie) || movie;
+    setSelectedMovie(initialMovie);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("movie", String(movie.id));
       return next;
     }, { replace: true });
-  }
+
+    // Enforce rich authentic TMDB synopsis, tagline, and cast in the modal
+    try {
+      const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+      const fullData = isTv
+        ? await getTVShowById(movie.id)
+        : await getMovieById(movie.id, movie.mediaType || "movie");
+
+      if (fullData) {
+        setSelectedMovie((prev) => {
+          if (!prev || String(prev.id) !== String(movie.id)) return prev;
+          const freshOverview = fullData.overview || fullData.description;
+          const cleanDesc =
+            freshOverview &&
+            freshOverview.trim().length >= 25 &&
+            !freshOverview.toLowerCase().includes("cineverse")
+              ? freshOverview.trim()
+              : prev.description;
+
+          return {
+            ...prev,
+            ...fullData,
+            description: cleanDesc || prev.description,
+            overview: cleanDesc || prev.description,
+            tagline: fullData.tagline || prev.tagline || "",
+            cast: fullData.cast && fullData.cast.length > 0 ? fullData.cast : prev.cast,
+            duration: fullData.duration || prev.duration,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn("Could not enrich movie modal details from TMDB:", err);
+    }
+  }, [setSearchParams]);
 
   function handleCloseMovie() {
     setSelectedMovie(null);
@@ -652,11 +720,11 @@ function getCleanMovieSynopsis(movie, genres = []) {
     if (movieId) {
       const found = movies.find((m) => String(m.id) === String(movieId));
       if (found) {
-        setSelectedMovie(found);
+        handleSelectMovie(found);
       } else {
         getMovieById(movieId)
           .then((data) => {
-            if (data) setSelectedMovie(data);
+            if (data) handleSelectMovie(data);
           })
           .catch((err) => console.warn("Could not restore movie modal on reload:", err));
       }
@@ -1106,9 +1174,22 @@ function getCleanMovieSynopsis(movie, genres = []) {
                 <span className="quality-pill">5.1 AUDIO</span>
               </div>
 
+              {selectedMovie.tagline && (
+                <p className="modal-tagline">“{selectedMovie.tagline}”</p>
+              )}
+
               <p className="modal-description">
                 {getCleanMovieSynopsis(selectedMovie, selectedMovie.genres)}
               </p>
+
+              {selectedMovie.cast && selectedMovie.cast.length > 0 && (
+                <div className="modal-cast-preview">
+                  <span className="cast-label">Starring: </span>
+                  <span className="cast-names">
+                    {selectedMovie.cast.slice(0, 5).map((c) => c.name).join(", ")}
+                  </span>
+                </div>
+              )}
 
               {/* Styled Glass Tags */}
               <div className="modal-tags">

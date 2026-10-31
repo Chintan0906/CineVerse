@@ -141,10 +141,14 @@ body {
 }
 
 .hero-slideshow-description {
-  max-width: 590px !important;
-  color: rgba(235, 244, 243, 0.78) !important;
-  font-size: clamp(14px, 1.15vw, 17px) !important;
-  line-height: 1.7 !important;
+  max-width: 740px !important;
+  color: #ffffff !important;
+  font-size: clamp(15px, 1.2vw, 17px) !important;
+  font-weight: 450 !important;
+  line-height: 1.65 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.98), 0 1px 4px rgba(0, 0, 0, 0.95) !important;
 }
 
 .hero-btn-play,
@@ -610,6 +614,10 @@ input,
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    color: #ffffff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95) !important;
   }
 
   .hero-slideshow-actions {
@@ -1979,6 +1987,49 @@ input,
     font-size: 11px;
   }
 }
+
+/* =====================================================
+   ENHANCED MOVIE MODAL DETAILS & SYNOPSIS
+   ===================================================== */
+.modal-tagline {
+  color: #a7f3d0 !important;
+  font-size: 15px !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.25px !important;
+  margin: -4px 0 14px !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7) !important;
+}
+
+.modal-description {
+  max-width: 760px !important;
+  font-size: 15.5px !important;
+  line-height: 1.75 !important;
+  color: #f1f5f9 !important;
+  font-weight: 400 !important;
+  margin-bottom: 22px !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.modal-cast-preview {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  font-size: 13.5px !important;
+  color: #94a3b8 !important;
+  margin-bottom: 22px !important;
+}
+
+.modal-cast-preview .cast-label {
+  color: #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+.modal-cast-preview .cast-names {
+  color: #f8fafc !important;
+}
+
 
 
 
