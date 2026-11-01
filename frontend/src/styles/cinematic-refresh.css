@@ -2065,6 +2065,44 @@ input,
   font-weight: 500;
 }
 
+.cine-status-subname.eclipse {
+  color: #34d399;
+}
+
+/* Eclipse Sub-Server Switcher Bar */
+.cine-subserver-bar-wrapper.eclipse-theme {
+  background: rgba(10, 25, 20, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.cine-subserver-bar-wrapper.eclipse-theme .cine-subserver-label {
+  color: #34d399;
+}
+
+.cine-subserver-bar-wrapper.eclipse-theme .cine-subserver-pill:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+}
+
+.cine-subserver-bar-wrapper.eclipse-theme .cine-subserver-pill.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.35));
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.cine-subserver-bar-wrapper.eclipse-theme .cine-subserver-pill.active .subserver-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.cine-subserver-bar-wrapper.eclipse-theme .cine-subserver-pill.active .subserver-badge {
+  background: rgba(16, 185, 129, 0.3);
+  color: #d1fae5;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
 @media (max-width: 768px) {
   .cine-subserver-bar-wrapper {
     margin: 4px 10px 8px 10px;

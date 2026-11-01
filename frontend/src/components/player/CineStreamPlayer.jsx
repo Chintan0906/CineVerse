@@ -224,6 +224,87 @@ const STREAM_SERVERS = [
   },
 ];
 
+// Internal mirror servers available within Server Eclipse (VidFast High-Speed Cluster)
+const ECLIPSE_SUB_SERVERS = [
+  {
+    id: "auto",
+    name: "Eclipse Auto",
+    badge: "Auto Stream",
+    quality: "1080p / 4K UHD",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "vrapid",
+    name: "vRapid",
+    badge: "4K UHD",
+    quality: "4K UHD / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vrapid`
+        : `https://vidfast.vc/movie/${tmdbId}?server=vrapid`;
+    },
+  },
+  {
+    id: "vblaze",
+    name: "vBlaze",
+    badge: "4K Fast",
+    quality: "4K Fast / Ultra Stream",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vblaze`
+        : `https://vidfast.vc/movie/${tmdbId}?server=vblaze`;
+    },
+  },
+  {
+    id: "cobra",
+    name: "Cobra",
+    badge: "Direct HD",
+    quality: "1080p Direct / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cobra`
+        : `https://vidfast.vc/movie/${tmdbId}?server=cobra`;
+    },
+  },
+  {
+    id: "cine",
+    name: "Cine",
+    badge: "Multi-Audio",
+    quality: "1080p Multiple Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cine`
+        : `https://vidfast.vc/movie/${tmdbId}?server=cine`;
+    },
+  },
+  {
+    id: "bravo",
+    name: "Bravo",
+    badge: "Fast CDN",
+    quality: "1080p Fast CDN / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=bravo`
+        : `https://vidfast.vc/movie/${tmdbId}?server=bravo`;
+    },
+  },
+  {
+    id: "horizon",
+    name: "Horizon",
+    badge: "Cloud Mirror",
+    quality: "1080p Cloud / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=horizon`
+        : `https://vidfast.vc/movie/${tmdbId}?server=horizon`;
+    },
+  },
+];
+
 // Internal mirror servers available within Server Legacy (High-Performance CDN Cluster)
 const LEGACY_SUB_SERVERS = [
   {
@@ -281,6 +362,7 @@ function CineStreamPlayer({
   onEpisodeChange,
 }) {
   const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
+  const [eclipseSubServer, setEclipseSubServer] = useState(ECLIPSE_SUB_SERVERS[0]);
   const [legacySubServer, setLegacySubServer] = useState(LEGACY_SUB_SERVERS[0]);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
@@ -550,6 +632,8 @@ function CineStreamPlayer({
 
   const embedUrl = activeServer.id === "legacy"
     ? legacySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    : activeServer.id === "eclipse"
+    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.getUrl(
         tmdbId,
         isTv,
@@ -587,6 +671,39 @@ function CineStreamPlayer({
           })}
         </div>
       </div>
+
+      {/* ECLIPSE SUB-SERVER SWITCHER BAR */}
+      {activeServer.id === "eclipse" && (
+        <div className="cine-subserver-bar-wrapper eclipse-theme">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>Eclipse Server Mirrors:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {ECLIPSE_SUB_SERVERS.map((sub) => {
+              const isSubActive = eclipseSubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setEclipseSubServer(sub);
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* LEGACY SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "legacy" && (
@@ -700,12 +817,23 @@ function CineStreamPlayer({
             {activeServer.id === "legacy" && (
               <span className="cine-status-subname"> &bull; {legacySubServer.name}</span>
             )}
+            {activeServer.id === "eclipse" && (
+              <span className="cine-status-subname eclipse"> &bull; {eclipseSubServer.name}</span>
+            )}
           </span>
           <span className="cine-status-chip">
-            {activeServer.id === "legacy" ? legacySubServer.quality : activeServer.quality}
+            {activeServer.id === "legacy"
+              ? legacySubServer.quality
+              : activeServer.id === "eclipse"
+              ? eclipseSubServer.quality
+              : activeServer.quality}
           </span>
           <span className="cine-status-chip speed-chip">
-            {activeServer.id === "legacy" ? legacySubServer.badge : activeServer.speed}
+            {activeServer.id === "legacy"
+              ? legacySubServer.badge
+              : activeServer.id === "eclipse"
+              ? eclipseSubServer.badge
+              : activeServer.speed}
           </span>
           {isTv && (
             <span className="cine-status-chip tv-chip">
@@ -797,15 +925,6 @@ function CineStreamPlayer({
         {/* TOP CINEMATIC VIGNETTE (Masks top-edge third-party provider artifacts) */}
         <div className="cine-player-top-vignette" aria-hidden="true" />
 
-        {/* CINEVERSE OFFICIAL BRAND SHIELD (Masks top-left provider logo / watermark) */}
-        <div className="cine-brand-watermark-shield" aria-hidden="true">
-          <span className="cine-shield-live-dot" />
-          <span className="cine-shield-brand-text">CINEVERSE</span>
-          <span className="cine-shield-pill-badge">
-            {activeServer.quality.includes("4K") ? "4K UHD" : "1080p"}
-          </span>
-        </div>
-
         {/* FLOATING QUICK-SUBTITLE ACTION PILL */}
         <div className="cine-floating-sub-controls">
           <button
@@ -861,11 +980,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           referrerPolicy="origin-when-cross-origin"
