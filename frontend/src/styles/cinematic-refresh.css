@@ -2069,6 +2069,44 @@ input,
   color: #34d399;
 }
 
+.cine-status-subname.animeembed {
+  color: #f472b6;
+}
+
+/* AnimeEmbed Sub-Server Switcher Bar */
+.cine-subserver-bar-wrapper.animeembed-theme {
+  background: rgba(28, 14, 38, 0.88);
+  border: 1px solid rgba(236, 72, 153, 0.35);
+}
+
+.cine-subserver-bar-wrapper.animeembed-theme .cine-subserver-label {
+  color: #f472b6;
+}
+
+.cine-subserver-bar-wrapper.animeembed-theme .cine-subserver-pill:hover {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: rgba(236, 72, 153, 0.4);
+  color: #ffffff;
+}
+
+.cine-subserver-bar-wrapper.animeembed-theme .cine-subserver-pill.active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(219, 39, 119, 0.35));
+  border-color: #ec4899;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+}
+
+.cine-subserver-bar-wrapper.animeembed-theme .cine-subserver-pill.active .subserver-dot {
+  background: #ec4899;
+  box-shadow: 0 0 8px #ec4899;
+}
+
+.cine-subserver-bar-wrapper.animeembed-theme .cine-subserver-pill.active .subserver-badge {
+  background: rgba(236, 72, 153, 0.3);
+  color: #fce7f3;
+  border: 1px solid rgba(236, 72, 153, 0.5);
+}
+
 /* Eclipse Sub-Server Switcher Bar */
 .cine-subserver-bar-wrapper.eclipse-theme {
   background: rgba(10, 25, 20, 0.85);

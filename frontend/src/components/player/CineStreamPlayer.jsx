@@ -101,6 +101,17 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "animeembed",
+    name: "Server Kage",
+    quality: "1080p Anime / Auto-Skip",
+    speed: "Zero-Ad Feed",
+    badge: "AnimeEmbed Pro",
+    getUrl: (tmdbId, isTv, season, episode, currentTime, anilistId) => {
+      const id = anilistId || "21701";
+      return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=e50914`;
+    },
+  },
+  {
     id: "ronin",
     name: "Server Ronin",
     quality: "1080p Anime / Sub & Dub",
@@ -221,6 +232,34 @@ const STREAM_SERVERS = [
         ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
         : `https://www.2embed.cc/embed/${tmdbId}`;
     },
+  },
+];
+
+// Dedicated anime sub-tracks for AnimeEmbed (Server Kage)
+const ANIMEEMBED_SUB_SERVERS = [
+  {
+    id: "sub",
+    name: "Japanese Sub",
+    badge: "Auto-Skip",
+    quality: "1080p Original Sub",
+    getUrl: (aniId, episode) =>
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=1&accent=e50914`,
+  },
+  {
+    id: "dub",
+    name: "English Dub",
+    badge: "English Audio",
+    quality: "1080p English Dub",
+    getUrl: (aniId, episode) =>
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=dub&autoSkip=1&accent=e50914`,
+  },
+  {
+    id: "uncut",
+    name: "Full Opening (Sub)",
+    badge: "Full Song",
+    quality: "1080p Uncut Intro",
+    getUrl: (aniId, episode) =>
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=0&accent=e50914`,
   },
 ];
 
@@ -363,7 +402,9 @@ function CineStreamPlayer({
 }) {
   const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
   const [eclipseSubServer, setEclipseSubServer] = useState(ECLIPSE_SUB_SERVERS[0]);
+  const [animeEmbedSubServer, setAnimeEmbedSubServer] = useState(ANIMEEMBED_SUB_SERVERS[0]);
   const [legacySubServer, setLegacySubServer] = useState(LEGACY_SUB_SERVERS[0]);
+  const [anilistId, setAnilistId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
   const [showAudioSubModal, setShowAudioSubModal] = useState(false);
@@ -403,6 +444,75 @@ function CineStreamPlayer({
   useEffect(() => {
     setCurrEpisode(propEpisode);
   }, [propEpisode]);
+
+  // Dynamic AniList ID resolution for AnimeEmbed (Server Kage)
+  useEffect(() => {
+    if (!media?.title) return;
+    const cleanTitle = media.title
+      .replace(/\s*\(?\d{4}\)?$/g, "")
+      .replace(/:\s*Season\s*\d+/gi, "")
+      .trim();
+
+    const cacheKey = `cine_ani_id_${cleanTitle.toLowerCase()}_s${currSeason}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setAnilistId(cached);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    let active = true;
+    let searchTitle = cleanTitle;
+    if (currSeason > 1 && !searchTitle.toLowerCase().includes("season")) {
+      searchTitle = `${cleanTitle} Season ${currSeason}`;
+    }
+
+    const fetchAni = (term) => {
+      return fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query ($search: String) {
+            Media (search: $search, type: ANIME) {
+              id
+            }
+          }`,
+          variables: { search: term },
+        }),
+      }).then((res) => res.json());
+    };
+
+    fetchAni(searchTitle)
+      .then((json) => {
+        if (!active) return;
+        const id = json?.data?.Media?.id;
+        if (id) {
+          setAnilistId(String(id));
+          try {
+            sessionStorage.setItem(cacheKey, String(id));
+          } catch {}
+        } else if (searchTitle !== cleanTitle) {
+          return fetchAni(cleanTitle).then((res2) => {
+            if (!active) return;
+            const fallbackId = res2?.data?.Media?.id;
+            if (fallbackId) {
+              setAnilistId(String(fallbackId));
+              try {
+                sessionStorage.setItem(cacheKey, String(fallbackId));
+              } catch {}
+            }
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [media?.title, currSeason]);
 
   // Available seasons list
   const rawSeasons = (seasons?.length ? seasons : media?.seasons || media?.availableSeasons || [])
@@ -634,6 +744,8 @@ function CineStreamPlayer({
     ? legacySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "eclipse"
     ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    : activeServer.id === "animeembed"
+    ? animeEmbedSubServer.getUrl(anilistId || "21701", currEpisode)
     : activeServer.getUrl(
         tmdbId,
         isTv,
@@ -690,6 +802,39 @@ function CineStreamPlayer({
                   aria-selected={isSubActive}
                   onClick={() => {
                     setEclipseSubServer(sub);
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ANIMEEMBED (SERVER KAGE) SUB-SERVER SWITCHER BAR */}
+      {activeServer.id === "animeembed" && (
+        <div className="cine-subserver-bar-wrapper animeembed-theme">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>AnimeEmbed Track:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {ANIMEEMBED_SUB_SERVERS.map((sub) => {
+              const isSubActive = animeEmbedSubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setAnimeEmbedSubServer(sub);
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -820,12 +965,17 @@ function CineStreamPlayer({
             {activeServer.id === "eclipse" && (
               <span className="cine-status-subname eclipse"> &bull; {eclipseSubServer.name}</span>
             )}
+            {activeServer.id === "animeembed" && (
+              <span className="cine-status-subname animeembed"> &bull; {animeEmbedSubServer.name}</span>
+            )}
           </span>
           <span className="cine-status-chip">
             {activeServer.id === "legacy"
               ? legacySubServer.quality
               : activeServer.id === "eclipse"
               ? eclipseSubServer.quality
+              : activeServer.id === "animeembed"
+              ? animeEmbedSubServer.quality
               : activeServer.quality}
           </span>
           <span className="cine-status-chip speed-chip">
@@ -833,6 +983,8 @@ function CineStreamPlayer({
               ? legacySubServer.badge
               : activeServer.id === "eclipse"
               ? eclipseSubServer.badge
+              : activeServer.id === "animeembed"
+              ? animeEmbedSubServer.badge
               : activeServer.speed}
           </span>
           {isTv && (
@@ -980,11 +1132,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           referrerPolicy="origin-when-cross-origin"
