@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import MovieDetails from "./pages/MovieDetails";
 import AuthPage from "./pages/AuthPage";
 import { AuthProvider } from "./context/AuthContext";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/cinematic-refresh.css";
 
@@ -26,15 +27,17 @@ function AppRoutes() {
   return (
     <div className="app">
       <div key={location.pathname} className="route-transition">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/movie/:id" element={<MovieDetails />} />
-          <Route path="/login" element={<AuthPage mode="login" />} />
-          <Route path="/register" element={<AuthPage mode="register" />} />
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/movie/:id" element={<MovieDetails />} />
+            <Route path="/login" element={<AuthPage mode="login" />} />
+            <Route path="/register" element={<AuthPage mode="register" />} />
 
-          {/* Fallback for unknown routes */}
-          <Route path="*" element={<Home />} />
-        </Routes>
+            {/* Fallback for unknown routes */}
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </ErrorBoundary>
       </div>
     </div>
   );

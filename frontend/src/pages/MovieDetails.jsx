@@ -87,6 +87,17 @@ function MovieDetails() {
       } catch {
         // ignore
       }
+      const s = Number(searchParams.get("season") || 1);
+      const e = Number(searchParams.get("episode") || 1);
+      const isTv = searchParams.get("type") === "tv" || location.state?.mediaType === "tv" || location.state?.isTV;
+      return {
+        id,
+        title: location.state?.title || "Now Playing",
+        season: s,
+        episode: e,
+        isTV: isTv,
+        mediaType: isTv ? "tv" : "movie",
+      };
     }
     return null;
   });
@@ -135,8 +146,12 @@ function MovieDetails() {
             validSeasons.find((s) => s.season_number > 0)?.season_number ??
             validSeasons[0]?.season_number ??
             1;
-          setSelectedSeason(firstSeason);
-          setSelectedEpisode(1);
+          const urlSeason = Number(searchParams.get("season"));
+          const urlEpisode = Number(searchParams.get("episode"));
+          const resolvedSeason = urlSeason && urlSeason > 0 ? urlSeason : firstSeason;
+          const resolvedEpisode = urlEpisode && urlEpisode > 0 ? urlEpisode : 1;
+          setSelectedSeason(resolvedSeason);
+          setSelectedEpisode(resolvedEpisode);
         }
       })
       .catch((err) => {
@@ -155,10 +170,11 @@ function MovieDetails() {
         const isTv = Boolean(
           movie.mediaType === "tv" ||
           movie.isTV ||
-          (movie.seasons && movie.seasons.length > 0)
+          (movie.seasons && movie.seasons.length > 0) ||
+          requestedType === "tv"
         );
-        const s = Number(searchParams.get("season") || selectedSeason || 1);
-        const e = Number(searchParams.get("episode") || selectedEpisode || 1);
+        const s = Number(searchParams.get("season")) || selectedSeason || 1;
+        const e = Number(searchParams.get("episode")) || selectedEpisode || 1;
         if (s) setSelectedSeason(s);
         if (e) setSelectedEpisode(e);
 
@@ -174,65 +190,74 @@ function MovieDetails() {
         setShowPlayer(true);
       }
     }
-  }, [loading, movie, searchParams]);
+  }, [loading, movie, searchParams, requestedType, selectedSeason, selectedEpisode, recordPlay]);
 
   // Fetch episodes when selectedSeason changes for a TV show
   useEffect(() => {
-    const isTv = Boolean(movie?.mediaType === "tv" || movie?.isTV || (movie?.seasons && movie.seasons.length > 0));
-    if (!movie || !isTv) {
+    const isTv = Boolean(
+      movie?.mediaType === "tv" ||
+      movie?.isTV ||
+      (movie?.seasons && movie.seasons.length > 0) ||
+      requestedType === "tv"
+    );
+    if (!id || !isTv) {
       setEpisodes([]);
       return undefined;
     }
 
     let active = true;
-    getTVSeasonEpisodes(movie.id, selectedSeason)
+    getTVSeasonEpisodes(id, selectedSeason)
       .then((data) => {
         if (!active) return;
         if (data && data.length > 0) {
           setEpisodes(data);
-          setSelectedEpisode((current) =>
-            data.some((ep) => ep.episodeNumber === current)
-              ? current
-              : data[0]?.episodeNumber || 1
-          );
+          const urlEp = Number(searchParams.get("episode"));
+          setSelectedEpisode((current) => {
+            const candidate = current || urlEp || 1;
+            return data.some((ep) => ep.episodeNumber === candidate)
+              ? candidate
+              : data[0]?.episodeNumber || 1;
+          });
         } else {
           // Provide fallback episodes so user can still play any episode
-          const currentSeasonObj = (movie.seasons || []).find((s) => s.season_number === selectedSeason);
-          const epCount = currentSeasonObj?.episode_count || 10;
+          const currentSeasonObj = (movie?.seasons || []).find((s) => s.season_number === selectedSeason);
+          const urlEp = Number(searchParams.get("episode"));
+          const epCount = Math.max(currentSeasonObj?.episode_count || 12, urlEp || 12);
           const fallbackList = Array.from({ length: epCount }, (_, i) => ({
             id: `s${selectedSeason}e${i + 1}`,
             name: `Episode ${i + 1}`,
             episodeNumber: i + 1,
             seasonNumber: selectedSeason,
             overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
-            still: movie.backdrop || movie.poster,
-            rating: movie.rating || 8.0,
+            still: movie?.backdrop || movie?.poster,
+            rating: movie?.rating || 8.0,
             runtime: 45,
           }));
           setEpisodes(fallbackList);
-          setSelectedEpisode(1);
+          setSelectedEpisode((current) => (urlEp > 0 ? urlEp : current || 1));
         }
       })
       .catch(() => {
         if (!active) return;
-        const currentSeasonObj = (movie.seasons || []).find((s) => s.season_number === selectedSeason);
-        const epCount = currentSeasonObj?.episode_count || 10;
+        const currentSeasonObj = (movie?.seasons || []).find((s) => s.season_number === selectedSeason);
+        const urlEp = Number(searchParams.get("episode"));
+        const epCount = Math.max(currentSeasonObj?.episode_count || 12, urlEp || 12);
         const fallbackList = Array.from({ length: epCount }, (_, i) => ({
           id: `s${selectedSeason}e${i + 1}`,
           name: `Episode ${i + 1}`,
           episodeNumber: i + 1,
           seasonNumber: selectedSeason,
           overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
-          still: movie.backdrop || movie.poster,
-          rating: movie.rating || 8.0,
+          still: movie?.backdrop || movie?.poster,
+          rating: movie?.rating || 8.0,
           runtime: 45,
         }));
         setEpisodes(fallbackList);
-        setSelectedEpisode(1);
+        setSelectedEpisode((current) => (urlEp > 0 ? urlEp : current || 1));
       });
 
     return () => { active = false; };
-  }, [movie?.id, movie?.mediaType, movie?.isTV, selectedSeason]);
+  }, [id, movie?.seasons, movie?.backdrop, movie?.poster, movie?.rating, requestedType, selectedSeason, searchParams]);
 
   const toggleWatchlist = (media) => updateWatchlist(media);
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {
@@ -243,12 +268,26 @@ function MovieDetails() {
     ? watchlist.some((saved) => String(saved.id) === String(movie.id))
     : false;
 
-  const isTvShow = Boolean(movie?.mediaType === "tv" || movie?.isTV || (movie?.seasons && movie.seasons.length > 0));
+  const isTvShow = Boolean(
+    movie?.mediaType === "tv" ||
+    movie?.isTV ||
+    (movie?.seasons && movie.seasons.length > 0) ||
+    requestedType === "tv" ||
+    searchParams.get("type") === "tv"
+  );
+
+  const rawSeasons = ((movie?.seasons) || []).filter((season) => season.season_number >= 0);
+  const availableSeasons = rawSeasons.length > 0
+    ? rawSeasons
+    : isTvShow
+    ? [{ id: 1, season_number: selectedSeason || 1, name: `Season ${selectedSeason || 1}`, episode_count: Math.max(12, selectedEpisode || 10) }]
+    : [];
 
   // Ensure current episode and season are correctly bound
   const playerMedia = (movie || activeStreamMovie) ? {
     ...(movie || {}),
     ...(activeStreamMovie || {}),
+    id: (movie?.id || activeStreamMovie?.id || id),
     season: selectedSeason,
     episode: selectedEpisode,
     isTV: isTvShow,
@@ -261,6 +300,7 @@ function MovieDetails() {
     isPlayerClosedByUserRef.current = false;
     const playMedia = {
       ...(movie || activeStreamMovie || {}),
+      id: (movie?.id || activeStreamMovie?.id || id),
       season: s,
       episode: e,
       isTV: isTvShow,
@@ -322,8 +362,68 @@ function MovieDetails() {
 
   if (loading) {
     if (showPlayer && streamMedia && !isPlayerClosedByUserRef.current) {
-      // Allow rendering the active player directly without flashing details or splash
-    } else if (showPlayer && !isPlayerClosedByUserRef.current) {
+      return (
+        <div className="movie-details-page">
+          <div className="player-overlay">
+            <div className="player-header">
+              <div>
+                <span className="section-eyebrow">NOW PLAYING</span>
+                <h2>{streamMedia.title || "Now Playing"}</h2>
+              </div>
+              <button
+                className="icon-button"
+                onClick={handleClosePlayer}
+                aria-label="Close video player"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="player-content">
+              <div className="player-window">
+                <CineStreamPlayer
+                  media={streamMedia}
+                  onProgress={handlePlayerProgress}
+                  seasons={availableSeasons}
+                  episodes={episodes}
+                  onSeasonChange={(newSeason) => {
+                    setSelectedSeason(newSeason);
+                    const updatedMedia = {
+                      ...streamMedia,
+                      season: newSeason,
+                      episode: 1,
+                    };
+                    recordPlay(updatedMedia, { season: newSeason, episode: 1 });
+                    setActiveStreamMovie(updatedMedia);
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("season", String(newSeason));
+                      next.set("episode", "1");
+                      return next;
+                    }, { replace: true });
+                  }}
+                  onEpisodeChange={(newEpisode) => {
+                    setSelectedEpisode(newEpisode);
+                    const updatedMedia = {
+                      ...streamMedia,
+                      season: selectedSeason,
+                      episode: newEpisode,
+                    };
+                    recordPlay(updatedMedia, { season: selectedSeason, episode: newEpisode });
+                    setActiveStreamMovie(updatedMedia);
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("episode", String(newEpisode));
+                      return next;
+                    }, { replace: true });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (showPlayer && !isPlayerClosedByUserRef.current) {
       return (
         <div className="player-overlay">
           <div className="player-header">
@@ -348,34 +448,29 @@ function MovieDetails() {
           </div>
         </div>
       );
-    } else {
-      return <MovieDetailsSkeleton onBack={() => navigate("/")} />;
     }
+    return <MovieDetailsSkeleton onBack={() => navigate("/")} />;
   }
 
-  if ((error || !movie) && !showPlayer) {
-    return (
-      <div className="app-shell error-screen">
-        <Film size={44} />
-        <h2>Movie Not Found</h2>
-        <p>{error || "Unable to retrieve the requested film."}</p>
-        <button
-          className="btn-primary"
-          onClick={() => navigate("/")}
-        >
-          <ArrowLeft size={18} />
-          Back to Catalogue
-        </button>
-      </div>
-    );
+  if (!movie) {
+    if (error) {
+      return (
+        <div className="app-shell error-screen">
+          <Film size={44} />
+          <h2>Movie Not Found</h2>
+          <p>{error || "Unable to retrieve the requested film."}</p>
+          <button
+            className="btn-primary"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft size={18} />
+            Back to Catalogue
+          </button>
+        </div>
+      );
+    }
+    return <MovieDetailsSkeleton onBack={() => navigate("/")} />;
   }
-
-  const rawSeasons = ((movie?.seasons) || []).filter((season) => season.season_number >= 0);
-  const availableSeasons = rawSeasons.length > 0
-    ? rawSeasons
-    : isTvShow
-    ? [{ id: 1, season_number: 1, name: "Season 1", episode_count: 10 }]
-    : [];
 
   return (
     <div className="movie-details-page">
@@ -766,7 +861,7 @@ function MovieDetails() {
               />
             </div>
             <StreamRecommendations
-              movies={movie.similar || []}
+              movies={movie?.similar || []}
               currentMovie={streamMedia}
               onPlay={playRecommendation}
               isSaved={(mediaId) => watchlist.some((saved) => String(saved.id) === String(mediaId))}
@@ -777,7 +872,7 @@ function MovieDetails() {
       )}
 
       {/* TRAILER MODAL */}
-      {showTrailer && movie.trailerUrl && (
+      {showTrailer && movie?.trailerUrl && (
         <div
           className="modal-backdrop"
           onMouseDown={(e) => {
@@ -795,7 +890,7 @@ function MovieDetails() {
             <div className="trailer-iframe-wrap">
               <iframe
                 src={movie.trailerUrl}
-                title={`${movie.title} Trailer`}
+                title={`${movie?.title || "Movie"} Trailer`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
