@@ -236,39 +236,50 @@ const STREAM_SERVERS = [
   {
     id: "quantum",
     name: "Server Quantum",
-    quality: "1080p VIP / HLS",
-    speed: "SuperEmbed VIP",
-    badge: "DirectStream",
+    quality: "1080p Ultra HD / Auto-Skip",
+    speed: "CineSrc VIP",
+    badge: "Auto-Skip Pro",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=true`;
     },
   },
 ];
 
-// Internal mirror servers available within Server Quantum (SuperEmbed Cluster)
+// Internal mirror servers available within Server Quantum (CineSrc Cluster)
 const QUANTUM_SUB_SERVERS = [
   {
-    id: "direct",
-    name: "VIP DirectStream",
-    badge: "Fast HLS",
-    quality: "1080p VIP DirectStream",
+    id: "cinesrc-auto",
+    name: "CineSrc Pro",
+    badge: "Auto-Skip",
+    quality: "1080p Ultra HD / Auto-Skip",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=true`;
     },
   },
   {
-    id: "multihost",
-    name: "Multi-Host Cluster",
-    badge: "16+ Hosts",
-    quality: "1080p Multi-Server",
+    id: "cinesrc-fast",
+    name: "CineSrc Fast CDN",
+    badge: "Fast Stream",
+    quality: "1080p Ultra Fast CDN",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&prioritize=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&prioritize=true`;
+    },
+  },
+  {
+    id: "cinesrc-uncut",
+    name: "CineSrc Cinema",
+    badge: "Uncut Intro",
+    quality: "1080p Full Experience",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=false`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=false`;
     },
   },
 ];
@@ -654,47 +665,107 @@ function CineStreamPlayer({
     };
   }, []);
 
+  const handleSeasonSelect = (newSeason) => {
+    setCurrSeason(newSeason);
+    setCurrEpisode(1);
+    setReloadKey((prev) => prev + 1);
+    if (onSeasonChange) {
+      onSeasonChange(newSeason);
+    }
+  };
+
+  const handleEpisodeSelect = (newEpisode) => {
+    setCurrEpisode(newEpisode);
+    setReloadKey((prev) => prev + 1);
+    if (onEpisodeChange) {
+      onEpisodeChange(newEpisode);
+    }
+  };
+
   // Listen for playback events (Real-time telemetry and video playback seconds)
   useEffect(() => {
     let lastSavedAt = 0;
     const handleMessage = (event) => {
-      if (
-        event.origin !== "https://vidlink.pro" ||
-        event.source !== iframeRef.current?.contentWindow
-      ) {
+      if (event.source !== iframeRef.current?.contentWindow) {
         return;
       }
 
-      const playerEvent = event.data?.type === "PLAYER_EVENT" ? event.data.data : null;
-      if (!playerEvent) return;
+      // 1. VidLink.pro messages
+      if (event.origin === "https://vidlink.pro") {
+        const playerEvent = event.data?.type === "PLAYER_EVENT" ? event.data.data : null;
+        if (!playerEvent) return;
 
-      if (playerEvent.event === "timeupdate" && typeof playerEvent.currentTime === "number") {
-        setCurrentPlayTime(playerEvent.currentTime);
-        setSubPlaying(true);
-        if (Date.now() - lastSavedAt >= 15000) {
-          const currentMedia = mediaRef.current;
-          onProgressRef.current?.(
-            currentMedia,
-            playerEvent.currentTime,
-            playerEvent.duration,
-            { season: currSeason, episode: currEpisode }
-          );
-          lastSavedAt = Date.now();
+        if (playerEvent.event === "timeupdate" && typeof playerEvent.currentTime === "number") {
+          setCurrentPlayTime(playerEvent.currentTime);
+          setSubPlaying(true);
+          if (Date.now() - lastSavedAt >= 15000) {
+            const currentMedia = mediaRef.current;
+            onProgressRef.current?.(
+              currentMedia,
+              playerEvent.currentTime,
+              playerEvent.duration,
+              { season: currSeason, episode: currEpisode }
+            );
+            lastSavedAt = Date.now();
+          }
+        } else if (playerEvent.event === "pause") {
+          setSubPlaying(false);
+        } else if (playerEvent.event === "play") {
+          setSubPlaying(true);
         }
-      } else if (playerEvent.event === "pause") {
-        setSubPlaying(false);
-      } else if (playerEvent.event === "play") {
-        setSubPlaying(true);
+      }
+
+      // 2. CineSrc (cinesrc.st) postMessage API
+      if (event.origin === "https://cinesrc.st") {
+        const eventData = event.data;
+        if (!eventData || typeof eventData !== "object") return;
+        const type = eventData.type;
+
+        if (type === "cinesrc:play") {
+          setSubPlaying(true);
+        } else if (type === "cinesrc:pause") {
+          setSubPlaying(false);
+        } else if (type === "cinesrc:timeupdate") {
+          const { currentTime, duration } = eventData;
+          if (typeof currentTime === "number") {
+            setCurrentPlayTime(currentTime);
+            setSubPlaying(true);
+            if (Date.now() - lastSavedAt >= 15000) {
+              const currentMedia = mediaRef.current;
+              onProgressRef.current?.(
+                currentMedia,
+                currentTime,
+                duration,
+                { season: currSeason, episode: currEpisode }
+              );
+              lastSavedAt = Date.now();
+            }
+          }
+        } else if (type === "cinesrc:nextepisode") {
+          const nextEp = Number(eventData.episode);
+          const nextSeason = Number(eventData.season);
+          if (nextSeason && nextSeason !== currSeason) {
+            handleSeasonSelect(nextSeason);
+          }
+          if (nextEp && nextEp !== currEpisode) {
+            if (eventData.internalNavigation) {
+              setCurrEpisode(nextEp);
+              if (onEpisodeChange) onEpisodeChange(nextEp);
+            } else {
+              handleEpisodeSelect(nextEp);
+            }
+          }
+        }
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [currSeason, currEpisode]);
+  }, [currSeason, currEpisode, onEpisodeChange, onSeasonChange]);
 
   // Fallback timer for custom subtitles on servers without postMessage
   useEffect(() => {
-    if (!customCues.length || !subPlaying || activeServer.id === "nova") return undefined;
+    if (!customCues.length || !subPlaying || activeServer.id === "nova" || activeServer.id === "quantum") return undefined;
     const timer = setInterval(() => {
       setCurrentPlayTime((prev) => prev + 1);
     }, 1000);
@@ -737,23 +808,6 @@ function CineStreamPlayer({
       el.requestFullscreen().catch(() => {});
     } else if (el.webkitRequestFullscreen) {
       el.webkitRequestFullscreen();
-    }
-  };
-
-  const handleSeasonSelect = (newSeason) => {
-    setCurrSeason(newSeason);
-    setCurrEpisode(1);
-    setReloadKey((prev) => prev + 1);
-    if (onSeasonChange) {
-      onSeasonChange(newSeason);
-    }
-  };
-
-  const handleEpisodeSelect = (newEpisode) => {
-    setCurrEpisode(newEpisode);
-    setReloadKey((prev) => prev + 1);
-    if (onEpisodeChange) {
-      onEpisodeChange(newEpisode);
     }
   };
 
@@ -891,12 +945,12 @@ function CineStreamPlayer({
         </div>
       )}
 
-      {/* QUANTUM (SUPEREMBED) SUB-SERVER SWITCHER BAR */}
+      {/* QUANTUM (CINESRC) SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "quantum" && (
         <div className="cine-subserver-bar-wrapper quantum-theme">
           <div className="cine-subserver-label">
             <Layers size={13} className="subserver-icon" />
-            <span>Quantum Server Mirrors:</span>
+            <span>CineSrc VIP Mirrors:</span>
           </div>
           <div className="cine-subserver-pills" role="tablist">
             {QUANTUM_SUB_SERVERS.map((sub) => {
