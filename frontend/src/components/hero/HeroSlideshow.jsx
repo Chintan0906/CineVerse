@@ -39,32 +39,53 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       .catch(() => {});
   }, [currentIndex, currentMovie, activeTrailerKey]);
 
-  // Show poster image for 12 seconds, then start trailer. Auto-advance after 38s unless paused or unmuted.
+  // 1. Show poster image for 4.5 seconds, then start trailer.
   useEffect(() => {
     setIsTrailerPlaying(false);
     setIsMuted(true);
     if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
-    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
 
-    if (featuredMovies.length <= 1) return;
+    if (featuredMovies.length === 0) return;
 
-    // Start trailer after 12s
+    // Start trailer after 4.5s
     trailerTimerRef.current = setTimeout(() => {
       setIsTrailerPlaying(true);
-    }, 12000);
-
-    // Auto-advance to next slide after trailer preview unless unmuted or user is hovering
-    if (!isPaused && isMuted) {
-      advanceTimerRef.current = setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % featuredMovies.length);
-      }, 38000);
-    }
+    }, 4500);
 
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+    };
+  }, [currentIndex, featuredMovies.length]);
+
+  // 2. Auto-advance to next slide after trailer preview unless paused or unmuted
+  useEffect(() => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+
+    if (featuredMovies.length <= 1 || isPaused || !isMuted) return;
+
+    advanceTimerRef.current = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % featuredMovies.length);
+    }, 30000);
+
+    return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     };
   }, [currentIndex, isPaused, isMuted, featuredMovies.length]);
+
+  // 3. Listen for video end to loop trailer seamlessly without playlist UI
+  useEffect(() => {
+    const handleMessage = (e) => {
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (data?.event === "onStateChange" && data?.info === 0) {
+          sendYouTubeCommand("seekTo", [0, true]);
+          sendYouTubeCommand("playVideo");
+        }
+      } catch (_) {}
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   const sendYouTubeCommand = (func, args = []) => {
     try {
@@ -139,7 +160,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
 
   return (
     <section
-      className="hero-slideshow notranslate"
+      className={`hero-slideshow notranslate ${isTrailerPlaying && activeTrailerKey ? "trailer-playing" : ""}`}
       translate="no"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -180,9 +201,9 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                   <iframe
                     ref={trailerIframeRef}
                     className="hero-trailer-iframe"
-                    src={`https://www.youtube-nocookie.com/embed/${slideTrailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${slideTrailerKey}&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`}
+                    src={`https://www.youtube.com/embed/${slideTrailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
                     title={`${movie.title} Trailer`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="autoplay; encrypted-media; picture-in-picture"
                     tabIndex="-1"
                     onLoad={() => {
                       if (!isMuted) {

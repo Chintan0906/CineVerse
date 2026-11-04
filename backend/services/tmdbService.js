@@ -278,6 +278,7 @@ async function getTVShowDetails(id) {
   try {
     const details = await tmdbRequest(`/tv/${id}`, {
       append_to_response: "credits,videos,similar",
+      include_video_language: "en,hi,ja,ko,es,fr,null",
     });
 
     const normalized = normalizeMovie(details, { media_type: "tv" });
@@ -481,6 +482,7 @@ async function getMovieDetails(id) {
   try {
     const details = await tmdbRequest(`/movie/${id}`, {
       append_to_response: "credits,videos,similar",
+      include_video_language: "en,hi,ja,ko,es,fr,null",
     });
 
     const normalized = normalizeMovie(details);
@@ -629,7 +631,9 @@ async function getNetflixCatalogue() {
       featuredMovies.map(async (m) => {
         try {
           const endpoint = m.isTV ? `/tv/${m.id}/videos` : `/movie/${m.id}/videos`;
-          const videoData = await tmdbRequest(endpoint);
+          const videoData = await tmdbRequest(endpoint, {
+            include_video_language: "en,hi,ja,ko,es,fr,null",
+          });
           const trailerVideo =
             (videoData.results || []).find(
               (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")

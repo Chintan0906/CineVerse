@@ -109,8 +109,7 @@
   height: 56.25vw;
   min-height: 100%;
   min-width: 177.77vh;
-  transform: translate(-50%, -50%) scale(1.18);
-  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.15);
   border: none;
 }
 
@@ -447,6 +446,14 @@
   border-color: #ffffff !important;
   color: #ffffff !important;
   box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Hide navigation buttons while trailer is playing */
+.hero-slideshow.trailer-playing .hero-nav-arrow,
+.hero-slideshow.trailer-playing .hero-slideshow-indicators {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s ease !important;
 }
 
 /* Navigation Arrows */

@@ -90,10 +90,13 @@ function MovieDetails() {
 
   const trailerKey =
     movie?.trailerKey ||
-    (movie?.trailerUrl ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null) ||
+    (movie?.trailerUrl
+      ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] ||
+        movie.trailerUrl.match(/v=([a-zA-Z0-9_-]+)/)?.[1]
+      : null) ||
     null;
 
-  // Show backdrop image for 12 seconds, then start playing trailer.
+  // Show backdrop image for 4.5 seconds, then start playing trailer.
   useEffect(() => {
     setIsTrailerPlaying(false);
     setIsTrailerMuted(true);
@@ -105,7 +108,7 @@ function MovieDetails() {
 
     trailerTimerRef.current = setTimeout(() => {
       setIsTrailerPlaying(true);
-    }, 12000);
+    }, 4500);
 
     return () => {
       if (trailerTimerRef.current) {
@@ -113,6 +116,21 @@ function MovieDetails() {
       }
     };
   }, [movie?.id, trailerKey, showPlayer]);
+
+  // Listen for video end to loop trailer seamlessly without playlist UI
+  useEffect(() => {
+    const handleMessage = (e) => {
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (data?.event === "onStateChange" && data?.info === 0) {
+          sendYouTubeCommand("seekTo", [0, true]);
+          sendYouTubeCommand("playVideo");
+        }
+      } catch (_) {}
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   const sendYouTubeCommand = (func, args = []) => {
     try {
@@ -614,9 +632,9 @@ function MovieDetails() {
             <iframe
               ref={trailerIframeRef}
               className="details-hero-trailer-iframe"
-              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=${isTrailerMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailerKey}&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${isTrailerMuted ? 1 : 0}&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
               title={`${movie.title} Trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="autoplay; encrypted-media; picture-in-picture"
               tabIndex="-1"
               onLoad={() => {
                 if (!isTrailerMuted) {
