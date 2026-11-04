@@ -259,6 +259,18 @@ const STREAM_SERVERS = [
         : `https://embedwave.cc/embed/movie/${tmdbId}?server=nxsha&autoplay=1&nobrand=1`;
     },
   },
+  {
+    id: "rive",
+    name: "Server Rive",
+    quality: "1080p Ultra HD",
+    speed: "Zero-Ad CDN",
+    badge: "RiveStream Pro",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://www.rivestream.app/embed?type=tv&id=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
+        : `https://www.rivestream.app/embed?type=movie&id=${tmdbId}`;
+    },
+  },
 ];
 
 // Internal mirror servers available within Server Quantum (CineSrc Cluster)
