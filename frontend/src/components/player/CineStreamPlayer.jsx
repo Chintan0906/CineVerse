@@ -126,54 +126,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "shinobi",
-    name: "Server Shinobi",
-    quality: "1080p Anime / Dual-Audio",
-    speed: "Zero Buffer CDN",
-    badge: "Anime Master",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://play2.123embed.net/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://play2.123embed.net/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "katana",
-    name: "Server Katana",
-    quality: "1080p Anime / Multi-Dub",
-    speed: "Direct Anime Feed",
-    badge: "Sub & Dub Elite",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://anyembed.xyz/embed/tmdb-tv-${tmdbId}-${season || 1}-${episode || 1}`
-        : `https://anyembed.xyz/embed/tmdb-movie-${tmdbId}`;
-    },
-  },
-  {
-    id: "shogun",
-    name: "Server Shogun",
-    quality: "1080p Anime / Subtitles",
-    speed: "Ultra High-Speed",
-    badge: "Anime Express",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&ds_lang=en`
-        : `https://vidsrc.sh/embed/movie?tmdb=${tmdbId}&ds_lang=en`;
-    },
-  },
-  {
-    id: "alpha",
-    name: "Server Alpha",
-    quality: "1080p / 4K UHD",
-    speed: "High Speed CDN",
-    badge: "Clean Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://player.videasy.to/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://player.videasy.to/movie/${tmdbId}`;
-    },
-  },
-  {
     id: "nova",
     name: "Server Nova",
     quality: "1080p Full HD",
@@ -1765,7 +1717,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["ronin", "shinobi", "katana", "shogun", "alpha", "nova", "pulse", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["ronin", "nova", "pulse", "legacy", "quantum", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1780,18 +1732,16 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "ronin"
                                     ? "Anime & Asian Soft Subtitles"
-                                    : s.id === "shinobi"
-                                    ? "Anime Dual-Audio & Subtitles"
-                                    : s.id === "katana"
-                                    ? "Anime Multi-Language Subtitles"
-                                    : s.id === "shogun"
-                                    ? "Anime Cloud Sync Subtitles"
-                                    : s.id === "alpha"
-                                    ? "Auto-Calibrated Stream"
                                     : s.id === "nova"
                                     ? "Direct Subtitle Stream"
                                     : s.id === "pulse"
                                     ? "Cloud Mirror Sync"
+                                    : s.id === "quantum"
+                                    ? "Auto-Skip / Subtitles"
+                                    : s.id === "wave"
+                                    ? "Multi-Route Subtitles"
+                                    : s.id === "rive"
+                                    ? "Fast CDN Subtitles"
                                     : "Deep Catalog Subtitles"}
                                 </span>
                               </div>
@@ -1835,7 +1785,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["ronin", "shinobi", "katana", "shogun", "alpha", "nova", "apex", "legacy"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["ronin", "nova", "apex", "legacy", "quantum", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1850,18 +1800,16 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "ronin"
                                     ? "Anime Japanese Audio & Dubs"
-                                    : s.id === "shinobi"
-                                    ? "Anime Original Japanese & Eng Dub"
-                                    : s.id === "katana"
-                                    ? "Anime Multi-Language Audio Feed"
-                                    : s.id === "shogun"
-                                    ? "Anime Master Audio Track"
-                                    : s.id === "alpha"
-                                    ? "4K / Multi-Language Audio"
                                     : s.id === "nova"
                                     ? "Direct Audio Master"
                                     : s.id === "apex"
                                     ? "Multi-Source Audio"
+                                    : s.id === "quantum"
+                                    ? "Multi-Audio / Auto-Skip"
+                                    : s.id === "wave"
+                                    ? "Multi-Audio / 4K UHD Feed"
+                                    : s.id === "rive"
+                                    ? "Fast CDN Multi-Audio"
                                     : "Classic Stereo Master"}
                                 </span>
                               </div>
