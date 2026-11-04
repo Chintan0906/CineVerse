@@ -3,12 +3,35 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "cineverse.library.v1";
 const CHANGE_EVENT = "cineverse:library-change";
 
+function deduplicateHistory(rawHistory) {
+  if (!Array.isArray(rawHistory)) return [];
+  const map = new Map();
+  // Sort by watchedAt descending so the newest/latest watched episode comes first
+  const sorted = [...rawHistory].sort(
+    (a, b) => (Number(b.watchedAt) || 0) - (Number(a.watchedAt) || 0)
+  );
+  for (const item of sorted) {
+    const id = String(item.tmdbId || item.id || "");
+    if (!id || !/^\d+$/.test(id)) continue;
+    if (!map.has(id)) {
+      map.set(id, {
+        ...item,
+        id,
+        tmdbId: id,
+        key: id,
+      });
+    }
+  }
+  return Array.from(map.values());
+}
+
 function readLibrary() {
   try {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
+    const rawHistory = Array.isArray(saved.history) ? saved.history : [];
     return {
       watchlist: Array.isArray(saved.watchlist) ? saved.watchlist : [],
-      history: Array.isArray(saved.history) ? saved.history : [],
+      history: deduplicateHistory(rawHistory),
     };
   } catch {
     return { watchlist: [], history: [] };
@@ -33,6 +56,8 @@ function mediaSnapshot(media) {
     duration: media.duration || "",
     mediaType: media.mediaType === "tv" || media.isTV ? "tv" : "movie",
     isTV: media.mediaType === "tv" || Boolean(media.isTV),
+    season: media.season || 1,
+    episode: media.episode || 1,
   };
 }
 
@@ -86,23 +111,38 @@ export function useLibrary() {
   const recordPlay = useCallback((media, episode = {}) => {
     const snapshot = mediaSnapshot(media);
     if (!snapshot) return;
-    const key = `${snapshot.id}:${episode.season || ""}:${episode.episode || ""}`;
+    const mediaId = snapshot.id;
 
     update((current) => {
-      const existing = current.history.find((item) => item.key === key);
+      const existing = current.history.find(
+        (item) => String(item.tmdbId || item.id) === mediaId
+      );
+      const s = Number(episode.season || snapshot.season || existing?.season || 1);
+      const e = Number(episode.episode || snapshot.episode || existing?.episode || 1);
+
       const nextItem = {
         ...existing,
         ...snapshot,
         ...episode,
-        key,
+        id: mediaId,
+        tmdbId: mediaId,
+        key: mediaId,
+        season: s,
+        episode: e,
         watchedAt: Date.now(),
         currentTime: existing?.currentTime || 0,
         durationSeconds: existing?.durationSeconds || 0,
         progressPercent: existing?.progressPercent || 0,
       };
+
+      // Ensure single card per title - remove any other entries for this title
+      const remaining = current.history.filter(
+        (item) => String(item.tmdbId || item.id) !== mediaId
+      );
+
       return {
         ...current,
-        history: [nextItem, ...current.history.filter((item) => item.key !== key)].slice(0, 60),
+        history: [nextItem, ...remaining].slice(0, 60),
       };
     });
   }, [update]);
@@ -112,25 +152,40 @@ export function useLibrary() {
     const watched = Number(currentTime);
     const total = Number(duration);
     if (!snapshot || !Number.isFinite(watched) || !Number.isFinite(total) || total <= 0) return;
-    const key = `${snapshot.id}:${episode.season || ""}:${episode.episode || ""}`;
+    const mediaId = snapshot.id;
 
     update((current) => {
-      const existing = current.history.find((item) => item.key === key);
+      const existing = current.history.find(
+        (item) => String(item.tmdbId || item.id) === mediaId
+      );
+      const s = Number(episode.season || snapshot.season || existing?.season || 1);
+      const e = Number(episode.episode || snapshot.episode || existing?.episode || 1);
       const progressPercent = Math.min(100, Math.round((watched / total) * 100));
+
       const nextItem = {
         ...existing,
         ...snapshot,
         ...episode,
-        key,
+        id: mediaId,
+        tmdbId: mediaId,
+        key: mediaId,
+        season: s,
+        episode: e,
         currentTime: watched,
         durationSeconds: total,
         progressPercent,
         completed: progressPercent >= 95,
         watchedAt: Date.now(),
       };
+
+      // Ensure single card per title - remove any other entries for this title
+      const remaining = current.history.filter(
+        (item) => String(item.tmdbId || item.id) !== mediaId
+      );
+
       return {
         ...current,
-        history: [nextItem, ...current.history.filter((item) => item.key !== key)].slice(0, 60),
+        history: [nextItem, ...remaining].slice(0, 60),
       };
     });
   }, [update]);

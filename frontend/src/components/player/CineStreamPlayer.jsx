@@ -441,6 +441,14 @@ const LEGACY_SUB_SERVERS = [
   },
 ];
 
+const STORAGE_KEYS = {
+  ACTIVE_SERVER: "cineverse_active_server_id",
+  ECLIPSE_SUB: "cineverse_eclipse_sub_id",
+  QUANTUM_SUB: "cineverse_quantum_sub_id",
+  ANIME_SUB: "cineverse_anime_sub_id",
+  LEGACY_SUB: "cineverse_legacy_sub_id",
+};
+
 function CineStreamPlayer({
   media,
   onProgress,
@@ -449,11 +457,62 @@ function CineStreamPlayer({
   onSeasonChange,
   onEpisodeChange,
 }) {
-  const [activeServer, setActiveServer] = useState(STREAM_SERVERS[0]);
-  const [eclipseSubServer, setEclipseSubServer] = useState(ECLIPSE_SUB_SERVERS[0]);
-  const [quantumSubServer, setQuantumSubServer] = useState(QUANTUM_SUB_SERVERS[0]);
-  const [animeEmbedSubServer, setAnimeEmbedSubServer] = useState(ANIMEEMBED_SUB_SERVERS[0]);
-  const [legacySubServer, setLegacySubServer] = useState(LEGACY_SUB_SERVERS[0]);
+  const [activeServer, setActiveServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SERVER);
+      if (savedId) {
+        const found = STREAM_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {
+      // ignore
+    }
+    return STREAM_SERVERS[0];
+  });
+
+  const [eclipseSubServer, setEclipseSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.ECLIPSE_SUB);
+      if (savedId) {
+        const found = ECLIPSE_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return ECLIPSE_SUB_SERVERS[0];
+  });
+
+  const [quantumSubServer, setQuantumSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.QUANTUM_SUB);
+      if (savedId) {
+        const found = QUANTUM_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return QUANTUM_SUB_SERVERS[0];
+  });
+
+  const [animeEmbedSubServer, setAnimeEmbedSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.ANIME_SUB);
+      if (savedId) {
+        const found = ANIMEEMBED_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return ANIMEEMBED_SUB_SERVERS[0];
+  });
+
+  const [legacySubServer, setLegacySubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.LEGACY_SUB);
+      if (savedId) {
+        const found = LEGACY_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return LEGACY_SUB_SERVERS[0];
+  });
   const [anilistId, setAnilistId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
@@ -783,6 +842,9 @@ function CineStreamPlayer({
     if (server.id === activeServer.id) return;
     setIsChanging(true);
     setActiveServer(server);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SERVER, server.id);
+    } catch {}
     setReloadKey((prev) => prev + 1);
     setTimeout(() => setIsChanging(false), 300);
   };
@@ -897,6 +959,7 @@ function CineStreamPlayer({
                   aria-selected={isSubActive}
                   onClick={() => {
                     setEclipseSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.ECLIPSE_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -930,6 +993,7 @@ function CineStreamPlayer({
                   aria-selected={isSubActive}
                   onClick={() => {
                     setAnimeEmbedSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -963,6 +1027,7 @@ function CineStreamPlayer({
                   aria-selected={isSubActive}
                   onClick={() => {
                     setQuantumSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.QUANTUM_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -996,6 +1061,7 @@ function CineStreamPlayer({
                   aria-selected={isSubActive}
                   onClick={() => {
                     setLegacySubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.LEGACY_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}

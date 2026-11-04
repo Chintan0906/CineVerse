@@ -472,9 +472,21 @@ function getCleanMovieSynopsis(movie, genres = []) {
       return movies.find((movie) => String(movie.id) === String(savedId)) || saved;
     })
     .filter((movie) => movie?.title && movie.title !== "Saved title");
-  const continueWatchingMovies = history
-    .filter((item) => !item.completed)
-    .slice(0, 12);
+
+  // Single card per title from where user left off
+  const continueWatchingMovies = useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const item of history) {
+      const id = String(item.tmdbId || item.id || "");
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      if (!item.completed) {
+        result.push(item);
+      }
+    }
+    return result.slice(0, 12);
+  }, [history]);
   const streamRecommendations = playerMovie
     ? movies
         .filter((movie) => String(movie.id) !== String(playerMovie.id))
@@ -562,49 +574,20 @@ function getCleanMovieSynopsis(movie, genres = []) {
     }, { replace: true });
   }
 
-  const handleSelectMovie = useCallback(async (movie) => {
+  // Clicking any movie/series card navigates directly to the full details/info page
+  const handleSelectMovie = useCallback((movie) => {
     if (!movie) return;
-    const initialMovie = normalize(movie) || movie;
-    setSelectedMovie(initialMovie);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("movie", String(movie.id));
-      return next;
-    }, { replace: true });
-
-    // Enforce rich authentic TMDB synopsis, tagline, and cast in the modal
-    try {
-      const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
-      const fullData = isTv
-        ? await getTVShowById(movie.id)
-        : await getMovieById(movie.id, movie.mediaType || "movie");
-
-      if (fullData) {
-        setSelectedMovie((prev) => {
-          if (!prev || String(prev.id) !== String(movie.id)) return prev;
-          const freshOverview = fullData.overview || fullData.description;
-          const cleanDesc =
-            freshOverview &&
-            freshOverview.trim().length >= 25 &&
-            !freshOverview.toLowerCase().includes("cineverse")
-              ? freshOverview.trim()
-              : prev.description;
-
-          return {
-            ...prev,
-            ...fullData,
-            description: cleanDesc || prev.description,
-            overview: cleanDesc || prev.description,
-            tagline: fullData.tagline || prev.tagline || "",
-            cast: fullData.cast && fullData.cast.length > 0 ? fullData.cast : prev.cast,
-            duration: fullData.duration || prev.duration,
-          };
-        });
-      }
-    } catch (err) {
-      console.warn("Could not enrich movie modal details from TMDB:", err);
-    }
-  }, [setSearchParams]);
+    const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+    navigate(`/movie/${movie.id}${isTv ? "?type=tv" : ""}`, {
+      state: {
+        mediaType: isTv ? "tv" : "movie",
+        isTV: isTv,
+        season: movie.season,
+        episode: movie.episode,
+        title: movie.title,
+      },
+    });
+  }, [navigate]);
 
   function handleCloseMovie() {
     setSelectedMovie(null);
@@ -1205,13 +1188,26 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
               {/* Action Buttons */}
               <div className="modal-actions">
-                <button
-                  className="btn-primary"
-                  onClick={() => handlePlay(selectedMovie)}
-                >
-                  <Play size={18} fill="currentColor" />
-                  Watch Now
-                </button>
+                {(() => {
+                  const hist = history.find(
+                    (h) => String(h.tmdbId || h.id) === String(selectedMovie.id)
+                  );
+                  const isTv = Boolean(selectedMovie.mediaType === "tv" || selectedMovie.isTV);
+                  const hasProgress = hist && !hist.completed;
+                  return (
+                    <button
+                      className="btn-primary"
+                      onClick={() => handlePlay(selectedMovie, hist?.season, hist?.episode)}
+                    >
+                      <Play size={18} fill="currentColor" />
+                      {hasProgress
+                        ? isTv
+                          ? `Continue Watching (S${hist.season || 1}:E${hist.episode || 1})`
+                          : "Continue Watching"
+                        : "Watch Now"}
+                    </button>
+                  );
+                })()}
 
                 <button
                   className="btn-secondary"

@@ -96,6 +96,10 @@ function MovieCard({
               <span className="movie-badge top10-badge">
                 TOP 10
               </span>
+            ) : isTv && (movie.season || movie.episode) ? (
+              <span className="movie-badge episode-badge">
+                S{movie.season || 1} • E{movie.episode || 1}
+              </span>
             ) : movie.isTV ? (
               <span className="movie-badge tv-badge">
                 TV SERIES
@@ -172,7 +176,13 @@ function MovieCard({
               <div className="card-overlay-meta">
                 <span className="match-score">{matchPercent}% Match</span>
                 <span className="quality-pill">HD</span>
-                {movie.year && <span>{movie.year}</span>}
+                {isTv && (movie.season || movie.episode) ? (
+                  <span className="quality-pill" style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.4)" }}>
+                    S{movie.season || 1}:E{movie.episode || 1}
+                  </span>
+                ) : (
+                  movie.year && <span>{movie.year}</span>
+                )}
               </div>
 
               {movie.genre && (
@@ -214,17 +224,25 @@ function MovieCard({
           </div>
 
           <div className="movie-card-meta">
-            {movie.year && (
-              <span>{movie.year}</span>
-            )}
-
-            {movie.duration && (
+            {isTv && (movie.season || movie.episode) ? (
+              <span className="movie-episode-indicator" style={{ color: "#f87171", fontWeight: 600 }}>
+                Season {movie.season || 1} · Ep {movie.episode || 1}
+              </span>
+            ) : (
               <>
-                <span className="meta-separator">•</span>
-                <span className="movie-duration">
-                  <Clock3 size={12} />
-                  {movie.duration}
-                </span>
+                {movie.year && (
+                  <span>{movie.year}</span>
+                )}
+
+                {movie.duration && (
+                  <>
+                    <span className="meta-separator">•</span>
+                    <span className="movie-duration">
+                      <Clock3 size={12} />
+                      {movie.duration}
+                    </span>
+                  </>
+                )}
               </>
             )}
           </div>

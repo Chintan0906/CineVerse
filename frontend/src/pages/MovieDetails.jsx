@@ -65,10 +65,15 @@ function MovieDetails() {
 
   const {
     watchlist,
+    history,
     toggleWatchlist: updateWatchlist,
     recordPlay,
     saveProgress,
   } = useLibrary();
+
+  const savedHistory = (history || []).find(
+    (item) => String(item.tmdbId || item.id) === String(id)
+  );
 
   const isStreamingQuery = searchParams.get("play") === "true";
   const [movie, setMovie] = useState(null);
@@ -148,8 +153,28 @@ function MovieDetails() {
             1;
           const urlSeason = Number(searchParams.get("season"));
           const urlEpisode = Number(searchParams.get("episode"));
-          const resolvedSeason = urlSeason && urlSeason > 0 ? urlSeason : firstSeason;
-          const resolvedEpisode = urlEpisode && urlEpisode > 0 ? urlEpisode : 1;
+          const stateSeason = Number(location.state?.season);
+          const stateEpisode = Number(location.state?.episode);
+
+          // Priority: 1. URL searchParams, 2. location.state, 3. savedHistory (where user left off), 4. firstSeason
+          const resolvedSeason =
+            urlSeason > 0
+              ? urlSeason
+              : stateSeason > 0
+              ? stateSeason
+              : savedHistory?.season > 0
+              ? Number(savedHistory.season)
+              : firstSeason;
+
+          const resolvedEpisode =
+            urlEpisode > 0
+              ? urlEpisode
+              : stateEpisode > 0
+              ? stateEpisode
+              : savedHistory?.episode > 0
+              ? Number(savedHistory.episode)
+              : 1;
+
           setSelectedSeason(resolvedSeason);
           setSelectedEpisode(resolvedEpisode);
         }
@@ -298,6 +323,12 @@ function MovieDetails() {
 
   const handleStartPlay = (s = selectedSeason, e = selectedEpisode) => {
     isPlayerClosedByUserRef.current = false;
+    const isMatchingEpisode =
+      !isTvShow ||
+      (Number(savedHistory?.season) === Number(s) &&
+        Number(savedHistory?.episode) === Number(e));
+    const resumeTime = isMatchingEpisode ? Number(savedHistory?.currentTime) || 0 : 0;
+
     const playMedia = {
       ...(movie || activeStreamMovie || {}),
       id: (movie?.id || activeStreamMovie?.id || id),
@@ -305,6 +336,7 @@ function MovieDetails() {
       episode: e,
       isTV: isTvShow,
       mediaType: isTvShow ? "tv" : "movie",
+      currentTime: resumeTime,
     };
     recordPlay(playMedia, { season: s, episode: e });
     setActiveStreamMovie(playMedia);
@@ -609,7 +641,15 @@ function MovieDetails() {
                 onClick={() => handleStartPlay()}
               >
                 <Play size={18} fill="currentColor" />
-                Watch Now
+                {savedHistory && !savedHistory.completed
+                  ? isTvShow
+                    ? selectedSeason === Number(savedHistory.season) && selectedEpisode === Number(savedHistory.episode)
+                      ? `Continue Watching (S${selectedSeason}:E${selectedEpisode})`
+                      : `Play S${selectedSeason}:E${selectedEpisode}`
+                    : "Continue Watching"
+                  : isTvShow
+                  ? `Watch S${selectedSeason}:E${selectedEpisode}`
+                  : "Watch Now"}
               </button>
 
               {movie.trailerUrl && (
@@ -630,6 +670,18 @@ function MovieDetails() {
                 {isSaved ? "In My List" : "Add to My List"}
               </button>
             </div>
+
+            {savedHistory?.progressPercent > 0 && !savedHistory.completed && (
+              <div className="details-resume-progress">
+                <div className="details-resume-track">
+                  <span style={{ width: `${Math.min(100, savedHistory.progressPercent)}%` }} />
+                </div>
+                <span className="details-resume-label">
+                  Left off at {isTvShow ? `S${savedHistory.season || 1}:E${savedHistory.episode || 1} • ` : ""}
+                  {Math.round(savedHistory.progressPercent)}% completed
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </section>
