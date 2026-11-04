@@ -22,6 +22,8 @@ import {
   Trash2,
   ExternalLink,
   Search,
+  Play,
+  Clock,
 } from "lucide-react";
 
 // Robust SRT & WebVTT Subtitle Parser
@@ -509,7 +511,12 @@ function CineStreamPlayer({
 }) {
   const [activeServer, setActiveServer] = useState(() => {
     try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SERVER);
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlServer = urlParams.get("server");
+      const savedId =
+        urlServer ||
+        localStorage.getItem(STORAGE_KEYS.ACTIVE_SERVER) ||
+        sessionStorage.getItem(STORAGE_KEYS.ACTIVE_SERVER);
       if (savedId) {
         const found = STREAM_SERVERS.find((s) => s.id === savedId);
         if (found) return found;
@@ -905,6 +912,10 @@ function CineStreamPlayer({
     setActiveServer(server);
     try {
       localStorage.setItem(STORAGE_KEYS.ACTIVE_SERVER, server.id);
+      sessionStorage.setItem(STORAGE_KEYS.ACTIVE_SERVER, server.id);
+      const url = new URL(window.location.href);
+      url.searchParams.set("server", server.id);
+      window.history.replaceState({}, "", url.toString());
     } catch {}
     setReloadKey((prev) => prev + 1);
     setTimeout(() => setIsChanging(false), 300);
@@ -1174,76 +1185,6 @@ function CineStreamPlayer({
         </div>
       )}
 
-      {/* WEBSERIES EPISODE & SEASON SWITCHER BAR */}
-      {isTv && (
-        <div className="cine-tv-control-bar">
-          <div className="cine-tv-control-left">
-            <span className="cine-tv-indicator">
-              <Tv size={14} />
-              <span>Series Navigation:</span>
-            </span>
-
-            {/* Season Selector */}
-            <div className="cine-tv-select-wrap">
-              <label htmlFor="player-season-select" className="sr-only">Season</label>
-              <select
-                id="player-season-select"
-                className="cine-tv-select"
-                value={currSeason}
-                onChange={(e) => handleSeasonSelect(Number(e.target.value))}
-              >
-                {seasonList.map((s) => (
-                  <option key={s.id || s.season_number} value={s.season_number}>
-                    {s.name || `Season ${s.season_number}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Episode Selector */}
-            <div className="cine-tv-select-wrap">
-              <label htmlFor="player-episode-select" className="sr-only">Episode</label>
-              <select
-                id="player-episode-select"
-                className="cine-tv-select episode-select"
-                value={currEpisode}
-                onChange={(e) => handleEpisodeSelect(Number(e.target.value))}
-              >
-                {episodeList.map((ep) => (
-                  <option key={ep.id || ep.episodeNumber} value={ep.episodeNumber}>
-                    {String(ep.episodeNumber).padStart(2, "0")} · {ep.name || `Episode ${ep.episodeNumber}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="cine-tv-control-right">
-            <button
-              type="button"
-              className="cine-tv-step-btn"
-              disabled={currEpisode <= 1}
-              onClick={handlePrevEpisode}
-              title="Previous Episode"
-            >
-              <ChevronLeft size={14} />
-              <span>Prev Ep</span>
-            </button>
-
-            <button
-              type="button"
-              className="cine-tv-step-btn"
-              disabled={episodeList.length ? currEpisode >= Math.max(...episodeList.map((e) => e.episodeNumber)) : false}
-              onClick={handleNextEpisode}
-              title="Next Episode"
-            >
-              <span>Next Ep</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ACTIVE STATUS BANNER */}
       <div className="cine-server-status-bar">
         <div className="cine-server-status-left">
@@ -1302,52 +1243,6 @@ function CineStreamPlayer({
         <div className="cine-server-status-actions">
           <button
             type="button"
-            className={`cine-server-action-btn ${customCues.length > 0 ? "active-sub" : ""}`}
-            onClick={() => {
-              setAudioSubTab("customSub");
-              setShowAudioSubModal(true);
-            }}
-            title="Load Custom Subtitles (.srt / .vtt) or Adjust Timing"
-          >
-            <Captions size={13} />
-            <span>{customCues.length > 0 ? "Subtitles: Active" : "Add Subtitles"}</span>
-          </button>
-
-          <button
-            type="button"
-            className="cine-server-action-btn cine-audiosub-btn"
-            onClick={() => {
-              setAudioSubTab("subtitles");
-              setShowAudioSubModal(true);
-            }}
-            title="Fix Subtitle Timing Offset & Change Audio Track Language"
-          >
-            <Languages size={13} />
-            <span>Audio & Subtitles</span>
-          </button>
-
-          <button
-            type="button"
-            className="cine-server-action-btn"
-            onClick={handleFullscreen}
-            title="Full Screen Theater Mode"
-          >
-            <Maximize2 size={13} />
-            <span>Fullscreen</span>
-          </button>
-
-          <button
-            type="button"
-            className="cine-server-action-btn"
-            onClick={handleReload}
-            title="Reload video stream"
-          >
-            <RotateCcw size={13} className={isChanging ? "spin-icon" : ""} />
-            <span>Reload</span>
-          </button>
-
-          <button
-            type="button"
             className="cine-server-action-btn"
             onClick={handleNextServer}
             title="Switch to next server"
@@ -1382,40 +1277,6 @@ function CineStreamPlayer({
         {/* TOP CINEMATIC VIGNETTE (Masks top-edge third-party provider artifacts) */}
         <div className="cine-player-top-vignette" aria-hidden="true" />
 
-        {/* FLOATING QUICK-SUBTITLE ACTION PILL */}
-        <div className="cine-floating-sub-controls">
-          <button
-            type="button"
-            className={`cine-floating-sub-btn ${customCues.length > 0 ? "has-sub" : ""}`}
-            onClick={() => {
-              if (customCues.length > 0) {
-                setAudioSubTab("customSub");
-                setShowAudioSubModal(true);
-              } else {
-                fileInputRef.current?.click();
-              }
-            }}
-            title={customCues.length > 0 ? "Adjust Custom Subtitles & Timing" : "Upload your downloaded .srt or .vtt subtitle file"}
-          >
-            <Captions size={14} />
-            <span>{customCues.length > 0 ? "Subtitles: Active" : "Upload .SRT Subtitle"}</span>
-          </button>
-          {customCues.length > 0 && (
-            <button
-              type="button"
-              className="cine-floating-sub-btn sub-settings-btn"
-              onClick={() => {
-                setAudioSubTab("customSub");
-                setShowAudioSubModal(true);
-              }}
-              title="Subtitle Timing Offset & Settings"
-            >
-              <Sliders size={13} />
-              <span>{subOffset >= 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}</span>
-            </button>
-          )}
-        </div>
-
         {/* DRAG & DROP HUD INDICATOR */}
         {isDraggingFile && (
           <div className="cine-drag-drop-hud">
@@ -1448,44 +1309,108 @@ function CineStreamPlayer({
         />
       </div>
 
-      {/* STREAM FOOTER HINT & SERVER SYNC TIP */}
-      <div className="cine-stream-hint-bar">
-        {activeServer.id === "eclipse" ? (
-          <div
-            className="cine-hint-item cine-hint-clickable"
-            onClick={() => {
-              const alphaServer = STREAM_SERVERS.find((s) => s.id === "alpha");
-              if (alphaServer) handleSelectServer(alphaServer);
-            }}
-            title="Switch to Server Alpha for guaranteed working subtitles"
-            style={{ color: "#ffffff", background: "rgba(255, 255, 255, 0.12)", border: "1px solid rgba(255, 255, 255, 0.25)" }}
-          >
-            <Sparkles size={14} className="accent-icon" />
-            <span>Subtitles not appearing on Eclipse? <strong className="hint-strong">Click to switch to Server Alpha (Calibrated Subtitles)</strong></span>
-          </div>
-        ) : (
-          <div
-            className="cine-hint-item cine-hint-clickable"
-            onClick={() => {
-              setAudioSubTab("customSub");
-              setShowAudioSubModal(true);
-            }}
-            title="Click to upload subtitles or adjust offset"
-          >
-            <Languages size={14} className="accent-icon" />
-            <span>Need subtitles or audio tracks? <strong className="hint-strong">Click for Subtitle &amp; Audio tools</strong></span>
-          </div>
-        )}
+      {/* SERIES EPISODES & SEASONS NAVIGATION CONTAINER (BEFORE MORE LIKE THIS) */}
+      {isTv && (
+        <section className="cine-series-nav-container">
+          <div className="cine-series-nav-header">
+            <div className="cine-series-nav-title-group">
+              <span className="cine-series-nav-eyebrow">
+                <Tv size={14} /> Series Episodes
+              </span>
+              <h3 className="cine-series-nav-title">
+                {media?.title || "Series"} · {currentSeasonObj?.name || `Season ${currSeason}`}
+              </h3>
+            </div>
 
-        <div className="cine-hint-item">
-          <ShieldCheck size={14} className="green-text" />
-          <span>Optimal 1080p / 4K Connection Active</span>
-        </div>
-        <div className="cine-hint-item">
-          <Info size={14} />
-          <span>Quality Tip: Use the gear/settings icon inside player to select 1080p, 720p, or Auto.</span>
-        </div>
-      </div>
+            {/* BUTTONS TO SELECT SEASON */}
+            <div className="cine-season-buttons-row" role="tablist" aria-label="Select Season">
+              {seasonList.map((s) => {
+                const isActive = Number(s.season_number) === Number(currSeason);
+                return (
+                  <button
+                    key={s.id || s.season_number}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => handleSeasonSelect(s.season_number)}
+                    className={`cine-season-pill-btn ${isActive ? "active" : ""}`}
+                  >
+                    <span>{s.name || `Season ${s.season_number}`}</span>
+                    {s.episode_count ? <span className="season-ep-count">({s.episode_count})</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* EPISODE CARDS GRID */}
+          <div className="cine-episodes-cards-grid">
+            {episodeList.map((ep) => {
+              const isCurrent = Number(ep.episodeNumber) === Number(currEpisode);
+              const stillUrl = ep.still || media?.backdrop || media?.poster;
+              return (
+                <article
+                  key={ep.id || ep.episodeNumber}
+                  className={`cine-player-episode-card ${isCurrent ? "active-episode" : ""}`}
+                  onClick={() => handleEpisodeSelect(ep.episodeNumber)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Play Episode ${ep.episodeNumber}: ${ep.name || `Episode ${ep.episodeNumber}`}`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleEpisodeSelect(ep.episodeNumber);
+                    }
+                  }}
+                >
+                  <div className="cine-ep-thumb-wrap">
+                    {stillUrl ? (
+                      <img
+                        src={stillUrl}
+                        alt={ep.name || `Episode ${ep.episodeNumber}`}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = media?.poster || "";
+                        }}
+                      />
+                    ) : (
+                      <div className="cine-ep-thumb-fallback">
+                        <Film size={26} />
+                      </div>
+                    )}
+                    <div className="cine-ep-play-overlay">
+                      <Play size={22} fill="#ffffff" />
+                    </div>
+                    <span className="cine-ep-num-badge">
+                      EP {String(ep.episodeNumber).padStart(2, "0")}
+                    </span>
+                    {isCurrent && (
+                      <span className="cine-ep-now-playing-badge">NOW PLAYING</span>
+                    )}
+                  </div>
+
+                  <div className="cine-ep-details">
+                    <div className="cine-ep-title-row">
+                      <h4 className="cine-ep-title">
+                        {ep.episodeNumber}. {ep.name || `Episode ${ep.episodeNumber}`}
+                      </h4>
+                      {ep.runtime > 0 && (
+                        <span className="cine-ep-runtime">
+                          <Clock size={12} />
+                          {ep.runtime}m
+                        </span>
+                      )}
+                    </div>
+                    <p className="cine-ep-overview">
+                      {ep.overview || "No episode summary available."}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* AUDIO & SUBTITLES HELPER MODAL */}
       {showAudioSubModal && (

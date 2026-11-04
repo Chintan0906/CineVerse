@@ -6,20 +6,27 @@ const CHANGE_EVENT = "cineverse:library-change";
 function deduplicateHistory(rawHistory) {
   if (!Array.isArray(rawHistory)) return [];
   const map = new Map();
+  const titleMap = new Set();
   // Sort by watchedAt descending so the newest/latest watched episode comes first
   const sorted = [...rawHistory].sort(
     (a, b) => (Number(b.watchedAt) || 0) - (Number(a.watchedAt) || 0)
   );
   for (const item of sorted) {
-    const id = String(item.tmdbId || item.id || "");
-    if (!id || !/^\d+$/.test(id)) continue;
-    if (!map.has(id)) {
-      map.set(id, {
+    if (!item || typeof item !== "object") continue;
+    const id = String(item.tmdbId || item.id || "").trim();
+    const titleKey = String(item.title || item.name || "").trim().toLowerCase();
+    const key = id || titleKey;
+    if (!key) continue;
+
+    // Check both ID and normalized title to guarantee zero duplicates
+    if (!map.has(key) && (!titleKey || !titleMap.has(titleKey))) {
+      map.set(key, {
         ...item,
-        id,
-        tmdbId: id,
-        key: id,
+        id: id || item.id,
+        tmdbId: id || item.tmdbId,
+        key,
       });
+      if (titleKey) titleMap.add(titleKey);
     }
   }
   return Array.from(map.values());
@@ -27,11 +34,23 @@ function deduplicateHistory(rawHistory) {
 
 function readLibrary() {
   try {
-    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const saved = JSON.parse(raw || "{}");
     const rawHistory = Array.isArray(saved.history) ? saved.history : [];
+    const cleanHistory = deduplicateHistory(rawHistory);
+    // Automatically sanitize and persist if duplicates were found
+    if (rawHistory.length !== cleanHistory.length) {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...saved,
+          history: cleanHistory,
+        })
+      );
+    }
     return {
       watchlist: Array.isArray(saved.watchlist) ? saved.watchlist : [],
-      history: deduplicateHistory(rawHistory),
+      history: cleanHistory,
     };
   } catch {
     return { watchlist: [], history: [] };
@@ -40,13 +59,13 @@ function readLibrary() {
 
 function mediaSnapshot(media) {
   if (!media || typeof media !== "object") return null;
-  const id = String(media.tmdbId || media.id || "");
-  if (!/^\d+$/.test(id)) return null;
+  const id = String(media.tmdbId || media.id || "").trim();
+  if (!id) return null;
 
   return {
     id,
     tmdbId: id,
-    title: media.title || "Untitled",
+    title: media.title || media.name || "Untitled",
     poster: media.poster || "",
     backdrop: media.backdrop || media.poster || "",
     year: media.year || "",
@@ -112,10 +131,13 @@ export function useLibrary() {
     const snapshot = mediaSnapshot(media);
     if (!snapshot) return;
     const mediaId = snapshot.id;
+    const titleLower = String(snapshot.title || "").trim().toLowerCase();
 
     update((current) => {
       const existing = current.history.find(
-        (item) => String(item.tmdbId || item.id) === mediaId
+        (item) =>
+          String(item.tmdbId || item.id) === mediaId ||
+          (titleLower && String(item.title || "").trim().toLowerCase() === titleLower)
       );
       const s = Number(episode.season || snapshot.season || existing?.season || 1);
       const e = Number(episode.episode || snapshot.episode || existing?.episode || 1);
@@ -135,9 +157,11 @@ export function useLibrary() {
         progressPercent: existing?.progressPercent || 0,
       };
 
-      // Ensure single card per title - remove any other entries for this title
+      // Ensure single card per title - remove any other entries for this title or ID
       const remaining = current.history.filter(
-        (item) => String(item.tmdbId || item.id) !== mediaId
+        (item) =>
+          String(item.tmdbId || item.id) !== mediaId &&
+          (!titleLower || String(item.title || "").trim().toLowerCase() !== titleLower)
       );
 
       return {
@@ -153,10 +177,13 @@ export function useLibrary() {
     const total = Number(duration);
     if (!snapshot || !Number.isFinite(watched) || !Number.isFinite(total) || total <= 0) return;
     const mediaId = snapshot.id;
+    const titleLower = String(snapshot.title || "").trim().toLowerCase();
 
     update((current) => {
       const existing = current.history.find(
-        (item) => String(item.tmdbId || item.id) === mediaId
+        (item) =>
+          String(item.tmdbId || item.id) === mediaId ||
+          (titleLower && String(item.title || "").trim().toLowerCase() === titleLower)
       );
       const s = Number(episode.season || snapshot.season || existing?.season || 1);
       const e = Number(episode.episode || snapshot.episode || existing?.episode || 1);
@@ -178,9 +205,11 @@ export function useLibrary() {
         watchedAt: Date.now(),
       };
 
-      // Ensure single card per title - remove any other entries for this title
+      // Ensure single card per title - remove any other entries for this title or ID
       const remaining = current.history.filter(
-        (item) => String(item.tmdbId || item.id) !== mediaId
+        (item) =>
+          String(item.tmdbId || item.id) !== mediaId &&
+          (!titleLower || String(item.title || "").trim().toLowerCase() !== titleLower)
       );
 
       return {
