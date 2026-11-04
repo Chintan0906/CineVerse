@@ -493,8 +493,35 @@ body {
 .episode-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin: 22px 0 4px;
+  gap: 14px;
+  margin: 22px 0 26px; /* Elegant gap between season/episode picker and action buttons */
+}
+
+.details-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+}
+
+.details-actions .btn-primary,
+.details-actions .btn-secondary,
+.details-actions button {
+  min-height: 41px !important;
+  padding: 0 20px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  gap: 8px !important;
+}
+
+.details-actions .btn-secondary {
+  padding: 0 18px !important;
+  font-weight: 600 !important;
+}
+
+.details-actions svg {
+  width: 15px !important;
+  height: 15px !important;
 }
 
 .episode-picker label {

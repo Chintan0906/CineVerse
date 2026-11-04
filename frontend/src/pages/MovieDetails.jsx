@@ -640,7 +640,7 @@ function MovieDetails() {
                 className="btn-primary"
                 onClick={() => handleStartPlay()}
               >
-                <Play size={18} fill="currentColor" />
+                <Play size={16} fill="currentColor" />
                 {savedHistory && !savedHistory.completed
                   ? isTvShow
                     ? selectedSeason === Number(savedHistory.season) && selectedEpisode === Number(savedHistory.episode)
@@ -657,7 +657,7 @@ function MovieDetails() {
                   className="btn-secondary"
                   onClick={() => setShowTrailer(true)}
                 >
-                  <Film size={18} />
+                  <Film size={16} />
                   Watch Trailer
                 </button>
               )}
@@ -666,7 +666,7 @@ function MovieDetails() {
                 className="btn-secondary"
                 onClick={() => toggleWatchlist(movie)}
               >
-                {isSaved ? <Check size={18} /> : <Plus size={18} />}
+                {isSaved ? <Check size={16} /> : <Plus size={16} />}
                 {isSaved ? "In My List" : "Add to My List"}
               </button>
             </div>
