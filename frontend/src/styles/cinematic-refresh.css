@@ -2077,6 +2077,10 @@ input,
   color: #38bdf8;
 }
 
+.cine-status-subname.wave {
+  color: #2dd4bf;
+}
+
 /* Quantum (SuperEmbed) Sub-Server Switcher Bar */
 .cine-subserver-bar-wrapper.quantum-theme {
   background: rgba(12, 25, 45, 0.88);
@@ -2109,6 +2113,40 @@ input,
   background: rgba(56, 189, 248, 0.3);
   color: #e0f2fe;
   border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+/* Wave (EmbedWave) Sub-Server Switcher Bar */
+.cine-subserver-bar-wrapper.wave-theme {
+  background: rgba(10, 36, 35, 0.88);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+}
+
+.cine-subserver-bar-wrapper.wave-theme .cine-subserver-label {
+  color: #2dd4bf;
+}
+
+.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill:hover {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #ffffff;
+}
+
+.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active {
+  background: linear-gradient(135deg, rgba(45, 212, 191, 0.35), rgba(20, 184, 166, 0.35));
+  border-color: #2dd4bf;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
+}
+
+.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active .subserver-dot {
+  background: #2dd4bf;
+  box-shadow: 0 0 8px #2dd4bf;
+}
+
+.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active .subserver-badge {
+  background: rgba(45, 212, 191, 0.3);
+  color: #ccfbf1;
+  border: 1px solid rgba(45, 212, 191, 0.5);
 }
 
 /* AnimeEmbed Sub-Server Switcher Bar */

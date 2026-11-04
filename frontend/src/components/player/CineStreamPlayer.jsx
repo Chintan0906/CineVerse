@@ -245,6 +245,18 @@ const STREAM_SERVERS = [
         : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=true`;
     },
   },
+  {
+    id: "wave",
+    name: "Server Wave",
+    quality: "1080p / 4K Ultra",
+    speed: "EmbedWave Multi",
+    badge: "Zero-Ad Pro",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=nxsha&autoplay=1&nobrand=1`
+        : `https://embedwave.cc/embed/movie/${tmdbId}?server=nxsha&autoplay=1&nobrand=1`;
+    },
+  },
 ];
 
 // Internal mirror servers available within Server Quantum (CineSrc Cluster)
@@ -280,6 +292,43 @@ const QUANTUM_SUB_SERVERS = [
       return isTv
         ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=false`
         : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=false`;
+    },
+  },
+];
+
+// Internal mirror servers available within Server Wave (EmbedWave Cluster)
+const WAVE_SUB_SERVERS = [
+  {
+    id: "nxsha",
+    name: "Wave Multi HD",
+    badge: "Multi HD",
+    quality: "1080p Multi-HD",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=nxsha&autoplay=1&nobrand=1`
+        : `https://embedwave.cc/embed/movie/${tmdbId}?server=nxsha&autoplay=1&nobrand=1`;
+    },
+  },
+  {
+    id: "cinesrc",
+    name: "Wave CineSrc",
+    badge: "CineSrc",
+    quality: "1080p CineSrc Route",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cinesrc&autoplay=1&nobrand=1`
+        : `https://embedwave.cc/embed/movie/${tmdbId}?server=cinesrc&autoplay=1&nobrand=1`;
+    },
+  },
+  {
+    id: "videasy",
+    name: "Wave 4K Ultra",
+    badge: "4K UHD",
+    quality: "4K UHD Route",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=videasy&autoplay=1&nobrand=1`
+        : `https://embedwave.cc/embed/movie/${tmdbId}?server=videasy&autoplay=1&nobrand=1`;
     },
   },
 ];
@@ -445,6 +494,7 @@ const STORAGE_KEYS = {
   ACTIVE_SERVER: "cineverse_active_server_id",
   ECLIPSE_SUB: "cineverse_eclipse_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
+  WAVE_SUB: "cineverse_wave_sub_id",
   ANIME_SUB: "cineverse_anime_sub_id",
   LEGACY_SUB: "cineverse_legacy_sub_id",
 };
@@ -490,6 +540,17 @@ function CineStreamPlayer({
       }
     } catch {}
     return QUANTUM_SUB_SERVERS[0];
+  });
+
+  const [waveSubServer, setWaveSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.WAVE_SUB);
+      if (savedId) {
+        const found = WAVE_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return WAVE_SUB_SERVERS[0];
   });
 
   const [animeEmbedSubServer, setAnimeEmbedSubServer] = useState(() => {
@@ -901,6 +962,8 @@ function CineStreamPlayer({
     ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "quantum"
     ? quantumSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    : activeServer.id === "wave"
+    ? waveSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "animeembed"
     ? animeEmbedSubServer.getUrl(anilistId || "21701", currEpisode)
     : activeServer.getUrl(
@@ -1043,6 +1106,40 @@ function CineStreamPlayer({
         </div>
       )}
 
+      {/* WAVE (EMBEDWAVE) SUB-SERVER SWITCHER BAR */}
+      {activeServer.id === "wave" && (
+        <div className="cine-subserver-bar-wrapper wave-theme">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>EmbedWave Routes:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {WAVE_SUB_SERVERS.map((sub) => {
+              const isSubActive = waveSubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setWaveSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.WAVE_SUB, sub.id); } catch {}
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* LEGACY SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "legacy" && (
         <div className="cine-subserver-bar-wrapper">
@@ -1162,6 +1259,9 @@ function CineStreamPlayer({
             {activeServer.id === "quantum" && (
               <span className="cine-status-subname quantum"> &bull; {quantumSubServer.name}</span>
             )}
+            {activeServer.id === "wave" && (
+              <span className="cine-status-subname wave"> &bull; {waveSubServer.name}</span>
+            )}
             {activeServer.id === "animeembed" && (
               <span className="cine-status-subname animeembed"> &bull; {animeEmbedSubServer.name}</span>
             )}
@@ -1173,6 +1273,8 @@ function CineStreamPlayer({
               ? eclipseSubServer.quality
               : activeServer.id === "quantum"
               ? quantumSubServer.quality
+              : activeServer.id === "wave"
+              ? waveSubServer.quality
               : activeServer.id === "animeembed"
               ? animeEmbedSubServer.quality
               : activeServer.quality}
@@ -1184,6 +1286,8 @@ function CineStreamPlayer({
               ? eclipseSubServer.badge
               : activeServer.id === "quantum"
               ? quantumSubServer.badge
+              : activeServer.id === "wave"
+              ? waveSubServer.badge
               : activeServer.id === "animeembed"
               ? animeEmbedSubServer.badge
               : activeServer.speed}
@@ -1333,14 +1437,14 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
-          referrerPolicy="origin-when-cross-origin"
+          referrerPolicy="no-referrer"
         />
       </div>
 
