@@ -177,7 +177,7 @@ function MovieCard({
                 <span className="match-score">{matchPercent}% Match</span>
                 <span className="quality-pill">HD</span>
                 {isTv && (movie.season || movie.episode) ? (
-                  <span className="quality-pill" style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.4)" }}>
+                  <span className="quality-pill" style={{ color: "#ffffff", borderColor: "rgba(255, 255, 255, 0.45)" }}>
                     S{movie.season || 1}:E{movie.episode || 1}
                   </span>
                 ) : (
@@ -225,7 +225,7 @@ function MovieCard({
 
           <div className="movie-card-meta">
             {isTv && (movie.season || movie.episode) ? (
-              <span className="movie-episode-indicator" style={{ color: "#f87171", fontWeight: 600 }}>
+              <span className="movie-episode-indicator" style={{ color: "#ffffff", fontWeight: 600 }}>
                 Season {movie.season || 1} · Ep {movie.episode || 1}
               </span>
             ) : (

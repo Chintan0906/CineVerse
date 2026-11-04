@@ -48,13 +48,13 @@ export class ErrorBoundary extends React.Component {
               width: "72px",
               height: "72px",
               borderRadius: "50%",
-              backgroundColor: "rgba(239, 68, 68, 0.12)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               marginBottom: "20px",
-              color: "#ef4444",
+              color: "#ffffff",
             }}
           >
             <AlertTriangle size={36} />
@@ -90,10 +90,10 @@ export class ErrorBoundary extends React.Component {
                 gap: "8px",
                 padding: "12px 22px",
                 borderRadius: "8px",
-                background: "linear-gradient(135deg, #e50914, #b20710)",
-                color: "#ffffff",
-                border: "none",
-                fontWeight: 600,
+                background: "#ffffff",
+                color: "#08090d",
+                border: "1px solid #ffffff",
+                fontWeight: 700,
                 fontSize: "0.95rem",
                 cursor: "pointer",
               }}

@@ -1181,8 +1181,10 @@ main {
 }
 
 .trending-badge {
-  color: white;
-  background: rgba(220, 38, 38, 0.9);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
 }
 
 .featured-badge {
@@ -4017,9 +4019,9 @@ main {
 }
 
 .shield-btn.shield-disabled {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
-  color: #f87171 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
 }
 
 .shield-icon-active {

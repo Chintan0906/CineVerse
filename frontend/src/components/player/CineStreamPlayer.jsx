@@ -110,7 +110,7 @@ const STREAM_SERVERS = [
     badge: "AnimeEmbed Pro",
     getUrl: (tmdbId, isTv, season, episode, currentTime, anilistId) => {
       const id = anilistId || "21701";
-      return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=e50914`;
+      return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=ffffff`;
     },
   },
   {
@@ -243,8 +243,8 @@ const STREAM_SERVERS = [
     badge: "Auto-Skip Pro",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=true`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
     },
   },
   {
@@ -270,8 +270,8 @@ const QUANTUM_SUB_SERVERS = [
     quality: "1080p Ultra HD / Auto-Skip",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=true`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
     },
   },
   {
@@ -281,8 +281,8 @@ const QUANTUM_SUB_SERVERS = [
     quality: "1080p Ultra Fast CDN",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&prioritize=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&prioritize=true`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&prioritize=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&prioritize=true`;
     },
   },
   {
@@ -292,8 +292,8 @@ const QUANTUM_SUB_SERVERS = [
     quality: "1080p Full Experience",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23e50914&autoplay=true&autonext=true&autoskip=false`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23e50914&autoplay=true&autoskip=false`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=false`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=false`;
     },
   },
 ];
@@ -343,7 +343,7 @@ const ANIMEEMBED_SUB_SERVERS = [
     badge: "Auto-Skip",
     quality: "1080p Original Sub",
     getUrl: (aniId, episode) =>
-      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=1&accent=e50914`,
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=1&accent=ffffff`,
   },
   {
     id: "dub",
@@ -351,7 +351,7 @@ const ANIMEEMBED_SUB_SERVERS = [
     badge: "English Audio",
     quality: "1080p English Dub",
     getUrl: (aniId, episode) =>
-      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=dub&autoSkip=1&accent=e50914`,
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=dub&autoSkip=1&accent=ffffff`,
   },
   {
     id: "uncut",
@@ -359,7 +359,7 @@ const ANIMEEMBED_SUB_SERVERS = [
     badge: "Full Song",
     quality: "1080p Uncut Intro",
     getUrl: (aniId, episode) =>
-      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=0&accent=e50914`,
+      `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=0&accent=ffffff`,
   },
 ];
 
