@@ -77,6 +77,43 @@
   }
 }
 
+.hero-slideshow-bg.has-trailer {
+  opacity: 0.15 !important;
+}
+
+/* Background Video Trailer Layer */
+.hero-trailer-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  animation: heroTrailerFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes heroTrailerFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hero-trailer-iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 56.25vw;
+  min-height: 100%;
+  min-width: 177.77vh;
+  transform: translate(-50%, -50%) scale(1.18);
+  pointer-events: none;
+  border: none;
+}
+
 /* Gradient Overlays - Netflix Style */
 .hero-slideshow-gradient-left {
   position: absolute;
@@ -403,6 +440,13 @@
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.8);
   transform: scale(1.1);
+}
+
+.hero-btn-sound.voice-active {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Navigation Arrows */

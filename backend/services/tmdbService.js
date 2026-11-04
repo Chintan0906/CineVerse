@@ -297,6 +297,8 @@ async function getTVShowDetails(id) {
       (v) =>
         v.site === "YouTube" &&
         (v.type === "Trailer" || v.type === "Teaser")
+    ) || (details.videos?.results || []).find(
+      (v) => v.site === "YouTube"
     ) || details.videos?.results?.[0];
 
     const trailerUrl = trailerVideo
@@ -498,6 +500,8 @@ async function getMovieDetails(id) {
       (v) =>
         v.site === "YouTube" &&
         (v.type === "Trailer" || v.type === "Teaser")
+    ) || (details.videos?.results || []).find(
+      (v) => v.site === "YouTube"
     ) || details.videos?.results?.[0];
 
     const trailerUrl = trailerVideo
@@ -619,6 +623,26 @@ async function getNetflixCatalogue() {
     featuredMovies.forEach((m) => {
       m.featured = true;
     });
+
+    // Fetch official trailer videos for featured candidates
+    await Promise.all(
+      featuredMovies.map(async (m) => {
+        try {
+          const endpoint = m.isTV ? `/tv/${m.id}/videos` : `/movie/${m.id}/videos`;
+          const videoData = await tmdbRequest(endpoint);
+          const trailerVideo =
+            (videoData.results || []).find(
+              (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
+            ) ||
+            (videoData.results || []).find((v) => v.site === "YouTube") ||
+            videoData.results?.[0];
+          if (trailerVideo?.key) {
+            m.trailerKey = trailerVideo.key;
+            m.trailerUrl = `https://www.youtube.com/embed/${trailerVideo.key}?autoplay=1&mute=0`;
+          }
+        } catch (_) {}
+      })
+    );
 
     // Keep dedicated series rows alongside the mixed Netflix-style rows.
     const trendingSeries = trendingTV.slice(0, 20);

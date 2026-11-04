@@ -1,24 +1,100 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CineVerseEmblem } from "../common/CineVerseLogo";
+import { getMovieById, getTVShowById } from "../../services/movieService";
 
 function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist, onPlay }) {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [trailerKeys, setTrailerKeys] = useState({});
 
-  // Auto-advance slideshow every 6 seconds
+  const trailerTimerRef = useRef(null);
+  const advanceTimerRef = useRef(null);
+  const trailerIframeRef = useRef(null);
+
+  const currentMovie = featuredMovies[currentIndex];
+  const activeTrailerKey =
+    currentMovie?.trailerKey ||
+    (currentMovie?.id ? trailerKeys[currentMovie.id] : null) ||
+    (currentMovie?.trailerUrl ? currentMovie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+
+  // Lazy fetch trailer key if not provided by backend
   useEffect(() => {
-    if (isPaused || featuredMovies.length <= 1) return;
+    if (!currentMovie || activeTrailerKey) return;
+    const isTv = Boolean(currentMovie.mediaType === "tv" || currentMovie.isTV);
+    const fetcher = isTv ? getTVShowById(currentMovie.id) : getMovieById(currentMovie.id);
+    fetcher
+      .then((data) => {
+        const key =
+          data?.trailerKey ||
+          (data?.trailerUrl ? data.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+        if (key) {
+          setTrailerKeys((prev) => ({ ...prev, [currentMovie.id]: key }));
+        }
+      })
+      .catch(() => {});
+  }, [currentIndex, currentMovie, activeTrailerKey]);
 
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % featuredMovies.length);
-    }, 6000);
+  // Show poster image for 12 seconds, then start trailer. Auto-advance after 38s unless paused or unmuted.
+  useEffect(() => {
+    setIsTrailerPlaying(false);
+    setIsMuted(true);
+    if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
 
-    return () => clearInterval(interval);
-  }, [isPaused, featuredMovies.length]);
+    if (featuredMovies.length <= 1) return;
+
+    // Start trailer after 12s
+    trailerTimerRef.current = setTimeout(() => {
+      setIsTrailerPlaying(true);
+    }, 12000);
+
+    // Auto-advance to next slide after trailer preview unless unmuted or user is hovering
+    if (!isPaused && isMuted) {
+      advanceTimerRef.current = setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % featuredMovies.length);
+      }, 38000);
+    }
+
+    return () => {
+      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    };
+  }, [currentIndex, isPaused, isMuted, featuredMovies.length]);
+
+  const sendYouTubeCommand = (func, args = []) => {
+    try {
+      if (trailerIframeRef.current?.contentWindow) {
+        trailerIframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      }
+    } catch (_) {}
+  };
+
+  const handleToggleSound = (e) => {
+    e?.stopPropagation?.();
+    if (!activeTrailerKey) return;
+
+    if (!isTrailerPlaying) {
+      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+      setIsTrailerPlaying(true);
+      setIsMuted(false);
+      return;
+    }
+
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    sendYouTubeCommand(nextMuted ? "mute" : "unMute");
+    if (!nextMuted) {
+      sendYouTubeCommand("setVolume", [100]);
+    }
+  };
 
   const handleNext = useCallback(() => {
     if (featuredMovies.length <= 1) return;
@@ -79,6 +155,10 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
           const isSaved = watchlist.some(
             (saved) => (typeof saved === "object" ? saved.id : saved) === movie?.id
           );
+          const slideTrailerKey =
+            movie.trailerKey ||
+            trailerKeys[movie.id] ||
+            (movie.trailerUrl ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
 
           return (
             <div
@@ -88,11 +168,31 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
             >
               {/* Slide Background Image */}
               <div
-                className={`hero-slideshow-bg ${isActive ? "active" : ""}`}
+                className={`hero-slideshow-bg ${isActive ? "active" : ""} ${isActive && isTrailerPlaying && slideTrailerKey ? "has-trailer" : ""}`}
                 style={{
                   backgroundImage: `url("${movie.backdrop || movie.poster}")`,
                 }}
               />
+
+              {/* Active Slide Background Trailer Video */}
+              {isActive && isTrailerPlaying && slideTrailerKey && (
+                <div className="hero-trailer-wrap">
+                  <iframe
+                    ref={trailerIframeRef}
+                    className="hero-trailer-iframe"
+                    src={`https://www.youtube-nocookie.com/embed/${slideTrailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${slideTrailerKey}&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`}
+                    title={`${movie.title} Trailer`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    tabIndex="-1"
+                    onLoad={() => {
+                      if (!isMuted) {
+                        sendYouTubeCommand("unMute");
+                        sendYouTubeCommand("setVolume", [100]);
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Gradient Overlays */}
               <div className="hero-slideshow-gradient-left" />
@@ -182,9 +282,10 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                   </button>
 
                   <button
-                    className="hero-btn-sound"
-                    onClick={() => setIsMuted(!isMuted)}
-                    title={isMuted ? "Unmute" : "Mute"}
+                    className={`hero-btn-sound ${!isMuted ? "voice-active" : ""}`}
+                    onClick={handleToggleSound}
+                    title={isMuted ? "Open trailer voice (Unmute)" : "Close trailer voice (Mute)"}
+                    aria-label={isMuted ? "Open trailer voice" : "Close trailer voice"}
                   >
                     {isMuted ? (
                       <VolumeX size={20} />

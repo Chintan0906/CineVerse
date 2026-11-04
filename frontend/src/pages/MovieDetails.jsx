@@ -14,6 +14,8 @@ import {
   TrendingUp,
   X,
   Loader2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
@@ -81,6 +83,72 @@ function MovieDetails() {
   const [error, setError] = useState("");
   const [showPlayer, setShowPlayer] = useState(() => isStreamingQuery);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+  const [isTrailerMuted, setIsTrailerMuted] = useState(true);
+  const trailerTimerRef = useRef(null);
+  const trailerIframeRef = useRef(null);
+
+  const trailerKey =
+    movie?.trailerKey ||
+    (movie?.trailerUrl ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null) ||
+    null;
+
+  // Show backdrop image for 12 seconds, then start playing trailer.
+  useEffect(() => {
+    setIsTrailerPlaying(false);
+    setIsTrailerMuted(true);
+    if (trailerTimerRef.current) {
+      clearTimeout(trailerTimerRef.current);
+    }
+
+    if (!movie || showPlayer || !trailerKey) return;
+
+    trailerTimerRef.current = setTimeout(() => {
+      setIsTrailerPlaying(true);
+    }, 12000);
+
+    return () => {
+      if (trailerTimerRef.current) {
+        clearTimeout(trailerTimerRef.current);
+      }
+    };
+  }, [movie?.id, trailerKey, showPlayer]);
+
+  const sendYouTubeCommand = (func, args = []) => {
+    try {
+      if (trailerIframeRef.current?.contentWindow) {
+        trailerIframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      }
+    } catch (_) {}
+  };
+
+  const handleToggleTrailerVoice = () => {
+    if (!trailerKey) return;
+
+    if (!isTrailerPlaying) {
+      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+      setIsTrailerPlaying(true);
+      setIsTrailerMuted(false);
+      return;
+    }
+
+    const nextMuted = !isTrailerMuted;
+    setIsTrailerMuted(nextMuted);
+    sendYouTubeCommand(nextMuted ? "mute" : "unMute");
+    if (!nextMuted) {
+      sendYouTubeCommand("setVolume", [100]);
+    }
+  };
+
+  // When trailer modal opens, mute background trailer
+  useEffect(() => {
+    if (showTrailer && isTrailerPlaying && !isTrailerMuted) {
+      sendYouTubeCommand("mute");
+    }
+  }, [showTrailer, isTrailerPlaying, isTrailerMuted]);
   const [activeStreamMovie, setActiveStreamMovie] = useState(() => {
     if (isStreamingQuery) {
       try {
@@ -531,26 +599,40 @@ function MovieDetails() {
       </header>
 
       {/* GIANT BACKDROP BILLBOARD */}
-      <section
-        className="details-hero"
-        style={{
-          backgroundImage: `
-            linear-gradient(
-              180deg,
-              rgba(8, 9, 13, 0.3) 0%,
-              rgba(8, 9, 13, 0.7) 60%,
-              rgba(8, 9, 13, 1) 100%
-            ),
-            linear-gradient(
-              90deg,
-              rgba(8, 9, 13, 0.95) 0%,
-              rgba(8, 9, 13, 0.7) 35%,
-              rgba(8, 9, 13, 0.3) 100%
-            ),
-            url("${movie.backdrop || movie.poster}")
-          `,
-        }}
-      >
+      <section className="details-hero">
+        {/* Background Backdrop Image */}
+        <div
+          className={`details-hero-bg ${isTrailerPlaying && trailerKey ? "has-trailer" : ""}`}
+          style={{
+            backgroundImage: `url("${movie.backdrop || movie.poster}")`,
+          }}
+        />
+
+        {/* Background Trailer Video */}
+        {isTrailerPlaying && trailerKey && !showPlayer && (
+          <div className="details-hero-trailer-wrap">
+            <iframe
+              ref={trailerIframeRef}
+              className="details-hero-trailer-iframe"
+              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=${isTrailerMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailerKey}&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`}
+              title={`${movie.title} Trailer`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              tabIndex="-1"
+              onLoad={() => {
+                if (!isTrailerMuted) {
+                  sendYouTubeCommand("unMute");
+                  sendYouTubeCommand("setVolume", [100]);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Gradient Overlays */}
+        <div className="details-hero-gradient-left" />
+        <div className="details-hero-gradient-bottom" />
+        <div className="details-hero-vignette" />
+
         <div className="details-hero-container">
           <div className="details-hero-info">
             <div className="badge-row">
@@ -669,6 +751,18 @@ function MovieDetails() {
                 {isSaved ? <Check size={16} /> : <Plus size={16} />}
                 {isSaved ? "In My List" : "Add to My List"}
               </button>
+
+              {trailerKey && (
+                <button
+                  className={`btn-secondary trailer-voice-btn ${!isTrailerMuted ? "voice-active" : ""}`}
+                  onClick={handleToggleTrailerVoice}
+                  title={isTrailerMuted ? "Open trailer voice (Unmute)" : "Close trailer voice (Mute)"}
+                  aria-label={isTrailerMuted ? "Open trailer voice" : "Close trailer voice"}
+                >
+                  {isTrailerMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  <span>{isTrailerMuted ? "Voice Off" : "Voice On"}</span>
+                </button>
+              )}
             </div>
 
             {savedHistory?.progressPercent > 0 && !savedHistory.completed && (
