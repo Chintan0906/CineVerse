@@ -49,7 +49,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       .catch(() => {});
   }, [currentIndex, currentMovie, activeTrailerKey]);
 
-  // 1. Mount trailer in background at 3.0s, cross-fade in at ~4.5s
+  // 1. Mount trailer in background at 600ms, cross-fade in at 4.8s
   useEffect(() => {
     setIsTrailerMounted(false);
     setIsTrailerVisible(false);
@@ -61,10 +61,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
 
     trailerTimerRef.current = setTimeout(() => {
       setIsTrailerMounted(true);
-      revealTimerRef.current = setTimeout(() => {
-        setIsTrailerVisible(true);
-      }, 1500);
-    }, 3000);
+    }, 600);
+
+    revealTimerRef.current = setTimeout(() => {
+      setIsTrailerVisible(true);
+    }, 4800);
 
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
@@ -236,13 +237,21 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                     title={`${movie.title} Trailer`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     tabIndex="-1"
-                    onLoad={() => {
+                    onLoad={(e) => {
+                      try {
+                        e.target?.contentWindow?.postMessage(
+                          JSON.stringify({ event: "listening", id: "hero-trailer" }),
+                          "*"
+                        );
+                      } catch (_) {}
                       if (!isMuted) {
                         sendYouTubeCommand("unMute");
                         sendYouTubeCommand("setVolume", [100]);
                       }
                     }}
                   />
+                  {/* Transparent mouse shield that stops all mouse hovering/clicking from reaching YouTube */}
+                  <div className="hero-trailer-shield" />
                 </div>
               )}
 

@@ -110,14 +110,15 @@ function MovieDetails() {
 
     if (!movie || showPlayer || !trailerKey) return;
 
-    // 1. Mount iframe in background (masked at opacity: 0 behind poster) at 3.0s
+    // 1. Mount iframe in background (masked at opacity: 0 behind poster) early at 600ms
     trailerTimerRef.current = setTimeout(() => {
       setIsTrailerMounted(true);
-      // 2. Cross-fade in at ~4.5s (after YouTube's internal play/pause bezel has fired and vanished)
-      revealTimerRef.current = setTimeout(() => {
-        setIsTrailerVisible(true);
-      }, 1500);
-    }, 3000);
+    }, 600);
+
+    // 2. Cross-fade in at 4.8s (giving YouTube 4.2 full seconds to start and hide bezel completely)
+    revealTimerRef.current = setTimeout(() => {
+      setIsTrailerVisible(true);
+    }, 4800);
 
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
@@ -662,13 +663,21 @@ function MovieDetails() {
               title={`${movie.title} Trailer`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               tabIndex="-1"
-              onLoad={() => {
+              onLoad={(e) => {
+                try {
+                  e.target?.contentWindow?.postMessage(
+                    JSON.stringify({ event: "listening", id: "details-trailer" }),
+                    "*"
+                  );
+                } catch (_) {}
                 if (!isTrailerMuted) {
                   sendYouTubeCommand("unMute");
                   sendYouTubeCommand("setVolume", [100]);
                 }
               }}
             />
+            {/* Transparent mouse shield that stops all mouse hovering/clicking from reaching YouTube */}
+            <div className="details-hero-trailer-shield" />
           </div>
         )}
 

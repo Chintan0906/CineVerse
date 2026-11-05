@@ -3553,6 +3553,16 @@ main {
   min-width: 177.77vh !important;
   transform: translate(-50%, -50%) scale(1.15) !important;
   border: none !important;
+  pointer-events: none !important;
+}
+
+.details-hero-trailer-shield {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  pointer-events: auto !important;
+  cursor: default !important;
+  background: transparent !important;
 }
 
 .details-hero-gradient-left {
