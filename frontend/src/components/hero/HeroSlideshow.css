@@ -78,7 +78,8 @@
 }
 
 .hero-slideshow-bg.has-trailer {
-  opacity: 0.15 !important;
+  opacity: 0 !important;
+  transition: opacity 0.8s ease-in-out !important;
 }
 
 /* Background Video Trailer Layer */
@@ -88,17 +89,8 @@
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
-  opacity: 0;
-  animation: heroTrailerFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes heroTrailerFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  opacity: 1;
+  transition: opacity 0.8s ease-in-out;
 }
 
 .hero-trailer-iframe {

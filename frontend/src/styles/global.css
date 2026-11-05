@@ -3522,11 +3522,11 @@ main {
   background-position: center 20% !important;
   background-repeat: no-repeat !important;
   z-index: 0 !important;
-  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: opacity 0.8s ease-in-out !important;
 }
 
 .details-hero-bg.has-trailer {
-  opacity: 0.35 !important;
+  opacity: 0 !important;
 }
 
 .details-hero-trailer-wrap {
@@ -3535,17 +3535,8 @@ main {
   overflow: hidden !important;
   z-index: 1 !important;
   pointer-events: none !important;
-  opacity: 0 !important;
-  animation: detailsTrailerFadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-}
-
-@keyframes detailsTrailerFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  opacity: 1 !important;
+  transition: opacity 0.8s ease-in-out !important;
 }
 
 .details-hero-trailer-iframe {

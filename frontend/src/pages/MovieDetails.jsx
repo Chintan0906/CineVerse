@@ -161,12 +161,14 @@ function MovieDetails() {
     }
   };
 
-  // When trailer modal opens, mute background trailer
+  // When trailer modal opens, pause background trailer; resume when closed
   useEffect(() => {
-    if (showTrailer && isTrailerPlaying && !isTrailerMuted) {
-      sendYouTubeCommand("mute");
+    if (showTrailer && isTrailerPlaying) {
+      sendYouTubeCommand("pauseVideo");
+    } else if (!showTrailer && isTrailerPlaying) {
+      sendYouTubeCommand("playVideo");
     }
-  }, [showTrailer, isTrailerPlaying, isTrailerMuted]);
+  }, [showTrailer, isTrailerPlaying]);
   const [activeStreamMovie, setActiveStreamMovie] = useState(() => {
     if (isStreamingQuery) {
       try {
@@ -632,9 +634,9 @@ function MovieDetails() {
             <iframe
               ref={trailerIframeRef}
               className="details-hero-trailer-iframe"
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${isTrailerMuted ? 1 : 0}&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`}
               title={`${movie.title} Trailer`}
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               tabIndex="-1"
               onLoad={() => {
                 if (!isTrailerMuted) {
