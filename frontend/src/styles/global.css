@@ -3535,8 +3535,12 @@ main {
   overflow: hidden !important;
   z-index: 1 !important;
   pointer-events: none !important;
-  opacity: 1 !important;
+  opacity: 0 !important;
   transition: opacity 0.8s ease-in-out !important;
+}
+
+.details-hero-trailer-wrap.visible {
+  opacity: 1 !important;
 }
 
 .details-hero-trailer-iframe {

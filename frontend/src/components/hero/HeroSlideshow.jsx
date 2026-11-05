@@ -8,11 +8,13 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+  const [isTrailerMounted, setIsTrailerMounted] = useState(false);
+  const [isTrailerVisible, setIsTrailerVisible] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [trailerKeys, setTrailerKeys] = useState({});
 
   const trailerTimerRef = useRef(null);
+  const revealTimerRef = useRef(null);
   const advanceTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
 
@@ -20,7 +22,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
   const activeTrailerKey =
     currentMovie?.trailerKey ||
     (currentMovie?.id ? trailerKeys[currentMovie.id] : null) ||
-    (currentMovie?.trailerUrl ? currentMovie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+    (currentMovie?.trailerUrl
+      ? currentMovie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] ||
+        currentMovie.trailerUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/)?.[1] ||
+        currentMovie.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
+      : null);
 
   // Lazy fetch trailer key if not provided by backend
   useEffect(() => {
@@ -31,7 +37,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       .then((data) => {
         const key =
           data?.trailerKey ||
-          (data?.trailerUrl ? data.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+          (data?.trailerUrl
+            ? data.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] ||
+              data.trailerUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/)?.[1] ||
+              data.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
+            : null);
         if (key) {
           setTrailerKeys((prev) => ({ ...prev, [currentMovie.id]: key }));
         }
@@ -39,21 +49,26 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       .catch(() => {});
   }, [currentIndex, currentMovie, activeTrailerKey]);
 
-  // 1. Show poster image for 4.5 seconds, then start trailer.
+  // 1. Mount trailer in background at 3.0s, cross-fade in at ~4.5s
   useEffect(() => {
-    setIsTrailerPlaying(false);
+    setIsTrailerMounted(false);
+    setIsTrailerVisible(false);
     setIsMuted(true);
     if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
 
     if (featuredMovies.length === 0) return;
 
-    // Start trailer after 4.5s
     trailerTimerRef.current = setTimeout(() => {
-      setIsTrailerPlaying(true);
-    }, 4500);
+      setIsTrailerMounted(true);
+      revealTimerRef.current = setTimeout(() => {
+        setIsTrailerVisible(true);
+      }, 1500);
+    }, 3000);
 
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, [currentIndex, featuredMovies.length]);
 
@@ -72,12 +87,20 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     };
   }, [currentIndex, isPaused, isMuted, featuredMovies.length]);
 
-  // 3. Listen for video end to loop trailer seamlessly without playlist UI
+  // 3. Listen for video start and loop seamlessly without playlist UI
   useEffect(() => {
     const handleMessage = (e) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (data?.event === "onStateChange" && data?.info === 0) {
+        // YouTube sends info: 1 (PLAYING)
+        if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
+          if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+          revealTimerRef.current = setTimeout(() => {
+            setIsTrailerVisible(true);
+          }, 1000);
+        }
+        // YouTube sends info: 0 (ENDED) -> loop
+        if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
           sendYouTubeCommand("seekTo", [0, true]);
           sendYouTubeCommand("playVideo");
         }
@@ -102,10 +125,14 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     e?.stopPropagation?.();
     if (!activeTrailerKey) return;
 
-    if (!isTrailerPlaying) {
+    if (!isTrailerVisible) {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
-      setIsTrailerPlaying(true);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      setIsTrailerMounted(true);
       setIsMuted(false);
+      revealTimerRef.current = setTimeout(() => {
+        setIsTrailerVisible(true);
+      }, 1000);
       return;
     }
 
@@ -160,7 +187,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
 
   return (
     <section
-      className={`hero-slideshow notranslate ${isTrailerPlaying && activeTrailerKey ? "trailer-playing" : ""}`}
+      className={`hero-slideshow notranslate ${isTrailerVisible && activeTrailerKey ? "trailer-playing" : ""}`}
       translate="no"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -179,7 +206,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
           const slideTrailerKey =
             movie.trailerKey ||
             trailerKeys[movie.id] ||
-            (movie.trailerUrl ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+            (movie.trailerUrl
+              ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] ||
+                movie.trailerUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/)?.[1] ||
+                movie.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
+              : null);
 
           return (
             <div
@@ -189,19 +220,19 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
             >
               {/* Slide Background Image */}
               <div
-                className={`hero-slideshow-bg ${isActive ? "active" : ""} ${isActive && isTrailerPlaying && slideTrailerKey ? "has-trailer" : ""}`}
+                className={`hero-slideshow-bg ${isActive ? "active" : ""} ${isActive && isTrailerVisible && slideTrailerKey ? "has-trailer" : ""}`}
                 style={{
                   backgroundImage: `url("${movie.backdrop || movie.poster}")`,
                 }}
               />
 
               {/* Active Slide Background Trailer Video */}
-              {isActive && isTrailerPlaying && slideTrailerKey && (
-                <div className="hero-trailer-wrap">
+              {isActive && isTrailerMounted && slideTrailerKey && (
+                <div className={`hero-trailer-wrap ${isTrailerVisible ? "visible" : ""}`}>
                   <iframe
                     ref={trailerIframeRef}
                     className="hero-trailer-iframe"
-                    src={`https://www.youtube.com/embed/${slideTrailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`}
+                    src={`https://www.youtube.com/embed/${slideTrailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3`}
                     title={`${movie.title} Trailer`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     tabIndex="-1"

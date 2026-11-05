@@ -83,46 +83,63 @@ function MovieDetails() {
   const [error, setError] = useState("");
   const [showPlayer, setShowPlayer] = useState(() => isStreamingQuery);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+  const [isTrailerMounted, setIsTrailerMounted] = useState(false);
+  const [isTrailerVisible, setIsTrailerVisible] = useState(false);
   const [isTrailerMuted, setIsTrailerMuted] = useState(true);
   const trailerTimerRef = useRef(null);
+  const revealTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
+  const prevShowTrailerRef = useRef(showTrailer);
 
   const trailerKey =
     movie?.trailerKey ||
     (movie?.trailerUrl
       ? movie.trailerUrl.match(/embed\/([a-zA-Z0-9_-]+)/)?.[1] ||
-        movie.trailerUrl.match(/v=([a-zA-Z0-9_-]+)/)?.[1]
+        movie.trailerUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/)?.[1] ||
+        movie.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
       : null) ||
     null;
 
-  // Show backdrop image for 4.5 seconds, then start playing trailer.
+  // Pre-mount trailer behind the poster, then cross-fade smoothly once playback starts
   useEffect(() => {
-    setIsTrailerPlaying(false);
+    setIsTrailerMounted(false);
+    setIsTrailerVisible(false);
     setIsTrailerMuted(true);
-    if (trailerTimerRef.current) {
-      clearTimeout(trailerTimerRef.current);
-    }
+    if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
 
     if (!movie || showPlayer || !trailerKey) return;
 
+    // 1. Mount iframe in background (masked at opacity: 0 behind poster) at 3.0s
     trailerTimerRef.current = setTimeout(() => {
-      setIsTrailerPlaying(true);
-    }, 4500);
+      setIsTrailerMounted(true);
+      // 2. Cross-fade in at ~4.5s (after YouTube's internal play/pause bezel has fired and vanished)
+      revealTimerRef.current = setTimeout(() => {
+        setIsTrailerVisible(true);
+      }, 1500);
+    }, 3000);
 
     return () => {
-      if (trailerTimerRef.current) {
-        clearTimeout(trailerTimerRef.current);
-      }
+      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, [movie?.id, trailerKey, showPlayer]);
 
-  // Listen for video end to loop trailer seamlessly without playlist UI
+  // Listen for video start and loop seamlessly without playlist UI
   useEffect(() => {
     const handleMessage = (e) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (data?.event === "onStateChange" && data?.info === 0) {
+        // YouTube sends info: 1 (PLAYING)
+        if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
+          // Video has begun playing; wait 1000ms for play/pause bezel animation to finish and disappear
+          if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+          revealTimerRef.current = setTimeout(() => {
+            setIsTrailerVisible(true);
+          }, 1000);
+        }
+        // YouTube sends info: 0 (ENDED) -> loop
+        if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
           sendYouTubeCommand("seekTo", [0, true]);
           sendYouTubeCommand("playVideo");
         }
@@ -146,10 +163,14 @@ function MovieDetails() {
   const handleToggleTrailerVoice = () => {
     if (!trailerKey) return;
 
-    if (!isTrailerPlaying) {
+    if (!isTrailerVisible) {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
-      setIsTrailerPlaying(true);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      setIsTrailerMounted(true);
       setIsTrailerMuted(false);
+      revealTimerRef.current = setTimeout(() => {
+        setIsTrailerVisible(true);
+      }, 1000);
       return;
     }
 
@@ -163,12 +184,15 @@ function MovieDetails() {
 
   // When trailer modal opens, pause background trailer; resume when closed
   useEffect(() => {
-    if (showTrailer && isTrailerPlaying) {
+    if (prevShowTrailerRef.current === showTrailer) return;
+    prevShowTrailerRef.current = showTrailer;
+
+    if (showTrailer && isTrailerMounted) {
       sendYouTubeCommand("pauseVideo");
-    } else if (!showTrailer && isTrailerPlaying) {
+    } else if (!showTrailer && isTrailerMounted) {
       sendYouTubeCommand("playVideo");
     }
-  }, [showTrailer, isTrailerPlaying]);
+  }, [showTrailer, isTrailerMounted]);
   const [activeStreamMovie, setActiveStreamMovie] = useState(() => {
     if (isStreamingQuery) {
       try {
@@ -622,19 +646,19 @@ function MovieDetails() {
       <section className="details-hero">
         {/* Background Backdrop Image */}
         <div
-          className={`details-hero-bg ${isTrailerPlaying && trailerKey ? "has-trailer" : ""}`}
+          className={`details-hero-bg ${isTrailerVisible && trailerKey ? "has-trailer" : ""}`}
           style={{
             backgroundImage: `url("${movie.backdrop || movie.poster}")`,
           }}
         />
 
         {/* Background Trailer Video */}
-        {isTrailerPlaying && trailerKey && !showPlayer && (
-          <div className="details-hero-trailer-wrap">
+        {isTrailerMounted && trailerKey && !showPlayer && (
+          <div className={`details-hero-trailer-wrap ${isTrailerVisible ? "visible" : ""}`}>
             <iframe
               ref={trailerIframeRef}
               className="details-hero-trailer-iframe"
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3`}
               title={`${movie.title} Trailer`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               tabIndex="-1"
