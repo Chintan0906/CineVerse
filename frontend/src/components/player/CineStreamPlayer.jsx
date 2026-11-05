@@ -126,6 +126,18 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "framex",
+    name: "Server FrameX",
+    quality: "1080p / 4K Ultra HD",
+    speed: "FrameX Multi-CDN",
+    badge: "FrameX VIP",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?autoplay=1&muted=0`;
+    },
+  },
+  {
     id: "ronin",
     name: "Server Ronin",
     quality: "1080p Anime / Sub & Dub",
@@ -221,6 +233,58 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://www.rivestream.app/embed?type=tv&id=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
         : `https://www.rivestream.app/embed?type=movie&id=${tmdbId}`;
+    },
+  },
+];
+
+// Internal extraction providers available within Server FrameX (FrameX Multi-Tier Pipeline)
+const FRAMEX_SUB_SERVERS = [
+  {
+    id: "barbarian",
+    name: "Barbarian I",
+    badge: "Multi-Sub",
+    quality: "Ultra-Fast HLS & Subtitles",
+    provider: "barbarian",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?server=barbarian&autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?server=barbarian&autoplay=1&muted=0`;
+    },
+  },
+  {
+    id: "archer",
+    name: "Archer II",
+    badge: "4K UHD",
+    quality: "Multi-Audio Tracks & 4K UHD",
+    provider: "archer",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?server=archer&autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?server=archer&autoplay=1&muted=0`;
+    },
+  },
+  {
+    id: "goblin",
+    name: "Goblin III",
+    badge: "Fast Mirror",
+    quality: "Automatic Stream Mirror",
+    provider: "goblin",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?server=goblin&autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?server=goblin&autoplay=1&muted=0`;
+    },
+  },
+  {
+    id: "pekka",
+    name: "P.E.K.K.A IV",
+    badge: "1080p Pure",
+    quality: "1080p Uncompressed High-Bitrate",
+    provider: "pekka",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?server=pekka&autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?server=pekka&autoplay=1&muted=0`;
     },
   },
 ];
@@ -458,6 +522,7 @@ const LEGACY_SUB_SERVERS = [
 
 const STORAGE_KEYS = {
   ACTIVE_SERVER: "cineverse_active_server_id",
+  FRAMEX_SUB: "cineverse_framex_sub_id",
   ECLIPSE_SUB: "cineverse_eclipse_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
   WAVE_SUB: "cineverse_wave_sub_id",
@@ -500,6 +565,17 @@ function CineStreamPlayer({
       }
     } catch {}
     return ECLIPSE_SUB_SERVERS[0];
+  });
+
+  const [framexSubServer, setFramexSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.FRAMEX_SUB);
+      if (savedId) {
+        const found = FRAMEX_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return FRAMEX_SUB_SERVERS[0];
   });
 
   const [quantumSubServer, setQuantumSubServer] = useState(() => {
@@ -848,6 +924,36 @@ function CineStreamPlayer({
           }
         }
       }
+
+      // 3. FrameXTV (framextv.xyz) postMessage API
+      if (event.origin?.includes("framextv") || event.data?.event?.startsWith("frameXTV:")) {
+        const eventData = event.data;
+        if (!eventData || typeof eventData !== "object") return;
+        const ev = eventData.event;
+
+        if (ev === "frameXTV:timeupdate") {
+          const currentTime = Number(eventData.currentTime || 0);
+          const duration = Number(eventData.duration || 0);
+          if (currentTime > 0) {
+            setCurrentPlayTime(currentTime);
+            setSubPlaying(true);
+            if (Date.now() - lastSavedAt >= 15000) {
+              const currentMedia = mediaRef.current;
+              onProgressRef.current?.(
+                currentMedia,
+                currentTime,
+                duration,
+                { season: currSeason, episode: currEpisode }
+              );
+              lastSavedAt = Date.now();
+            }
+          }
+        } else if (ev === "frameXTV:play") {
+          setSubPlaying(true);
+        } else if (ev === "frameXTV:pause") {
+          setSubPlaying(false);
+        }
+      }
     };
 
     window.addEventListener("message", handleMessage);
@@ -941,6 +1047,8 @@ function CineStreamPlayer({
     ? waveSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "animeembed"
     ? animeEmbedSubServer.getUrl(anilistId || "21701", currEpisode)
+    : activeServer.id === "framex"
+    ? framexSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.getUrl(
         tmdbId,
         isTv,
@@ -1032,6 +1140,40 @@ function CineStreamPlayer({
                   onClick={() => {
                     setAnimeEmbedSubServer(sub);
                     try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, sub.id); } catch {}
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* FRAMEX (FRAMEXTV) EXTRACTION PROVIDERS SWITCHER BAR */}
+      {activeServer.id === "framex" && (
+        <div className="cine-subserver-bar-wrapper framex-theme">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>FrameX Extraction Providers:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {FRAMEX_SUB_SERVERS.map((sub) => {
+              const isSubActive = framexSubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setFramexSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.FRAMEX_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -1717,7 +1859,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["ronin", "nova", "pulse", "legacy", "quantum", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["quantum", "eclipse", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1730,7 +1872,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "ronin"
+                                  {s.id === "framex"
+                                    ? "FrameX Multi-Subtitles HLS"
+                                    : s.id === "ronin"
                                     ? "Anime & Asian Soft Subtitles"
                                     : s.id === "nova"
                                     ? "Direct Subtitle Stream"
@@ -1738,6 +1882,10 @@ function CineStreamPlayer({
                                     ? "Cloud Mirror Sync"
                                     : s.id === "quantum"
                                     ? "Auto-Skip / Subtitles"
+                                    : s.id === "eclipse"
+                                    ? "Ultra-Fast CDN Stream"
+                                    : s.id === "animeembed"
+                                    ? "Anime Sub / Dub Stream"
                                     : s.id === "wave"
                                     ? "Multi-Route Subtitles"
                                     : s.id === "rive"
@@ -1785,7 +1933,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["ronin", "nova", "apex", "legacy", "quantum", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["quantum", "eclipse", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -1798,7 +1946,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "ronin"
+                                  {s.id === "framex"
+                                    ? "FrameX Archer Multi-Audio & 4K UHD"
+                                    : s.id === "ronin"
                                     ? "Anime Japanese Audio & Dubs"
                                     : s.id === "nova"
                                     ? "Direct Audio Master"
@@ -1806,6 +1956,8 @@ function CineStreamPlayer({
                                     ? "Multi-Source Audio"
                                     : s.id === "quantum"
                                     ? "Multi-Audio / Auto-Skip"
+                                    : s.id === "eclipse"
+                                    ? "Ultra-Fast Full HD"
                                     : s.id === "wave"
                                     ? "Multi-Audio / 4K UHD Feed"
                                     : s.id === "rive"
