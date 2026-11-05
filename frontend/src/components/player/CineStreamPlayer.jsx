@@ -110,8 +110,8 @@ const STREAM_SERVERS = [
     badge: "Ultra Fast",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?sub=en&autoPlay=true`
+        : `https://vidfast.vc/movie/${tmdbId}?sub=en&autoPlay=true`;
     },
   },
   {
@@ -400,8 +400,8 @@ const ECLIPSE_SUB_SERVERS = [
     quality: "1080p / 4K UHD",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?sub=en&autoPlay=true`
+        : `https://vidfast.vc/movie/${tmdbId}?sub=en&autoPlay=true`;
     },
   },
   {
