@@ -16,6 +16,9 @@ import {
   Loader2,
   Volume2,
   VolumeX,
+  Home,
+  Compass,
+  Bookmark,
 } from "lucide-react";
 
 import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
@@ -1102,6 +1105,62 @@ function MovieDetails() {
           </div>
         </div>
       )}
+
+      {/* FRAMEXTV SIGNATURE FIXED MOBILE BOTTOM NAVIGATION */}
+      <nav className="framex-bottom-nav" aria-label="Mobile navigation">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="framex-nav-tab"
+          aria-label="Home"
+        >
+          <Home size={18} strokeWidth={1.8} />
+          <span>Home</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="framex-nav-tab"
+          aria-label="Discover Movies"
+        >
+          <Compass size={18} strokeWidth={1.8} />
+          <span>Movies</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleStartPlay()}
+          className="framex-nav-tab framex-nav-play-tab"
+          aria-label="Watch Now"
+        >
+          <Play size={18} fill="currentColor" />
+          <span>Play</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (movie.trailerUrl) setShowTrailer(true);
+            else handleToggleTrailerVoice();
+          }}
+          className="framex-nav-tab"
+          aria-label="Watch Trailer"
+        >
+          <Film size={18} strokeWidth={1.8} />
+          <span>Trailer</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => toggleWatchlist(movie)}
+          className={`framex-nav-tab ${isSaved ? "active" : ""}`}
+          aria-label="My Watchlist"
+        >
+          <Bookmark size={18} strokeWidth={isSaved ? 2.4 : 1.8} />
+          <span>{isSaved ? "Saved" : "My List"}</span>
+        </button>
+      </nav>
     </div>
   );
 }

@@ -748,8 +748,13 @@ input,
   display: contents;
 }
 
+/* Hide FrameXTV mobile bottom navigation on desktop */
+.framex-bottom-nav {
+  display: none !important;
+}
+
 /* ====================================================
-   MOBILE APPLICATION SCALABILITY SYSTEM
+   FRAMEXTV REVERSE-ENGINEERED MOBILE DESIGN SYSTEM
    Native Mobile App UX, Touch Optimizations & PWA Layout
    ==================================================== */
 
@@ -758,12 +763,154 @@ input,
   html, body {
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+    background-color: #09090b !important;
   }
 
-  /* Safe Area Padding for mobile notch devices */
+  /* Safe Area Padding for mobile notch devices + FrameXTV bottom bar space */
+  .app,
   .app-shell,
-  .movie-details-page {
-    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  .movie-details-page,
+  .home-layout {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* FRAMEXTV SIGNATURE FIXED BOTTOM NAVIGATION BAR */
+  .framex-bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1200 !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    background: rgba(9, 9, 11, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom, 0px)) !important;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.9) !important;
+    user-select: none !important;
+  }
+
+  .framex-nav-tab {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    color: #71717a !important;
+    padding: 4px 10px !important;
+    min-width: 54px !important;
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .framex-nav-tab:active {
+    transform: scale(0.92) !important;
+  }
+
+  .framex-nav-tab span {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.2px !important;
+    margin-top: 2px !important;
+    transition: color 0.2s ease !important;
+  }
+
+  .framex-nav-tab.active {
+    color: #ffffff !important;
+  }
+
+  .framex-nav-tab.active span {
+    font-weight: 700 !important;
+    color: #ffffff !important;
+  }
+
+  .framex-nav-tab.active svg {
+    color: #ffffff !important;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)) !important;
+  }
+
+  .framex-nav-play-tab {
+    color: #ffffff !important;
+  }
+
+  .framex-nav-play-tab svg {
+    fill: #ffffff !important;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)) !important;
+  }
+
+  .framex-nav-play-tab span {
+    font-weight: 700 !important;
+    color: #ffffff !important;
+  }
+
+  /* FRAMEXTV MOBILE TOP HEADER REFINEMENT */
+  .navbar {
+    height: 54px !important;
+    padding: 0 14px !important;
+    background: rgba(9, 9, 11, 0.92) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-mobile-toggle {
+    display: none !important;
+  }
+
+  .nav-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .nav-search-button,
+  .nav-watchlist-button {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+    background: rgba(24, 24, 27, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #d4d4d8 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .nav-watchlist-button span {
+    display: none !important;
+  }
+
+  .nav-profile-pill {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: rgba(24, 24, 27, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-profile-name,
+  .nav-profile-chevron {
+    display: none !important;
+  }
+
+  .nav-avatar-box {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 6px !important;
+    margin: 0 !important;
+    font-size: 11px !important;
   }
 
   /* Hide Desktop Horizontal Mouse Scroll Buttons on Touch Devices */
@@ -771,7 +918,7 @@ input,
     display: none !important;
   }
 
-  /* Mobile Genre Filter Bar: Smooth horizontal swipe row */
+  /* FRAMEXTV MOBILE GENRE FILTER BAR */
   .genre-filters {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -792,9 +939,23 @@ input,
   .genre-filters .genre-chip {
     flex-shrink: 0 !important;
     white-space: nowrap !important;
-    padding: 8px 16px !important;
-    font-size: 12.5px !important;
+    padding: 7px 15px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
     border-radius: 20px !important;
+    background: #121215 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #a1a1aa !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .genre-filters button.active,
+  .genre-filters .genre-chip.active {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.25) !important;
   }
 
   /* Fluid Touch Snap Rows */
@@ -847,9 +1008,33 @@ input,
     scroll-snap-align: start !important;
   }
 
-  /* Prevent Sticky Hover Jumps on Mobile Touch */
+  /* Prevent Sticky Hover Jumps on Mobile Touch & FrameXTV Micro-Tap Effect */
   .movie-card:hover {
     transform: none !important;
+  }
+
+  .movie-card {
+    background: #121215 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    transition: transform 0.15s ease, border-color 0.15s ease !important;
+  }
+
+  .movie-card:active {
+    transform: scale(0.96) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .movie-badge {
+    background: rgba(0, 0, 0, 0.85) !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 4px !important;
+    letter-spacing: 0.5px !important;
+    backdrop-filter: blur(8px) !important;
   }
 
   /* Mobile App Search & Genre Results Grid */
@@ -1067,6 +1252,30 @@ input,
     padding: 8px !important;
     gap: 12px !important;
     border-radius: 12px !important;
+    background: #121215 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
+  }
+
+  .episode-card:active {
+    transform: scale(0.98) !important;
+    background: #18181b !important;
+  }
+
+  .episode-card.active-episode {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .episode-num-badge {
+    background: rgba(0, 0, 0, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    border-radius: 4px !important;
+    padding: 2px 4px !important;
   }
 
   .episode-thumbnail-wrap {

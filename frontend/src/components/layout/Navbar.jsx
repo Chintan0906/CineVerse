@@ -190,7 +190,7 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           {user ? <LogOut size={14} className="nav-profile-chevron" /> : <ChevronDown size={14} className="nav-profile-chevron" />}
         </button>
 
-        {/* Mobile menu hamburger */}
+        {/* Mobile menu hamburger (hidden by default in FrameXTV mode) */}
         <button
           type="button"
           className="nav-mobile-toggle"
@@ -201,6 +201,59 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
+
+      {/* FRAMEXTV SIGNATURE APP-LIKE FIXED MOBILE BOTTOM NAVIGATION */}
+      <nav className="framex-bottom-nav" aria-label="Mobile navigation">
+        <button
+          type="button"
+          onClick={() => handleNavigation("Home", "#home")}
+          className={`framex-nav-tab ${activeLink === "Home" ? "active" : ""}`}
+          aria-label="Home"
+        >
+          <Home size={18} strokeWidth={activeLink === "Home" ? 2.4 : 1.8} />
+          <span>Home</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleNavigation("Discover", "#discovery")}
+          className={`framex-nav-tab ${activeLink === "Discover" ? "active" : ""}`}
+          aria-label="Discover Movies"
+        >
+          <Compass size={18} strokeWidth={activeLink === "Discover" ? 2.4 : 1.8} />
+          <span>Movies</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleNavigation("Trending", "#trending-now")}
+          className={`framex-nav-tab ${activeLink === "Trending" ? "active" : ""}`}
+          aria-label="Trending Series"
+        >
+          <Sparkles size={18} strokeWidth={activeLink === "Trending" ? 2.4 : 1.8} />
+          <span>Series</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSearch}
+          className="framex-nav-tab"
+          aria-label="Search titles"
+        >
+          <Search size={18} strokeWidth={1.8} />
+          <span>Search</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleWatchlist}
+          className={`framex-nav-tab ${activeLink === "Watchlist" ? "active" : ""}`}
+          aria-label="My Watchlist"
+        >
+          <Bookmark size={18} strokeWidth={activeLink === "Watchlist" ? 2.4 : 1.8} />
+          <span>My List</span>
+        </button>
+      </nav>
     </header>
   );
 }
