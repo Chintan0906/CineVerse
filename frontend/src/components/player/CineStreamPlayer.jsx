@@ -88,14 +88,26 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Server Eclipse is primary default)
+// Disguised high-performance streaming servers (Server Quantum is primary default)
 const STREAM_SERVERS = [
+  {
+    id: "quantum",
+    name: "Server Quantum",
+    quality: "1080p Ultra HD / Auto-Skip",
+    speed: "CineSrc VIP",
+    badge: "Recommended",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
+    },
+  },
   {
     id: "eclipse",
     name: "Server Eclipse",
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
-    badge: "Recommended",
+    badge: "Ultra Fast",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
@@ -185,18 +197,6 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
         : `https://www.2embed.cc/embed/${tmdbId}`;
-    },
-  },
-  {
-    id: "quantum",
-    name: "Server Quantum",
-    quality: "1080p Ultra HD / Auto-Skip",
-    speed: "CineSrc VIP",
-    badge: "Auto-Skip Pro",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
     },
   },
   {
