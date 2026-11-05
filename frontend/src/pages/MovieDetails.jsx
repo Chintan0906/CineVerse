@@ -133,11 +133,11 @@ function MovieDetails() {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         // YouTube sends info: 1 (PLAYING)
         if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
-          // Video has begun playing; wait 1000ms for play/pause bezel animation to finish and disappear
+          // Video has begun playing; wait 2400ms for YouTube's play/pause bezel animation to finish and vanish completely
           if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
           revealTimerRef.current = setTimeout(() => {
             setIsTrailerVisible(true);
-          }, 1000);
+          }, 2400);
         }
         // YouTube sends info: 0 (ENDED) -> loop
         if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
@@ -171,7 +171,7 @@ function MovieDetails() {
       setIsTrailerMuted(false);
       revealTimerRef.current = setTimeout(() => {
         setIsTrailerVisible(true);
-      }, 1000);
+      }, 2400);
       return;
     }
 
@@ -627,7 +627,7 @@ function MovieDetails() {
           aria-label="Back to Browse"
         >
           <ArrowLeft size={18} />
-          Back to Browse
+          <span className="back-btn-text">Back to Browse</span>
         </button>
 
         <Link className="brand-logo-link" to="/" aria-label="CineVerse home">
@@ -635,11 +635,12 @@ function MovieDetails() {
         </Link>
 
         <button
-          className="btn-secondary"
+          className="btn-secondary details-header-list-btn"
           onClick={() => toggleWatchlist(movie)}
+          aria-label={isSaved ? "Saved in List" : "Add to List"}
         >
           {isSaved ? <Check size={18} /> : <Plus size={18} />}
-          {isSaved ? "Saved in List" : "Add to List"}
+          <span className="details-header-list-text">{isSaved ? "Saved" : "Add to List"}</span>
         </button>
       </header>
 
@@ -772,50 +773,54 @@ function MovieDetails() {
             {/* OVAL ACTION BUTTONS */}
             <div className="details-actions">
               <button
-                className="btn-primary"
+                className="btn-primary details-btn-watch"
                 onClick={() => handleStartPlay()}
               >
                 <Play size={16} fill="currentColor" />
-                {savedHistory && !savedHistory.completed
-                  ? isTvShow
-                    ? selectedSeason === Number(savedHistory.season) && selectedEpisode === Number(savedHistory.episode)
-                      ? `Continue Watching (S${selectedSeason}:E${selectedEpisode})`
-                      : `Play S${selectedSeason}:E${selectedEpisode}`
-                    : "Continue Watching"
-                  : isTvShow
-                  ? `Watch S${selectedSeason}:E${selectedEpisode}`
-                  : "Watch Now"}
+                <span>
+                  {savedHistory && !savedHistory.completed
+                    ? isTvShow
+                      ? selectedSeason === Number(savedHistory.season) && selectedEpisode === Number(savedHistory.episode)
+                        ? `Continue Watching (S${selectedSeason}:E${selectedEpisode})`
+                        : `Play S${selectedSeason}:E${selectedEpisode}`
+                      : "Continue Watching"
+                    : isTvShow
+                    ? `Watch S${selectedSeason}:E${selectedEpisode}`
+                    : "Watch Now"}
+                </span>
               </button>
 
-              {movie.trailerUrl && (
+              <div className="details-actions-secondary">
+                {movie.trailerUrl && (
+                  <button
+                    className="btn-secondary"
+                    onClick={() => setShowTrailer(true)}
+                  >
+                    <Film size={16} />
+                    <span>Watch Trailer</span>
+                  </button>
+                )}
+
                 <button
                   className="btn-secondary"
-                  onClick={() => setShowTrailer(true)}
+                  onClick={() => toggleWatchlist(movie)}
                 >
-                  <Film size={16} />
-                  Watch Trailer
+                  {isSaved ? <Check size={16} /> : <Plus size={16} />}
+                  <span>{isSaved ? "In My List" : "Add to List"}</span>
                 </button>
-              )}
 
-              <button
-                className="btn-secondary"
-                onClick={() => toggleWatchlist(movie)}
-              >
-                {isSaved ? <Check size={16} /> : <Plus size={16} />}
-                {isSaved ? "In My List" : "Add to My List"}
-              </button>
-
-              {trailerKey && (
-                <button
-                  className={`btn-secondary trailer-voice-btn ${!isTrailerMuted ? "voice-active" : ""}`}
-                  onClick={handleToggleTrailerVoice}
-                  title={isTrailerMuted ? "Open trailer voice (Unmute)" : "Close trailer voice (Mute)"}
-                  aria-label={isTrailerMuted ? "Open trailer voice" : "Close trailer voice"}
-                >
-                  {isTrailerMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                  <span>{isTrailerMuted ? "Voice Off" : "Voice On"}</span>
-                </button>
-              )}
+                {trailerKey && (
+                  <button
+                    className={`btn-secondary trailer-voice-btn ${!isTrailerMuted ? "voice-active" : ""}`}
+                    onClick={handleToggleTrailerVoice}
+                    title={isTrailerMuted ? "Open trailer voice (Unmute)" : "Close trailer voice (Mute)"}
+                    aria-label={isTrailerMuted ? "Open trailer voice" : "Close trailer voice"}
+                  >
+                    {isTrailerMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    <span>{isTrailerMuted ? "Voice Off" : "Voice On"}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {savedHistory?.progressPercent > 0 && !savedHistory.completed && (

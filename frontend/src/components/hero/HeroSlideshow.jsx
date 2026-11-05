@@ -95,10 +95,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         // YouTube sends info: 1 (PLAYING)
         if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
+          // Wait 2400ms for YouTube's play/pause bezel animation to finish and vanish completely
           if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
           revealTimerRef.current = setTimeout(() => {
             setIsTrailerVisible(true);
-          }, 1000);
+          }, 2400);
         }
         // YouTube sends info: 0 (ENDED) -> loop
         if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
@@ -133,7 +134,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       setIsMuted(false);
       revealTimerRef.current = setTimeout(() => {
         setIsTrailerVisible(true);
-      }, 1000);
+      }, 2400);
       return;
     }
 

@@ -743,6 +743,11 @@ input,
 }
 
 
+/* Desktop default for secondary details actions wrapper */
+.details-actions-secondary {
+  display: contents;
+}
+
 /* ====================================================
    MOBILE APPLICATION SCALABILITY SYSTEM
    Native Mobile App UX, Touch Optimizations & PWA Layout
@@ -764,6 +769,32 @@ input,
   /* Hide Desktop Horizontal Mouse Scroll Buttons on Touch Devices */
   .movie-row-controls {
     display: none !important;
+  }
+
+  /* Mobile Genre Filter Bar: Smooth horizontal swipe row */
+  .genre-filters {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+    width: calc(100% + 32px) !important;
+    margin-inline: -16px !important;
+    padding: 6px 16px 12px !important;
+  }
+
+  .genre-filters::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .genre-filters button,
+  .genre-filters .genre-chip {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 8px 16px !important;
+    font-size: 12.5px !important;
+    border-radius: 20px !important;
   }
 
   /* Fluid Touch Snap Rows */
@@ -793,6 +824,24 @@ input,
     overflow-x: auto !important;
   }
 
+  /* Netflix Mobile Style Top 10 Number Align & Fix Top Clipping */
+  .movie-row.movie-row-top10 {
+    padding-top: 30px !important;
+    margin-top: -12px !important;
+  }
+
+  .movie-row-item-top10 {
+    flex: 0 0 170px !important;
+  }
+
+  .netflix-rank-number {
+    font-size: 112px !important;
+    line-height: 0.8 !important;
+    letter-spacing: -10px !important;
+    left: -8px !important;
+    bottom: 34px !important;
+  }
+
   .movie-row-item {
     flex: 0 0 124px !important;
     scroll-snap-align: start !important;
@@ -805,36 +854,85 @@ input,
 
   /* Mobile App Search & Genre Results Grid */
   .search-grid-wrapper {
-    padding: 0 16px 20px !important;
+    padding: 6px 16px 24px !important;
   }
 
   .search-grid-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
     margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
   .search-grid-title {
     font-size: 1.25rem !important;
+    margin: 0 0 4px !important;
   }
 
   .search-grid-subtitle {
     font-size: 11.5px !important;
   }
 
-  .search-results-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 12px 8px !important;
+  .search-grid-header .btn-secondary {
+    padding: 6px 14px !important;
+    font-size: 11.5px !important;
+    border-radius: 20px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-height: 32px !important;
   }
 
-  /* Dedicated Mobile Details Page */
+  .search-results-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px 10px !important;
+  }
+
+  /* Dedicated Mobile Details Page Header */
   .details-header {
-    min-height: 54px !important;
+    min-height: 52px !important;
     padding: 0 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    background: rgba(8, 9, 13, 0.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+  }
+
+  .details-header .back-btn {
+    padding: 0 12px !important;
+    min-height: 36px !important;
+    font-size: 12px !important;
+    border-radius: 18px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .details-header .details-header-list-btn {
+    padding: 0 12px !important;
+    min-height: 36px !important;
+    font-size: 12px !important;
+    border-radius: 18px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .details-header .brand-logo-link {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform: scale(0.92) !important;
   }
 
   .details-hero {
-    min-height: 48vh !important;
-    padding: 40px 16px 20px !important;
+    min-height: 44vh !important;
+    padding: 28px 16px 20px !important;
   }
 
   .details-title {
@@ -847,20 +945,99 @@ input,
     font-size: 12px !important;
   }
 
+  /* Compact 2-column Season & Episode dropdowns on Mobile */
+  .episode-picker {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 14px 0 18px !important;
+  }
+
+  .episode-picker label {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+  }
+
+  .episode-picker select {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 9px 28px 9px 10px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Netflix Mobile Style Actions: Big Primary button on top, 3 secondary buttons below */
   .details-actions {
     display: flex !important;
-    align-items: center !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .details-actions .details-btn-watch {
+    width: 100% !important;
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    justify-content: center !important;
+    padding: 0 16px !important;
+    background: #ffffff !important;
+    color: #08090d !important;
+    box-shadow: 0 4px 18px rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .details-actions-secondary {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
   }
 
-  .details-actions .btn-primary,
-  .details-actions .btn-secondary {
-    flex: 1 !important;
+  .details-actions-secondary button,
+  .details-actions-secondary .btn-secondary,
+  .details-actions-secondary .trailer-voice-btn {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     justify-content: center !important;
-    padding: 10px 14px !important;
-    font-size: 13.5px !important;
-    min-height: 42px !important;
+    min-height: 50px !important;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    gap: 4px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  .details-actions-secondary button svg,
+  .details-actions-secondary .btn-secondary svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .details-actions-secondary .trailer-voice-btn.voice-active {
+    background: rgba(117, 227, 205, 0.15) !important;
+    border-color: rgba(117, 227, 205, 0.5) !important;
+    color: #75e3cd !important;
+  }
+
+  /* More Like This 2-Column Responsive Grid on Mobile */
+  .similar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px 10px !important;
   }
 
   .details-body-container {
@@ -1065,15 +1242,36 @@ input,
   }
 }
 
-/* Extra Small Phones (iPhone SE, smaller Android screens <= 390px) */
-@media (max-width: 390px) {
+/* Extra Small Phones (iPhone SE, smaller Android screens <= 480px) */
+@media (max-width: 480px) {
   .search-results-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px 10px !important;
   }
 
   .movie-row-item {
-    flex: 0 0 110px !important;
+    flex: 0 0 114px !important;
+  }
+
+  .details-header .back-btn-text,
+  .details-header .details-header-list-text {
+    display: none !important;
+  }
+
+  .details-header .back-btn,
+  .details-header .details-header-list-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .details-actions-secondary button span {
+    font-size: 10px !important;
   }
 }
 
