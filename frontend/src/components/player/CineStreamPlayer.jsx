@@ -88,30 +88,30 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Server Quantum is primary default)
+// Disguised high-performance streaming servers (Server Eclipse is primary default)
 const STREAM_SERVERS = [
-  {
-    id: "quantum",
-    name: "Server Quantum",
-    quality: "1080p Ultra HD / Auto-Skip",
-    speed: "CineSrc VIP",
-    badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
-    },
-  },
   {
     id: "eclipse",
     name: "Server Eclipse",
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
-    badge: "Ultra Fast",
+    badge: "Recommended",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?sub=en&autoPlay=true`
         : `https://vidfast.vc/movie/${tmdbId}?sub=en&autoPlay=true`;
+    },
+  },
+  {
+    id: "quantum",
+    name: "Server Quantum",
+    quality: "1080p Ultra HD / Auto-Skip",
+    speed: "CineSrc VIP",
+    badge: "VIP Mirror",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
     },
   },
   {
@@ -521,7 +521,7 @@ const LEGACY_SUB_SERVERS = [
 ];
 
 const STORAGE_KEYS = {
-  ACTIVE_SERVER: "cineverse_active_server_id",
+  ACTIVE_SERVER: "cineverse_active_server_v3",
   FRAMEX_SUB: "cineverse_framex_sub_id",
   ECLIPSE_SUB: "cineverse_eclipse_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
