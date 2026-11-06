@@ -24,6 +24,10 @@ import {
   Search,
   Play,
   Clock,
+  Key,
+  Download,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 // Robust SRT & WebVTT Subtitle Parser
@@ -625,7 +629,7 @@ function CineStreamPlayer({
   const [reloadKey, setReloadKey] = useState(0);
   const [isChanging, setIsChanging] = useState(false);
   const [showAudioSubModal, setShowAudioSubModal] = useState(false);
-  const [audioSubTab, setAudioSubTab] = useState("customSub"); // "customSub" | "subtitles" | "audio"
+  const [audioSubTab, setAudioSubTab] = useState("autoSub"); // "autoSub" | "customSub" | "subtitles" | "audio"
 
   // Universal Custom Subtitle Engine State
   const [customCues, setCustomCues] = useState([]);
@@ -636,6 +640,33 @@ function CineStreamPlayer({
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
   const [subPlaying, setSubPlaying] = useState(true);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  // Auto Subtitle Fetcher State (Wyzie Subs & OpenSubtitles)
+  const [subApiKey, setSubApiKey] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_api_key") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [subProvider, setSubProvider] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_provider") || "wyzie";
+    } catch {
+      return "wyzie";
+    }
+  });
+  const [autoSubTracks, setAutoSubTracks] = useState([]);
+  const [isSearchingSubs, setIsSearchingSubs] = useState(false);
+  const [subSearchError, setSubSearchError] = useState("");
+  const [activeAutoTrackId, setActiveAutoTrackId] = useState(null);
+  const [keyInput, setKeyInput] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_api_key") || "";
+    } catch {
+      return "";
+    }
+  });
 
   const iframeRef = useRef(null);
   const screenBoxRef = useRef(null);
@@ -778,11 +809,175 @@ function CineStreamPlayer({
     setCustomCues([]);
     setCustomSubName("");
     setSubOffset(0.0);
+    setActiveAutoTrackId(null);
   };
 
   const handleOffsetChange = (delta) => {
     setSubOffset((prev) => parseFloat((prev + delta).toFixed(2)));
   };
+
+  const handleSaveSubKey = () => {
+    const clean = keyInput.trim();
+    setSubApiKey(clean);
+    try {
+      localStorage.setItem("cineverse_sub_api_key", clean);
+      localStorage.setItem("cineverse_sub_provider", subProvider);
+    } catch {}
+    if (clean) {
+      handleSearchAutoSubtitles(subProvider, clean);
+    }
+  };
+
+  const handleSearchAutoSubtitles = async (provider = subProvider, key = subApiKey) => {
+    if (!tmdbId) {
+      setSubSearchError("Media identifier missing.");
+      return;
+    }
+    const cleanKey = (key || "").trim();
+    if (!cleanKey) {
+      setSubSearchError(
+        provider === "wyzie"
+          ? "Please enter your free Wyzie API key. Claim one free in 10s at store.wyzie.io/redeem."
+          : "Please enter your OpenSubtitles API key from opensubtitles.com/en/consumers."
+      );
+      return;
+    }
+
+    setIsSearchingSubs(true);
+    setSubSearchError("");
+    try {
+      if (provider === "wyzie") {
+        const queryParams = new URLSearchParams({
+          id: tmdbId,
+          language: "en",
+          key: cleanKey,
+        });
+        if (isTv) {
+          queryParams.set("season", String(currSeason));
+          queryParams.set("episode", String(currEpisode));
+        }
+
+        const res = await fetch(`https://sub.wyzie.io/search?${queryParams.toString()}`);
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error("Invalid Wyzie API key. Claim a free key at store.wyzie.io/redeem.");
+          }
+          throw new Error(`Wyzie API returned error status ${res.status}`);
+        }
+        const data = await res.json();
+        const rawTracks = Array.isArray(data)
+          ? data
+          : data.subtitles || data.results || data.data || [];
+
+        if (!rawTracks.length) {
+          setSubSearchError("No subtitles found on Wyzie for this title. Try OpenSubtitles or manual upload.");
+          setAutoSubTracks([]);
+        } else {
+          const formatted = rawTracks.map((item, idx) => ({
+            id: item.id || `wyzie-${idx}`,
+            label: item.display || item.name || `English Subtitle #${idx + 1}`,
+            language: item.language || "en",
+            url: item.url || item.download || item.link,
+            format: item.format || "vtt",
+            source: "Wyzie Subs",
+          }));
+          setAutoSubTracks(formatted);
+        }
+      } else {
+        // OpenSubtitles REST API
+        const queryParams = new URLSearchParams({
+          tmdb_id: tmdbId,
+          languages: "en",
+        });
+        if (isTv) {
+          queryParams.set("season_number", String(currSeason));
+          queryParams.set("episode_number", String(currEpisode));
+        }
+
+        const res = await fetch(`https://api.opensubtitles.com/api/v1/subtitles?${queryParams.toString()}`, {
+          headers: {
+            "Api-Key": cleanKey,
+            "User-Agent": "CineVerse v1.0",
+          },
+        });
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            throw new Error("Invalid OpenSubtitles API key. Verify consumer key from opensubtitles.com.");
+          }
+          throw new Error(`OpenSubtitles API error status ${res.status}`);
+        }
+        const data = await res.json();
+        const rawList = data.data || [];
+        if (!rawList.length) {
+          setSubSearchError("No subtitles found on OpenSubtitles for this title.");
+          setAutoSubTracks([]);
+        } else {
+          const formatted = rawList.map((item) => {
+            const file = item.attributes?.files?.[0];
+            return {
+              id: item.id || String(file?.file_id),
+              fileId: file?.file_id,
+              label: item.attributes?.release || file?.file_name || "English Track",
+              language: item.attributes?.language || "en",
+              url: null,
+              source: "OpenSubtitles",
+            };
+          });
+          setAutoSubTracks(formatted);
+        }
+      }
+    } catch (err) {
+      setSubSearchError(err.message || "Failed to fetch subtitles. Check network or API key.");
+    } finally {
+      setIsSearchingSubs(false);
+    }
+  };
+
+  const handleSelectAutoTrack = async (track) => {
+    try {
+      setActiveAutoTrackId(track.id);
+      let content = "";
+      if (track.url) {
+        const res = await fetch(track.url);
+        if (!res.ok) throw new Error("Could not download subtitle file.");
+        content = await res.text();
+      } else if (track.fileId && subProvider === "opensubtitles") {
+        const res = await fetch("https://api.opensubtitles.com/api/v1/download", {
+          method: "POST",
+          headers: {
+            "Api-Key": subApiKey,
+            "Content-Type": "application/json",
+            "User-Agent": "CineVerse v1.0",
+          },
+          body: JSON.stringify({ file_id: track.fileId }),
+        });
+        if (!res.ok) throw new Error("Could not request download link from OpenSubtitles.");
+        const data = await res.json();
+        if (!data.link) throw new Error("No download link returned.");
+        const fileRes = await fetch(data.link);
+        content = await fileRes.text();
+      }
+
+      if (!content) throw new Error("Empty subtitle content.");
+      const cues = parseSubtitles(content);
+      if (cues.length > 0) {
+        setCustomCues(cues);
+        setCustomSubName(`${track.label} (${track.source})`);
+        setSubEnabled(true);
+      } else {
+        throw new Error("Unable to parse cues from downloaded subtitle.");
+      }
+    } catch (err) {
+      alert(`Error loading subtitle: ${err.message}`);
+    }
+  };
+
+  // Auto-search subtitles when API key exists and media/episode changes
+  useEffect(() => {
+    if (subApiKey && tmdbId) {
+      handleSearchAutoSubtitles(subProvider, subApiKey);
+    }
+  }, [tmdbId, currSeason, currEpisode]);
 
   // Global window drag-and-drop listener so dropping files over the iframe works 100% of the time
   useEffect(() => {
@@ -857,8 +1052,12 @@ function CineStreamPlayer({
         return;
       }
 
-      // 1. VidLink.pro messages
-      if (event.origin === "https://vidlink.pro") {
+      // 1. VidLink.pro & VidFast (Server Eclipse) messages
+      if (
+        event.origin === "https://vidlink.pro" ||
+        event.origin?.includes("vidfast") ||
+        event.data?.type === "PLAYER_EVENT"
+      ) {
         const playerEvent = event.data?.type === "PLAYER_EVENT" ? event.data.data : null;
         if (!playerEvent) return;
 
@@ -879,6 +1078,8 @@ function CineStreamPlayer({
           setSubPlaying(false);
         } else if (playerEvent.event === "play") {
           setSubPlaying(true);
+        } else if (playerEvent.event === "seeked" && typeof playerEvent.currentTime === "number") {
+          setCurrentPlayTime(playerEvent.currentTime);
         }
       }
 
@@ -1349,6 +1550,18 @@ function CineStreamPlayer({
         <div className="cine-server-status-actions">
           <button
             type="button"
+            className={`cine-server-action-btn ${customCues.length ? "active-subs" : ""}`}
+            onClick={() => {
+              setAudioSubTab(customCues.length ? "subtitles" : "autoSub");
+              setShowAudioSubModal(true);
+            }}
+            title="Audio & Subtitles Assistant (Wyzie / OpenSubtitles / Sync)"
+          >
+            <Captions size={13} />
+            <span>{customCues.length ? "Subtitles: Active" : "Subtitles"}</span>
+          </button>
+          <button
+            type="button"
             className="cine-server-action-btn"
             onClick={handleNextServer}
             title="Switch to next server"
@@ -1402,6 +1615,22 @@ function CineStreamPlayer({
             </div>
           </div>
         )}
+
+        {/* FLOATING SUBTITLE TOGGLE BUTTON */}
+        <div className="cine-floating-sub-controls">
+          <button
+            type="button"
+            className={`cine-floating-sub-btn ${customCues.length ? "has-sub" : ""}`}
+            onClick={() => {
+              setAudioSubTab(customCues.length ? "subtitles" : "autoSub");
+              setShowAudioSubModal(true);
+            }}
+            title="Audio & Subtitles Settings"
+          >
+            <Captions size={13} />
+            <span>{customCues.length ? (subEnabled ? "CC: On" : "CC: Muted") : "CC"}</span>
+          </button>
+        </div>
 
         <iframe
           key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
@@ -1550,11 +1779,19 @@ function CineStreamPlayer({
             <div className="cine-audiosub-nav">
               <button
                 type="button"
+                className={`cine-audiosub-tab-btn ${audioSubTab === "autoSub" ? "active" : ""}`}
+                onClick={() => setAudioSubTab("autoSub")}
+              >
+                <Sparkles size={14} />
+                <span>Auto Subtitles ({customCues.length ? "Active" : "Wyzie / OpenSubs"})</span>
+              </button>
+              <button
+                type="button"
                 className={`cine-audiosub-tab-btn ${audioSubTab === "customSub" ? "active" : ""}`}
                 onClick={() => setAudioSubTab("customSub")}
               >
                 <Upload size={14} />
-                <span>Custom Subtitles ({customCues.length ? "Active" : "Upload"})</span>
+                <span>Upload (.srt/.vtt)</span>
               </button>
               <button
                 type="button"
@@ -1562,7 +1799,7 @@ function CineStreamPlayer({
                 onClick={() => setAudioSubTab("subtitles")}
               >
                 <Captions size={14} />
-                <span>Fix Subtitle Timing</span>
+                <span>Fix Timing Offset</span>
               </button>
               <button
                 type="button"
@@ -1575,6 +1812,213 @@ function CineStreamPlayer({
             </div>
 
             <div className="cine-audiosub-body">
+              {audioSubTab === "autoSub" && (
+                <div className="cine-autosub-panel">
+                  {/* Provider toggle */}
+                  <div className="cine-autosub-provider-toggle" role="tablist">
+                    <button
+                      type="button"
+                      role="tab"
+                      className={`cine-autosub-provider-btn ${subProvider === "wyzie" ? "active" : ""}`}
+                      onClick={() => {
+                        setSubProvider("wyzie");
+                        try { localStorage.setItem("cineverse_sub_provider", "wyzie"); } catch {}
+                        if (subApiKey) handleSearchAutoSubtitles("wyzie", subApiKey);
+                      }}
+                    >
+                      <Sparkles size={13} />
+                      <span>Wyzie Subs API (Fast / WebVTT)</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      className={`cine-autosub-provider-btn ${subProvider === "opensubtitles" ? "active" : ""}`}
+                      onClick={() => {
+                        setSubProvider("opensubtitles");
+                        try { localStorage.setItem("cineverse_sub_provider", "opensubtitles"); } catch {}
+                        if (subApiKey) handleSearchAutoSubtitles("opensubtitles", subApiKey);
+                      }}
+                    >
+                      <Layers size={13} />
+                      <span>OpenSubtitles.com API</span>
+                    </button>
+                  </div>
+
+                  {/* Active Subtitle Status Pill if already playing */}
+                  {customCues.length > 0 && (
+                    <div className="cine-sub-meta-card">
+                      <div className="cine-sub-meta-info">
+                        <FileText size={22} style={{ color: "#ffffff", flexShrink: 0 }} />
+                        <div className="cine-sub-meta-texts">
+                          <span className="cine-sub-meta-title" title={customSubName}>
+                            {customSubName}
+                          </span>
+                          <span className="cine-sub-meta-details">
+                            {customCues.length} dialogue lines loaded &bull; Synced with {activeServer.name}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="cine-sub-actions-row">
+                        <button
+                          type="button"
+                          className="cine-sub-btn-pill"
+                          onClick={() => setSubEnabled(!subEnabled)}
+                        >
+                          <Check size={12} />
+                          <span>{subEnabled ? "Visible" : "Hidden"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="cine-sub-btn-pill danger"
+                          onClick={handleClearSubtitles}
+                        >
+                          <Trash2 size={12} />
+                          <span>Clear</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* API Key Box */}
+                  <div className="cine-autosub-key-box">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "13px", color: "#ffffff", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Key size={14} />
+                        <span>{subProvider === "wyzie" ? "Wyzie Subs API Key" : "OpenSubtitles API Key"}</span>
+                      </strong>
+                      {subApiKey && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubApiKey("");
+                            setKeyInput("");
+                            try { localStorage.removeItem("cineverse_sub_api_key"); } catch {}
+                            setAutoSubTracks([]);
+                          }}
+                          style={{ background: "none", border: "none", color: "#f87171", fontSize: "11px", cursor: "pointer" }}
+                        >
+                          Disconnect Key
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="cine-autosub-key-input-row">
+                      <input
+                        type="text"
+                        className="cine-autosub-input"
+                        placeholder={subProvider === "wyzie" ? "Paste Wyzie API key (wyzie-...)" : "Paste OpenSubtitles API key..."}
+                        value={keyInput}
+                        onChange={(e) => setKeyInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveSubKey();
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="cine-autosub-btn-action"
+                        onClick={handleSaveSubKey}
+                        disabled={isSearchingSubs}
+                      >
+                        {isSearchingSubs ? (
+                          <>
+                            <Loader2 size={13} className="spin-fast" />
+                            <span>Searching...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search size={13} />
+                            <span>{subApiKey ? "Refresh Search" : "Save & Fetch"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="cine-autosub-key-helper">
+                      <span>
+                        {subProvider === "wyzie" ? (
+                          <>
+                            Need a key? Get one 100% free (1,000 queries/day) at{" "}
+                            <a href="https://store.wyzie.io/redeem" target="_blank" rel="noreferrer">
+                              store.wyzie.io/redeem <ExternalLink size={10} />
+                            </a>
+                          </>
+                        ) : (
+                          <>
+                            Free OpenSubtitles Consumer key from{" "}
+                            <a href="https://www.opensubtitles.com/en/consumers" target="_blank" rel="noreferrer">
+                              opensubtitles.com/consumers <ExternalLink size={10} />
+                            </a>
+                          </>
+                        )}
+                      </span>
+                      <span style={{ color: "rgba(255,255,255,0.45)" }}>Saved securely in your browser</span>
+                    </div>
+                  </div>
+
+                  {/* Search Error Notice */}
+                  {subSearchError && (
+                    <div className="cine-info-callout" style={{ borderColor: "rgba(248, 113, 113, 0.4)", color: "#fca5a5" }}>
+                      <strong>Notice:</strong>
+                      <p>{subSearchError}</p>
+                    </div>
+                  )}
+
+                  {/* Subtitle Results List */}
+                  {autoSubTracks.length > 0 && (
+                    <div className="cine-autosub-results">
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.7)", fontWeight: 600 }}>
+                          Available Subtitles for {media?.title || "this title"} {isTv ? `(S${currSeason}:E${currEpisode})` : ""}:
+                        </span>
+                        <span style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.5)" }}>
+                          {autoSubTracks.length} tracks found
+                        </span>
+                      </div>
+
+                      {autoSubTracks.map((track) => {
+                        const isLoaded = activeAutoTrackId === track.id || (customSubName && customSubName.includes(track.label));
+                        return (
+                          <div
+                            key={track.id}
+                            className={`cine-autosub-track-card ${isLoaded ? "active" : ""}`}
+                          >
+                            <div className="cine-autosub-track-info">
+                              <span className="cine-autosub-track-badge">
+                                {track.language.toUpperCase()}
+                              </span>
+                              <div>
+                                <div className="cine-autosub-track-title" title={track.label}>
+                                  {track.label}
+                                </div>
+                                <div className="cine-autosub-track-subtext">
+                                  {track.source} &bull; WebVTT / SRT &bull; Auto-Sync
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={`cine-sub-btn-pill ${isLoaded ? "active" : ""}`}
+                              onClick={() => handleSelectAutoTrack(track)}
+                            >
+                              {isLoaded ? <Check size={12} /> : <Download size={12} />}
+                              <span>{isLoaded ? "Active" : "Load Track"}</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Fallback Notice for Native Server Eclipse CC */}
+                  <div className="cine-info-callout" style={{ marginTop: "4px" }}>
+                    <strong>Native Server Eclipse Subtitles</strong>
+                    <p>
+                      Server Eclipse loads with <code>?sub=en</code> by default. If the server has internal subtitles, you can also toggle them via the video player's internal CC icon.
+                    </p>
+                  </div>
+                </div>
+              )}
               {audioSubTab === "customSub" && (
                 <div className="cine-custom-sub-panel">
                   {/* Hidden file input */}
