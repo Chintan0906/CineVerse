@@ -93,3 +93,18 @@ export async function getMoviesByGenre(genre) {
 
   return result.data;
 }
+
+export async function getMediaSubtitles(id, season, episode, language = "en") {
+  try {
+    const params = new URLSearchParams({ id: String(id), language });
+    if (season) params.set("season", String(season));
+    if (episode) params.set("episode", String(episode));
+
+    const response = await fetch(`${API_BASE_URL}/movies/subtitles?${params.toString()}`);
+    if (!response.ok) return [];
+    const result = await response.json();
+    return result.data || [];
+  } catch (_) {
+    return [];
+  }
+}

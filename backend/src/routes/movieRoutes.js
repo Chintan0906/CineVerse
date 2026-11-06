@@ -134,6 +134,113 @@ router.get("/tv/:id", async (req, res) => {
   }
 });
 
+// GET /api/movies/subtitles?id=tmdbId&season=1&episode=1&language=en
+// Server-side proxy: Keeps Wyzie & OpenSubtitles API keys 100% private
+router.get("/subtitles", async (req, res) => {
+  const { id, season, episode, language = "en" } = req.query;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Missing media id." });
+  }
+
+  const workerUrl = process.env.WYZIE_WORKER_URL;
+  const workerKey = process.env.NITRO_WORKER_KEY;
+  const directKey = process.env.WYZIE_API_KEY;
+
+  try {
+    let rawTracks = [];
+
+    // 1. Wyzie Worker Proxy (Option 1)
+    if (workerUrl && workerKey) {
+      const targetUrl = new URL("/search", workerUrl);
+      targetUrl.searchParams.set("id", String(id));
+      targetUrl.searchParams.set("language", String(language));
+      if (season) targetUrl.searchParams.set("season", String(season));
+      if (episode) targetUrl.searchParams.set("episode", String(episode));
+
+      const workerRes = await fetch(targetUrl.toString(), {
+        headers: {
+          Authorization: `Bearer ${workerKey}`,
+        },
+      });
+
+      if (workerRes.ok) {
+        const data = await workerRes.json();
+        rawTracks = Array.isArray(data)
+          ? data
+          : data.subtitles || data.results || data.data || [];
+      }
+    } else if (directKey) {
+      // 2. Direct server-side call (keeps key off client bundles)
+      const targetUrl = new URL("https://sub.wyzie.io/search");
+      targetUrl.searchParams.set("id", String(id));
+      targetUrl.searchParams.set("language", String(language));
+      targetUrl.searchParams.set("key", String(directKey));
+      if (season) targetUrl.searchParams.set("season", String(season));
+      if (episode) targetUrl.searchParams.set("episode", String(episode));
+
+      const wyzieRes = await fetch(targetUrl.toString());
+      if (wyzieRes.ok) {
+        const data = await wyzieRes.json();
+        rawTracks = Array.isArray(data)
+          ? data
+          : data.subtitles || data.results || data.data || [];
+      }
+    }
+
+    // 3. Fallback to OpenSubtitles server-side if OPEN_SUBTITLES_KEY is configured
+    if (!rawTracks.length && process.env.OPEN_SUBTITLES_KEY) {
+      const openSubsUrl = new URL("https://api.opensubtitles.com/api/v1/subtitles");
+      openSubsUrl.searchParams.set("tmdb_id", String(id));
+      openSubsUrl.searchParams.set("languages", String(language));
+      if (season) openSubsUrl.searchParams.set("season_number", String(season));
+      if (episode) openSubsUrl.searchParams.set("episode_number", String(episode));
+
+      const osRes = await fetch(openSubsUrl.toString(), {
+        headers: {
+          "Api-Key": process.env.OPEN_SUBTITLES_KEY,
+          "User-Agent": "CineVerse v1.0",
+        },
+      });
+      if (osRes.ok) {
+        const data = await osRes.json();
+        const list = data.data || [];
+        rawTracks = list.map((item) => {
+          const file = item.attributes?.files?.[0];
+          return {
+            id: item.id || String(file?.file_id),
+            label: item.attributes?.release || file?.file_name || "English Subtitle",
+            language: item.attributes?.language || language,
+            fileId: file?.file_id,
+            source: "OpenSubtitles",
+          };
+        });
+      }
+    }
+
+    const formatted = rawTracks.map((item, idx) => ({
+      id: item.id || `sub-${idx}`,
+      label: item.display || item.name || item.label || `English Subtitle #${idx + 1}`,
+      language: item.language || language,
+      url: item.url || item.download || item.link || null,
+      fileId: item.fileId || null,
+      format: item.format || "vtt",
+      source: item.source || "Wyzie Subs",
+    }));
+
+    res.json({
+      success: true,
+      data: formatted,
+    });
+  } catch (err) {
+    console.error("Subtitles fetch error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Unable to retrieve subtitles.",
+      data: [],
+    });
+  }
+});
+
 // GET /api/movies/:id
 // Get details for a movie or TV show
 router.get("/:id", async (req, res) => {
