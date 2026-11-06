@@ -1204,15 +1204,66 @@ function CineStreamPlayer({
     handleSelectServer(nextServer);
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(
+        Boolean(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement
+        )
+      );
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    document.addEventListener("mozfullscreenchange", handleFsChange);
+    document.addEventListener("MSFullscreenChange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+      document.removeEventListener("mozfullscreenchange", handleFsChange);
+      document.removeEventListener("MSFullscreenChange", handleFsChange);
+    };
+  }, []);
+
   const handleFullscreen = () => {
     const el = screenBoxRef.current;
     if (!el) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else if (el.requestFullscreen) {
-      el.requestFullscreen().catch(() => {});
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen();
+
+    const fsElement =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement;
+
+    if (fsElement || isFullscreen) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+      setIsFullscreen(false);
+    } else {
+      const requestFn =
+        el.requestFullscreen ||
+        el.webkitRequestFullscreen ||
+        el.mozRequestFullScreen ||
+        el.msRequestFullscreen;
+
+      if (typeof requestFn === "function") {
+        requestFn.call(el).catch(() => {
+          setIsFullscreen(true);
+        });
+      } else {
+        setIsFullscreen(true);
+      }
     }
   };
 
@@ -1550,6 +1601,15 @@ function CineStreamPlayer({
         <div className="cine-server-status-actions">
           <button
             type="button"
+            className={`cine-server-action-btn ${isFullscreen ? "active-subs" : ""}`}
+            onClick={handleFullscreen}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Player"}
+          >
+            <Maximize2 size={13} />
+            <span>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+          </button>
+          <button
+            type="button"
             className={`cine-server-action-btn ${customCues.length ? "active-subs" : ""}`}
             onClick={() => {
               setAudioSubTab(customCues.length ? "subtitles" : "autoSub");
@@ -1575,7 +1635,7 @@ function CineStreamPlayer({
       {/* 16:9 STREAM SCREEN FRAME (WITH DRAG & DROP & SUBTITLES OVERLAY) */}
       <div
         ref={screenBoxRef}
-        className={`cine-screen-box ${isChanging ? "switching" : ""}`}
+        className={`cine-screen-box ${isChanging ? "switching" : ""} ${isFullscreen ? "is-fullscreen" : ""}`}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDraggingFile(true);
@@ -1616,7 +1676,7 @@ function CineStreamPlayer({
           </div>
         )}
 
-        {/* FLOATING SUBTITLE TOGGLE BUTTON */}
+        {/* FLOATING SUBTITLE & FULLSCREEN CONTROLS OVER VIDEO */}
         <div className="cine-floating-sub-controls">
           <button
             type="button"
@@ -1630,6 +1690,15 @@ function CineStreamPlayer({
             <Captions size={13} />
             <span>{customCues.length ? (subEnabled ? "CC: On" : "CC: Muted") : "CC"}</span>
           </button>
+          <button
+            type="button"
+            className={`cine-floating-sub-btn ${isFullscreen ? "has-sub" : ""}`}
+            onClick={handleFullscreen}
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            <Maximize2 size={13} />
+            <span>{isFullscreen ? "Exit" : "Fullscreen"}</span>
+          </button>
         </div>
 
         <iframe
@@ -1638,8 +1707,10 @@ function CineStreamPlayer({
           className="cine-stream-iframe"
           src={embedUrl}
           title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
+          allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
+          allowFullScreen={true}
+          webkitallowfullscreen="true"
+          mozallowfullscreen="true"
           referrerPolicy="no-referrer"
         />
       </div>
