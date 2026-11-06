@@ -103,6 +103,17 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "animeembed",
+    name: "Server Kage",
+    quality: "1080p Anime / Auto-Skip",
+    speed: "Zero-Ad Feed",
+    badge: "AnimeEmbed Pro",
+    getUrl: (tmdbId, isTv, season, episode, currentTime, anilistId) => {
+      const id = anilistId || "21701";
+      return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=ffffff`;
+    },
+  },
+  {
     id: "quantum",
     name: "Server Quantum",
     quality: "1080p Ultra HD / Auto-Skip",
@@ -112,17 +123,6 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
         : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
-    },
-  },
-  {
-    id: "animeembed",
-    name: "Server Kage",
-    quality: "1080p Anime / Auto-Skip",
-    speed: "Zero-Ad Feed",
-    badge: "AnimeEmbed Pro",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, anilistId) => {
-      const id = anilistId || "21701";
-      return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=ffffff`;
     },
   },
   {
@@ -521,7 +521,7 @@ const LEGACY_SUB_SERVERS = [
 ];
 
 const STORAGE_KEYS = {
-  ACTIVE_SERVER: "cineverse_active_server_v3",
+  ACTIVE_SERVER: "cineverse_active_server_v4",
   FRAMEX_SUB: "cineverse_framex_sub_id",
   ECLIPSE_SUB: "cineverse_eclipse_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
