@@ -25,7 +25,7 @@ import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLo
 import CinematicSplashScreen from "../components/common/CinematicSplashScreen";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
-import { searchMovies, getMovieById, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre } from "../services/movieService";
+import { searchMovies, getMovieById, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre, getMovieRecommendations } from "../services/movieService";
 import "../components/hero/HeroSlideshow.css";
 
 function Home() {
@@ -309,65 +309,143 @@ function getCleanMovieSynopsis(movie, genres = []) {
   // Active featured movie on the billboard
   const featuredMovie = featuredList[heroIndex] || featuredList[0] || movies[0] || null;
 
-  // Curated Netflix categories
+  // Reference title for "Because You Watched":
+  // Most recently watched movie/series in history, or fallback to watchlist, or top movie
+  const lastWatched = useMemo(() => {
+    if (history && history.length > 0) return history[0];
+    if (watchlist && watchlist.length > 0) return watchlist[0];
+    if (movies && movies.length > 0) return movies[0];
+    return null;
+  }, [history, watchlist, movies]);
+
+  const referenceId = lastWatched?.tmdbId || lastWatched?.id;
+  const referenceTitle = lastWatched?.title || lastWatched?.name || "";
+  const referenceType = lastWatched?.mediaType || (lastWatched?.isTV ? "tv" : "movie");
+
+  const [becauseYouWatchedList, setBecauseYouWatchedList] = useState([]);
+
+  useEffect(() => {
+    if (!referenceId) return;
+    let active = true;
+
+    async function fetchBecauseYouWatched() {
+      try {
+        const recs = await getMovieRecommendations(referenceId, referenceType);
+        if (active && recs && recs.length > 0) {
+          setBecauseYouWatchedList(recs);
+          return;
+        }
+      } catch (_) {}
+
+      // Instant intelligent fallback based on catalogue genres
+      if (active && movies.length > 0) {
+        const targetGenres = Array.isArray(lastWatched?.genres) && lastWatched.genres.length > 0
+          ? lastWatched.genres
+          : [lastWatched?.genre || "Action"];
+        const matched = movies
+          .filter((m) => String(m.id) !== String(referenceId))
+          .filter((m) => (m.genres || []).some((g) => targetGenres.includes(g)))
+          .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))
+          .slice(0, 20);
+
+        setBecauseYouWatchedList(matched.length > 0 ? matched : movies.slice(4, 24));
+      }
+    }
+
+    fetchBecauseYouWatched();
+
+    return () => {
+      active = false;
+    };
+  }, [referenceId, referenceType, movies.length]);
+
+  // Curated Netflix categories with "Because You Watched" placed just before "Popular on CineVerse"
   const categories = useMemo(() => {
+    let list = [];
     if (apiCategories && apiCategories.length > 0) {
-      return apiCategories.map((cat) => ({
+      list = apiCategories.map((cat) => ({
         ...cat,
         movies: cat.movies.map(normalize).filter(Boolean),
       }));
+    } else {
+      list = [
+        {
+          id: "top-10",
+          title: "Top 10 Movies Today",
+          subtitle: "The most-watched titles right now on CineVerse",
+          isTop10: true,
+          movies: movies.slice(0, 10),
+        },
+        {
+          id: "trending-now",
+          title: "Trending Now",
+          subtitle: "Everyone is watching these titles",
+          movies: movies.filter((m) => m.trending),
+        },
+        {
+          id: "popular-cineverse",
+          title: "Popular on CineVerse",
+          subtitle: "Loved by audiences worldwide",
+          movies: movies.slice(0, 20),
+        },
+        {
+          id: "action-thrillers",
+          title: "Action & High-Octane Thrillers",
+          subtitle: "Suspense, danger, and relentless action",
+          movies: movies.filter((m) =>
+            m.genres.some((g) => ["Action", "Adventure", "Thriller"].includes(g))
+          ),
+        },
+        {
+          id: "scifi-beyond",
+          title: "Sci-Fi & Cosmic Worlds",
+          subtitle: "Venture beyond the known universe",
+          movies: movies.filter((m) =>
+            m.genres.some((g) => ["Sci-Fi", "Fantasy"].includes(g))
+          ),
+        },
+        {
+          id: "critically-acclaimed",
+          title: "Critically Acclaimed Masterpieces",
+          subtitle: "Award winners and fan favourites",
+          movies: [...movies].sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating)),
+        },
+        {
+          id: "dramas-stories",
+          title: "Emotional Dramas & Stories",
+          subtitle: "Compelling narratives and deep emotions",
+          movies: movies.filter((m) => m.genres.includes("Drama")),
+        },
+      ];
     }
 
-    return [
-      {
-        id: "top-10",
-        title: "Top 10 Movies Today",
-        subtitle: "The most-watched titles right now on CineVerse",
-        isTop10: true,
-        movies: movies.slice(0, 10),
-      },
-      {
-        id: "trending-now",
-        title: "Trending Now",
-        subtitle: "Everyone is watching these titles",
-        movies: movies.filter((m) => m.trending),
-      },
-      {
-        id: "popular-cineverse",
-        title: "Popular on CineVerse",
-        subtitle: "Loved by audiences worldwide",
-        movies: movies.slice(0, 20),
-      },
-      {
-        id: "action-thrillers",
-        title: "Action & High-Octane Thrillers",
-        subtitle: "Suspense, danger, and relentless action",
-        movies: movies.filter((m) =>
-          m.genres.some((g) => ["Action", "Adventure", "Thriller"].includes(g))
-        ),
-      },
-      {
-        id: "scifi-beyond",
-        title: "Sci-Fi & Cosmic Worlds",
-        subtitle: "Venture beyond the known universe",
-        movies: movies.filter((m) =>
-          m.genres.some((g) => ["Sci-Fi", "Fantasy"].includes(g))
-        ),
-      },
-      {
-        id: "critically-acclaimed",
-        title: "Critically Acclaimed Masterpieces",
-        subtitle: "Award winners and fan favourites",
-        movies: [...movies].sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating)),
-      },
-      {
-        id: "dramas-stories",
-        title: "Emotional Dramas & Stories",
-        subtitle: "Compelling narratives and deep emotions",
-        movies: movies.filter((m) => m.genres.includes("Drama")),
-      },
-    ];
-  }, [apiCategories, movies]);
+    if (referenceTitle && becauseYouWatchedList.length > 0) {
+      const becauseCategory = {
+        id: "because-you-watched",
+        title: `Because You Watched ${referenceTitle}`,
+        subtitle: `Recommended movies & series inspired by your interest in ${referenceTitle}`,
+        movies: becauseYouWatchedList.map(normalize).filter(Boolean),
+      };
+
+      // Place just before "popular on cinesphere" (popular-cineverse)
+      const popIdx = list.findIndex(
+        (cat) =>
+          cat.id === "popular-cineverse" ||
+          cat.id?.includes("popular") ||
+          cat.title?.toLowerCase().includes("popular")
+      );
+
+      if (popIdx !== -1) {
+        const copy = [...list];
+        copy.splice(popIdx, 0, becauseCategory);
+        return copy;
+      } else {
+        return [...list.slice(0, 3), becauseCategory, ...list.slice(3)];
+      }
+    }
+
+    return list;
+  }, [apiCategories, movies, referenceTitle, becauseYouWatchedList]);
 
   // Available genre filter chips
   const genres = useMemo(() => {

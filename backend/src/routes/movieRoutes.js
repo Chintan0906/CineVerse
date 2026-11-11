@@ -6,6 +6,7 @@ const {
   searchMovies,
   searchMultimedia,
   getMovieDetails,
+  getMovieRecommendations,
   getTVShowDetails,
   getTVSeasonEpisodes,
   discoverByGenre,
@@ -236,6 +237,27 @@ router.get("/subtitles", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Unable to retrieve subtitles.",
+      data: [],
+    });
+  }
+});
+
+// GET /api/movies/:id/recommendations
+// Return personalized/similar titles for "Because You Watched"
+router.get(["/:id/recommendations", "/tv/:id/recommendations"], async (req, res) => {
+  const { id } = req.params;
+  const type = req.query.type; // 'movie' or 'tv'
+  try {
+    const recommendations = await getMovieRecommendations(id, type);
+    res.json({
+      success: true,
+      data: recommendations,
+    });
+  } catch (error) {
+    console.error("Recommendations error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Unable to load recommendations.",
       data: [],
     });
   }

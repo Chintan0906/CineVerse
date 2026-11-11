@@ -537,6 +537,47 @@ async function getMovieDetails(id) {
   }
 }
 
+// Fetch recommendations/similar titles for "Because You Watched"
+async function getMovieRecommendations(id, type = "movie") {
+  const isTv = type === "tv";
+  const recPath = isTv ? `/tv/${id}/recommendations` : `/movie/${id}/recommendations`;
+  const simPath = isTv ? `/tv/${id}/similar` : `/movie/${id}/similar`;
+
+  try {
+    let response = await tmdbRequest(recPath);
+    let results = response?.results || [];
+
+    if (!results.length) {
+      response = await tmdbRequest(simPath);
+      results = response?.results || [];
+    }
+
+    if (results.length > 0) {
+      return results.slice(0, 20).map((m) =>
+        normalizeMovie(m, { media_type: isTv ? "tv" : "movie" })
+      );
+    }
+  } catch (err) {
+    console.error("TMDB recommendations error:", err.message);
+  }
+
+  // Fallback: match by genres from catalogue
+  try {
+    const catalogue = await getNetflixCatalogue();
+    const source = (catalogue.allMovies || []).find((m) => String(m.id) === String(id));
+    const targetGenres = source?.genres || ["Action", "Drama"];
+    const related = (catalogue.allMovies || [])
+      .filter((m) => String(m.id) !== String(id))
+      .filter((m) => (m.genres || []).some((g) => targetGenres.includes(g)))
+      .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))
+      .slice(0, 20);
+
+    return related;
+  } catch (_) {
+    return [];
+  }
+}
+
 // Complete Netflix-Style Catalogue (Movies + TV Shows)
 async function getNetflixCatalogue() {
   const now = Date.now();
@@ -767,6 +808,7 @@ module.exports = {
   searchMovies,
   searchMultimedia,
   getMovieDetails,
+  getMovieRecommendations,
   getTVShowDetails,
   getTVSeasonEpisodes,
   getTrendingMovies,

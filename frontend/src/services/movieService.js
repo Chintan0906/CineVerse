@@ -94,6 +94,23 @@ export async function getMoviesByGenre(genre) {
   return result.data;
 }
 
+export async function getMovieRecommendations(id, type) {
+  try {
+    const query = type ? `?type=${encodeURIComponent(type)}` : "";
+    const response = await fetch(
+      `${API_BASE_URL}/movies/${encodeURIComponent(id)}/recommendations${query}`
+    );
+    if (!response.ok) {
+      const details = await getMovieById(id, type);
+      return details?.similar || [];
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (_) {
+    return [];
+  }
+}
+
 export async function getMediaSubtitles(id, season, episode, language = "en") {
   try {
     const params = new URLSearchParams({ id: String(id), language });
