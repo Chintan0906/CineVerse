@@ -2532,9 +2532,10 @@ main {
 .movie-card-wrapper.top10-wrapper {
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
   position: relative;
   width: 100%;
-  padding-left: 20px;
+  padding-left: 0;
 }
 
 .movie-row-item-top10 {
@@ -2569,10 +2570,8 @@ main {
 }
 
 .movie-card.top10-card {
-  flex: 1;
-  min-width: 0;
-  margin-left: 55px;
   z-index: 3;
+  margin-left: 0;
 }
 
 /* Badges */
@@ -2727,7 +2726,7 @@ main {
     left: -10px;
   }
   .movie-card.top10-card {
-    margin-left: 45px;
+    margin-left: 0;
   }
 }
 
@@ -2742,7 +2741,7 @@ main {
     bottom: 40px;
   }
   .movie-card.top10-card {
-    margin-left: 35px;
+    margin-left: 0;
   }
 }
 

@@ -245,6 +245,69 @@ body {
   transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 240ms ease !important;
 }
 
+/* =====================================================
+   TOP 10 TRENDING ROW — UNIFIED CARD SIZE WITH ALL ROWS
+   Cards in Top 10 match standard card size identically
+===================================================== */
+.movie-row.movie-row-top10 {
+  padding-top: 10px !important;
+  overflow-y: visible !important;
+}
+
+.movie-row-item.movie-row-item-top10 {
+  flex: 0 0 calc(clamp(138px, 13.2vw, 194px) + clamp(46px, 4.2vw, 62px)) !important;
+  min-width: 0 !important;
+}
+
+.movie-card-wrapper.top10-wrapper {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+  position: relative !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.movie-card.top10-card {
+  width: clamp(138px, 13.2vw, 194px) !important;
+  max-width: clamp(138px, 13.2vw, 194px) !important;
+  flex: 0 0 clamp(138px, 13.2vw, 194px) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  z-index: 3 !important;
+}
+
+.netflix-rank-number {
+  position: absolute !important;
+  left: clamp(-12px, -1vw, -6px) !important;
+  bottom: clamp(48px, 4.2vw, 56px) !important;
+  font-size: clamp(170px, 15vw, 215px) !important;
+  font-weight: 950 !important;
+  line-height: 0.72 !important;
+  font-family: "Impact", "Arial Black", -apple-system, sans-serif !important;
+  color: #08090d !important;
+  -webkit-text-stroke: 4.5px rgba(255, 255, 255, 0.4) !important;
+  letter-spacing: -16px !important;
+  z-index: 2 !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.8)) !important;
+  transition: transform 0.35s ease, -webkit-text-stroke 0.35s ease, color 0.35s ease !important;
+}
+
+.netflix-rank-number[aria-label="Rank 10"] {
+  letter-spacing: -24px !important;
+  left: clamp(-18px, -1.5vw, -12px) !important;
+}
+
+.movie-card-wrapper.top10-wrapper:hover .netflix-rank-number {
+  -webkit-text-stroke: 4.5px #ffffff !important;
+  color: rgba(255, 255, 255, 0.15) !important;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4)) !important;
+  transform: scale(1.06) translateY(-4px) !important;
+}
+
 .movie-card:hover {
   z-index: 5;
   filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.48));
@@ -587,6 +650,28 @@ input,
 
   .movie-row-item {
     flex-basis: clamp(132px, 22vw, 176px) !important;
+  }
+
+  .movie-row-item.movie-row-item-top10 {
+    flex: 0 0 calc(clamp(132px, 22vw, 176px) + clamp(38px, 5vw, 52px)) !important;
+  }
+
+  .movie-card.top10-card {
+    width: clamp(132px, 22vw, 176px) !important;
+    max-width: clamp(132px, 22vw, 176px) !important;
+    flex: 0 0 clamp(132px, 22vw, 176px) !important;
+  }
+
+  .netflix-rank-number {
+    font-size: clamp(140px, 17vw, 175px) !important;
+    bottom: clamp(44px, 4vw, 50px) !important;
+    letter-spacing: -13px !important;
+    left: -8px !important;
+  }
+
+  .netflix-rank-number[aria-label="Rank 10"] {
+    letter-spacing: -18px !important;
+    left: -14px !important;
   }
 
   .stream-recommendations-grid {
@@ -985,22 +1070,35 @@ input,
     overflow-x: auto !important;
   }
 
-  /* Netflix Mobile Style Top 10 Number Align & Fix Top Clipping */
+  /* Netflix Mobile Style Top 10 Number Align & Card Sizing */
   .movie-row.movie-row-top10 {
-    padding-top: 30px !important;
-    margin-top: -12px !important;
+    padding-top: 20px !important;
+    margin-top: -6px !important;
   }
 
-  .movie-row-item-top10 {
-    flex: 0 0 170px !important;
+  .movie-row-item.movie-row-item-top10 {
+    flex: 0 0 calc(clamp(124px, 37vw, 158px) + clamp(30px, 8vw, 42px)) !important;
+    scroll-snap-align: start !important;
+  }
+
+  .movie-card.top10-card {
+    width: clamp(124px, 37vw, 158px) !important;
+    max-width: clamp(124px, 37vw, 158px) !important;
+    flex: 0 0 clamp(124px, 37vw, 158px) !important;
+    margin-left: 0 !important;
   }
 
   .netflix-rank-number {
-    font-size: 112px !important;
+    font-size: clamp(118px, 26vw, 145px) !important;
     line-height: 0.8 !important;
     letter-spacing: -10px !important;
-    left: -8px !important;
-    bottom: 34px !important;
+    left: -6px !important;
+    bottom: 38px !important;
+  }
+
+  .netflix-rank-number[aria-label="Rank 10"] {
+    letter-spacing: -15px !important;
+    left: -10px !important;
   }
 
   .movie-row-item {
