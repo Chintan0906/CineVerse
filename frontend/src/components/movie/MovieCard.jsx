@@ -172,10 +172,6 @@ function MovieCard({
                 </button>
               </div>
 
-              <h3 className="card-overlay-title">
-                {movie.title}
-              </h3>
-
               <div className="card-overlay-meta">
                 <span className="match-score">{matchPercent}% Match</span>
                 <span className="quality-pill">HD</span>
