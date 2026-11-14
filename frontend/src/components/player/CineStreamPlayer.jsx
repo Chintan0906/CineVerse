@@ -539,6 +539,11 @@ function CineStreamPlayer({
   onEpisodeChange,
 }) {
   const [activeServer, setActiveServer] = useState(() => {
+    if (media?.resumePlayback && Number(media.currentTime) >= 15) {
+      const resumeServer = STREAM_SERVERS.find((server) => server.id === "nova");
+      if (resumeServer) return resumeServer;
+    }
+
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const urlServer = urlParams.get("server");

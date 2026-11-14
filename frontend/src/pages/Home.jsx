@@ -61,6 +61,9 @@ function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeGenre, setActiveGenre] = useState("All");
+  const [activeType, setActiveType] = useState("all");
+  const [activeYear, setActiveYear] = useState("all");
+  const [sortBy, setSortBy] = useState("popular");
   const [activeTab, setActiveTab] = useState("Home");
   const [playerMovie, setPlayerMovie] = useState(() => {
     if (!watchId) return null;
@@ -69,6 +72,17 @@ function Home() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (String(parsed.id) === String(watchId)) {
+          const latestProgress = history.find(
+            (item) => String(item.tmdbId || item.id) === String(watchId)
+          );
+          if (latestProgress) {
+            const currentTime = Number(latestProgress.currentTime) || 0;
+            return {
+              ...parsed,
+              ...latestProgress,
+              resumePlayback: currentTime >= 15 && !latestProgress.completed,
+            };
+          }
           return parsed;
         }
       }
@@ -468,6 +482,11 @@ function getCleanMovieSynopsis(movie, genres = []) {
     ];
   }, [movies]);
 
+  const browseYears = useMemo(() => (
+    [...new Set(movies.map((movie) => String(movie.year || "")).filter((year) => /^\d{4}$/.test(year)))]
+      .sort((a, b) => Number(b) - Number(a))
+  ), [movies]);
+
   // Real-time worldwide debounced search across all movies ever made via TMDB
   useEffect(() => {
     const query = searchQuery.trim();
@@ -533,17 +552,45 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
   // Display results when searching or filtering
   const displayedSearchResults = useMemo(() => {
+    let results;
     if (searchQuery.trim().length >= 2) {
-      if (globalSearchResults.length > 0) return globalSearchResults;
-      // Fallback to local search if no global results yet
-      const query = searchQuery.trim().toLowerCase();
-      return movies.filter((m) =>
-        m.title.toLowerCase().includes(query) ||
-        m.genres.some((g) => g.toLowerCase().includes(query))
-      );
+      if (globalSearchResults.length > 0) {
+        results = globalSearchResults;
+      } else {
+        // Fallback to local search if no global results yet
+        const query = searchQuery.trim().toLowerCase();
+        results = movies.filter((m) =>
+          m.title.toLowerCase().includes(query) ||
+          m.genres.some((g) => g.toLowerCase().includes(query))
+        );
+      }
+    } else {
+      results = genreFilteredMovies;
     }
-    return genreFilteredMovies;
-  }, [searchQuery, globalSearchResults, movies, genreFilteredMovies]);
+
+    const filtered = results.filter((movie) => {
+      const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+      const matchesType = activeType === "all" || (activeType === "series" ? isTv : !isTv);
+      const matchesYear = activeYear === "all" || String(movie.year || "") === activeYear;
+      return matchesType && matchesYear;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "title") return String(a.title || "").localeCompare(String(b.title || ""));
+      if (sortBy === "newest") return Number(b.year || 0) - Number(a.year || 0);
+      return Number(b.rating || 0) - Number(a.rating || 0);
+    });
+  }, [searchQuery, globalSearchResults, movies, genreFilteredMovies, activeType, activeYear, sortBy]);
+
+  const hasBrowseFilters = activeGenre !== "All" || activeType !== "all" || activeYear !== "all";
+
+  function clearBrowseFilters() {
+    setActiveGenre("All");
+    setActiveType("all");
+    setActiveYear("all");
+    setSortBy("popular");
+    setSearchQuery("");
+  }
 
   // Watchlist movies
   const watchlistMovies = watchlist
@@ -633,6 +680,16 @@ function getCleanMovieSynopsis(movie, genres = []) {
       next.delete("movie");
       return next;
     }, { replace: true });
+  }
+
+  function handleResume(movie) {
+    if (!movie) return;
+    const currentTime = Math.max(0, Number(movie.currentTime) || 0);
+    handlePlay({
+      ...movie,
+      currentTime,
+      resumePlayback: currentTime >= 15 && !movie.completed,
+    }, movie.season, movie.episode);
   }
 
   function handleClosePlayer() {
@@ -731,6 +788,9 @@ function getCleanMovieSynopsis(movie, genres = []) {
   function showHistory() {
     setActiveTab("History");
     setActiveGenre("All");
+    setActiveType("all");
+    setActiveYear("all");
+    setSortBy("popular");
     setSearchQuery("");
     setSearchOpen(false);
     setSearchParams((prev) => {
@@ -744,6 +804,9 @@ function getCleanMovieSynopsis(movie, genres = []) {
   function showHome() {
     setActiveTab("Home");
     setActiveGenre("All");
+    setActiveType("all");
+    setActiveYear("all");
+    setSortBy("popular");
     setSearchQuery("");
     setSearchOpen(false);
     setPendingSection("");
@@ -758,6 +821,9 @@ function getCleanMovieSynopsis(movie, genres = []) {
   function showHomeSection(sectionId) {
     setActiveTab("Home");
     setActiveGenre("All");
+    setActiveType("all");
+    setActiveYear("all");
+    setSortBy("popular");
     setSearchQuery("");
     setSearchOpen(false);
     setPendingSection(sectionId);
@@ -937,7 +1003,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
       <main>
         {/* HERO SLIDESHOW - NETFLIX STYLE AUTO-PLAY */}
-        {!searchQuery && activeTab === "Home" && activeGenre === "All" && featuredList.length > 0 && (
+        {!searchQuery && activeTab === "Home" && !hasBrowseFilters && featuredList.length > 0 && (
           <HeroSlideshow
             featuredMovies={featuredList}
             watchlist={watchlist}
@@ -969,21 +1035,57 @@ function getCleanMovieSynopsis(movie, genres = []) {
             </h2>
           </div>
 
-          {activeTab !== "History" && <div className="genre-filters">
-            {genres.map((genre) => (
-              <button
-                key={genre}
-                className={activeGenre === genre && !searchQuery ? "active" : ""}
-                onClick={() => {
-                  setActiveGenre(genre);
-                  setSearchQuery("");
-                  setActiveTab("Home");
-                }}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>}
+          {activeTab === "Home" && (
+            <div className="browse-control-stack">
+              <div className="genre-filters" aria-label="Filter by genre">
+                {genres.map((genre) => (
+                  <button
+                    key={genre}
+                    type="button"
+                    className={activeGenre === genre && !searchQuery ? "active" : ""}
+                    aria-pressed={activeGenre === genre && !searchQuery}
+                    onClick={() => {
+                      setActiveGenre(genre);
+                      setSearchQuery("");
+                    }}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+
+              <div className="browse-filter-controls" aria-label="More browsing filters">
+                <label className="browse-select">
+                  <span>Show</span>
+                  <select value={activeType} onChange={(event) => setActiveType(event.target.value)}>
+                    <option value="all">Movies & series</option>
+                    <option value="movie">Movies</option>
+                    <option value="series">Series</option>
+                  </select>
+                </label>
+                <label className="browse-select">
+                  <span>Year</span>
+                  <select value={activeYear} onChange={(event) => setActiveYear(event.target.value)}>
+                    <option value="all">Any year</option>
+                    {browseYears.map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+                <label className="browse-select">
+                  <span>Sort</span>
+                  <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                    <option value="popular">Top rated</option>
+                    <option value="newest">Newest</option>
+                    <option value="title">Title A–Z</option>
+                  </select>
+                </label>
+                {(hasBrowseFilters || searchQuery) && (
+                  <button type="button" className="browse-clear-button" onClick={clearBrowseFilters}>
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* MOVIE CATALOGUE & SEARCH RESULTS */}
@@ -1003,32 +1105,29 @@ function getCleanMovieSynopsis(movie, genres = []) {
           )}
 
           {/* WORLDWIDE SEARCH OR GENRE FILTER RESULTS GRID */}
-          {(searchQuery || activeGenre !== "All") && !["Watchlist", "History"].includes(activeTab) && (
+          {(searchQuery || hasBrowseFilters) && !["Watchlist", "History"].includes(activeTab) && (
             <div className="search-grid-wrapper">
               <div className="search-grid-header">
                 <div>
                   <h3 className="search-grid-title">
                     {searchQuery
-                      ? `Worldwide Movies Matching "${searchQuery}"`
-                      : `${activeGenre} Collection`}
+                      ? `Worldwide titles matching "${searchQuery}"`
+                      : `${activeGenre !== "All" ? `${activeGenre} · ` : ""}${activeType === "movie" ? "Movies" : activeType === "series" ? "Series" : "Titles"}${activeYear !== "all" ? ` from ${activeYear}` : ""}`}
                   </h3>
                   <p className="search-grid-subtitle">
                     {isSearchingGlobal
                       ? "Querying TMDB international database..."
                       : isLoadingGenre
                       ? `Searching TMDB worldwide archives for ${activeGenre}...`
-                      : `Found ${displayedSearchResults.length} titles available to view`}
+                    : `${displayedSearchResults.length} ${displayedSearchResults.length === 1 ? "title" : "titles"}${sortBy === "popular" ? " · sorted by rating" : sortBy === "newest" ? " · newest first" : " · A–Z"}`}
                   </p>
                 </div>
-                {searchQuery && (
+                {(searchQuery || hasBrowseFilters) && (
                   <button
                     className="btn-secondary"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setActiveGenre("All");
-                    }}
+                    onClick={clearBrowseFilters}
                   >
-                    Clear Search
+                    Clear filters
                   </button>
                 )}
               </div>
@@ -1050,15 +1149,12 @@ function getCleanMovieSynopsis(movie, genres = []) {
                 <div className="empty-state">
                   <Search size={30} />
                   <div>
-                    <h3>No movies found</h3>
-                    <p>Try searching another title, actor, or genre.</p>
+                      <h3>No titles match these filters</h3>
+                      <p>Change a filter or clear them to see more movies and series.</p>
                   </div>
                   <button
                     className="btn-secondary"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setActiveGenre("All");
-                    }}
+                    onClick={clearBrowseFilters}
                   >
                     Reset Search
                   </button>
@@ -1074,10 +1170,10 @@ function getCleanMovieSynopsis(movie, genres = []) {
                 <MovieRow
                   id="continue-watching"
                   title="Continue Watching"
-                  subtitle="Pick up where you left off"
+                  subtitle={`${continueWatchingMovies.length} ${continueWatchingMovies.length === 1 ? "title" : "titles"} in progress · pick up where you left off`}
                   movies={continueWatchingMovies}
                   onSelect={handleSelectMovie}
-                  onPlay={handlePlay}
+                  onPlay={handleResume}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
                 />
@@ -1125,7 +1221,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
                   title="Continue Watching"
                   movies={continueWatchingMovies}
                   onSelect={handleSelectMovie}
-                  onPlay={handlePlay}
+                  onPlay={handleResume}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
                 />
@@ -1136,7 +1232,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
                 subtitle="Your latest titles are saved on this device"
                 movies={history}
                 onSelect={handleSelectMovie}
-                onPlay={handlePlay}
+                onPlay={handleResume}
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
                 showCount
@@ -1398,6 +1494,8 @@ function getCleanMovieSynopsis(movie, genres = []) {
                       ...prev,
                       season: newSeason,
                       episode: 1,
+                      currentTime: 0,
+                      resumePlayback: false,
                     }));
                     setSearchParams((prev) => {
                       const next = new URLSearchParams(prev);
@@ -1412,6 +1510,8 @@ function getCleanMovieSynopsis(movie, genres = []) {
                       ...prev,
                       season: playerSeason,
                       episode: newEpisode,
+                      currentTime: 0,
+                      resumePlayback: false,
                     }));
                     setSearchParams((prev) => {
                       const next = new URLSearchParams(prev);

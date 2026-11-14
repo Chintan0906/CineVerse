@@ -24,6 +24,14 @@ function MovieCard({
   if (!movie) return null;
 
   const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+  const resumeSeconds = Number(movie.currentTime) || 0;
+  const hasResumePoint = resumeSeconds >= 15 && !movie.completed;
+  const resumeHours = Math.floor(resumeSeconds / 3600);
+  const resumeMinutes = Math.floor((resumeSeconds % 3600) / 60);
+  const resumeRemainder = Math.floor(resumeSeconds % 60);
+  const resumeTimestamp = resumeHours > 0
+    ? `${resumeHours}:${String(resumeMinutes).padStart(2, "0")}:${String(resumeRemainder).padStart(2, "0")}`
+    : `${resumeMinutes}:${String(resumeRemainder).padStart(2, "0")}`;
 
   const handleCardClick = () => {
     if (onSelect) {
@@ -117,7 +125,11 @@ function MovieCard({
           {movie.progressPercent > 0 && !movie.completed && (
             <div
               className="movie-progress-track"
+              role="progressbar"
               aria-label={`${movie.progressPercent}% watched`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(100, movie.progressPercent)}
             >
               <span style={{ width: `${Math.min(100, movie.progressPercent)}%` }} />
             </div>
@@ -150,16 +162,17 @@ function MovieCard({
               <div className="overlay-top-row">
                 <button
                   type="button"
-                  className="card-play-button"
+                  className={`card-play-button ${hasResumePoint ? "resume" : ""}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (onPlay) onPlay(movie);
                     else handleCardClick();
                   }}
-                  aria-label={`Play ${movie.title}`}
-                  title="Play"
+                  aria-label={hasResumePoint ? `Resume ${movie.title} from ${resumeTimestamp}` : `Play ${movie.title}`}
+                  title={hasResumePoint ? `Resume from ${resumeTimestamp}` : "Play"}
                 >
                   <Play size={18} fill="currentColor" />
+                  {hasResumePoint && <span>Resume {resumeTimestamp}</span>}
                 </button>
 
                 <button
