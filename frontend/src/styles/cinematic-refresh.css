@@ -888,6 +888,43 @@ input,
   }
 }
 
+/* Home discovery: let each poster cast a soft, color-matched glow on hover. */
+.movie-card {
+  isolation: isolate;
+}
+
+.movie-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: 4% -7% -9%;
+  border-radius: 22px;
+  background-image: var(--poster-glow-image, none);
+  background-repeat: no-repeat;
+  background-position: center 12%;
+  background-size: 100% 78%;
+  content: "";
+  opacity: 0;
+  filter: blur(26px) saturate(1.75) brightness(0.78);
+  transform: translateY(9px) scale(0.92);
+  transition:
+    opacity 280ms ease,
+    transform 360ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  pointer-events: none;
+}
+
+.movie-card:hover::before,
+.movie-card:focus-visible::before,
+.movie-card:focus-within::before {
+  opacity: 0.72;
+  transform: translateY(3px) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movie-card::before {
+    transition: none;
+  }
+}
+
 
 /* Desktop default for secondary details actions wrapper */
 .details-actions-secondary {

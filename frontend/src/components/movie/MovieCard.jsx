@@ -68,6 +68,9 @@ function MovieCard({
 
       <article
         className={`movie-card ${rank ? "top10-card" : ""}`}
+        style={{
+          "--poster-glow-image": movie.poster ? `url("${movie.poster}")` : "none",
+        }}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         role="button"
