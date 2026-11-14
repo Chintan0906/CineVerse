@@ -1458,9 +1458,6 @@ function CineStreamPlayer({
           }
         }}
       >
-        {/* TOP CINEMATIC VIGNETTE (Masks top-edge third-party provider artifacts) */}
-        <div className="cine-player-top-vignette" aria-hidden="true" />
-
         {/* DRAG & DROP HUD INDICATOR */}
         {isDraggingFile && (
           <div className="cine-drag-drop-hud">
