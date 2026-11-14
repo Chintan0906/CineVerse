@@ -4239,6 +4239,12 @@ html {
 header.navbar,
 header.navbar.scrolled,
 header.navbar:hover {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  z-index: 1200 !important;
+  transform: none !important;
   background: transparent !important;
   background-image: none !important;
   backdrop-filter: none !important;
