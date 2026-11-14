@@ -4118,6 +4118,66 @@ html {
   -webkit-backdrop-filter: none !important;
 }
 
+/* Let the hero artwork begin behind the floating navigation. */
+.app-shell > main > .hero-slideshow {
+  margin-top: -72px !important;
+  height: calc(min(82svh, 900px) + 72px) !important;
+}
+
+.app-shell > main > .hero-slideshow .hero-slideshow-content {
+  padding-top: calc(max(85px, 11vh) + 72px) !important;
+}
+
+/* Keep the artwork visible through the navigation pills. */
+.navbar .nav-link {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(7, 10, 12, 0.24) !important;
+  backdrop-filter: blur(8px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(125%) !important;
+}
+
+.navbar .nav-link:hover {
+  background: rgba(30, 36, 38, 0.48) !important;
+}
+
+.navbar .nav-link.active {
+  border-color: rgba(255, 255, 255, 0.48) !important;
+  background: rgba(243, 247, 246, 0.24) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16), inset 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+.navbar .nav-link.active:hover {
+  background: rgba(255, 255, 255, 0.34) !important;
+  color: #ffffff !important;
+}
+
+.navbar .nav-profile-pill,
+.navbar .nav-watchlist-button,
+.navbar .nav-search-button {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(7, 10, 12, 0.24) !important;
+  backdrop-filter: blur(8px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(125%) !important;
+}
+
+.navbar .nav-profile-pill:hover,
+.navbar .nav-watchlist-button:hover,
+.navbar .nav-search-button:hover {
+  background: rgba(30, 36, 38, 0.48) !important;
+}
+
+@media (max-width: 768px) {
+  .app-shell > main > .hero-slideshow {
+    margin-top: -66px !important;
+    height: calc(min(82svh, 900px) + 66px) !important;
+  }
+
+  .app-shell > main > .hero-slideshow .hero-slideshow-content {
+    padding-top: calc(max(85px, 11vh) + 66px) !important;
+  }
+}
+
 @media (max-width: 768px) {
   .navbar,
   .navbar.scrolled,
