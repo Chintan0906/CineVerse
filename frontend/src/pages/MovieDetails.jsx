@@ -842,6 +842,11 @@ function MovieDetails() {
         </div>
       </section>
 
+      <div
+        className={`details-hero-color-bleed ${isTrailerVisible && trailerKey ? "trailer-active" : ""}`}
+        aria-hidden="true"
+      />
+
       {/* MAIN CONTENT SECTION */}
       <div className="details-body-container">
         {/* STORYLINE & FINANCIAL STATS */}
