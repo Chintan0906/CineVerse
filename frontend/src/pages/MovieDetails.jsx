@@ -690,6 +690,7 @@ function MovieDetails() {
         <div className="details-hero-gradient-left" />
         <div className="details-hero-gradient-bottom" />
         <div className="details-hero-vignette" />
+        <div className="details-hero-live-glass" aria-hidden="true" />
 
         <div className="details-hero-container">
           <div className="details-hero-info">
@@ -844,6 +845,7 @@ function MovieDetails() {
 
       <div
         className={`details-hero-color-bleed ${isTrailerVisible && trailerKey ? "trailer-active" : ""}`}
+        style={{ "--details-hero-art": `url("${movie.backdrop || movie.poster}")` }}
         aria-hidden="true"
       />
 
