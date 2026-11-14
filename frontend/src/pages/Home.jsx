@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Info,
   Loader2,
+  Share2,
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
@@ -82,6 +83,7 @@ function Home() {
   const [playerEpisode, setPlayerEpisode] = useState(() => Number(searchParams.get("episode") || 1));
   const [heroIndex, setHeroIndex] = useState(0);
   const [pendingSection, setPendingSection] = useState("");
+  const [shareFeedback, setShareFeedback] = useState("");
 
   const [hasBooted, setHasBooted] = useState(() => {
     try {
@@ -830,6 +832,32 @@ function getCleanMovieSynopsis(movie, genres = []) {
     );
   }
 
+  const handleShareSite = async () => {
+    const shareData = {
+      title: "CineVerse",
+      text: "Discover movies and series on CineVerse.",
+      url: window.location.origin,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      setShareFeedback("Link copied");
+    } catch {
+      setShareFeedback("Could not copy link");
+    }
+
+    window.setTimeout(() => setShareFeedback(""), 2400);
+  };
+
   return (
     <div
       className="app-shell"
@@ -1153,6 +1181,19 @@ function getCleanMovieSynopsis(movie, genres = []) {
           )}
         </div>
       </main>
+
+      {/* SHARE SITE LINK */}
+      <div className="share-site-wrap">
+        <button
+          type="button"
+          className="share-site-pill"
+          onClick={handleShareSite}
+          aria-label="Share CineVerse with a friend"
+        >
+          <Share2 size={16} aria-hidden="true" />
+          <span aria-live="polite">{shareFeedback || "Share with a friend"}</span>
+        </button>
+      </div>
 
       {/* FOOTER */}
       <footer className="footer">

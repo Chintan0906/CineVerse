@@ -1105,6 +1105,64 @@ input,
   display: none !important;
 }
 
+/* Small share pill between the home content and footer. */
+.share-site-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 0;
+}
+
+.share-site-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  max-width: min(100%, 360px);
+  padding: 10px 19px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: #050608;
+  color: #f7f9f9;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.08);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.share-site-pill:hover {
+  transform: translateY(-2px);
+  border-color: #ffffff;
+  background: #111519;
+  box-shadow: 0 11px 28px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+.share-site-pill:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.share-site-pill:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+}
+
+.share-site-wrap + .footer {
+  margin-top: 30px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-site-pill {
+    transition: none;
+  }
+}
+
 /* ====================================================
    FRAMEXTV REVERSE-ENGINEERED MOBILE DESIGN SYSTEM
    Native Mobile App UX, Touch Optimizations & PWA Layout
