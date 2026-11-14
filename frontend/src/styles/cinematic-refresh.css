@@ -28,7 +28,6 @@ body {
   padding-inline: clamp(18px, 4.2vw, 68px) !important;
   background: rgba(7, 10, 13, 0.78) !important;
   border-bottom: 1px solid rgba(203, 235, 230, 0.09) !important;
-  backdrop-filter: blur(24px) saturate(140%) !important;
 }
 
 .navbar.scrolled,
@@ -1440,8 +1439,6 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
     height: 54px !important;
     padding: 0 14px !important;
     background: rgba(9, 9, 11, 0.92) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 

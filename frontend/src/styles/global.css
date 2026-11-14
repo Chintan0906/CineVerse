@@ -228,8 +228,6 @@ main {
   background: rgba(8, 9, 13, 0.88);
   border-bottom: 1px solid var(--border);
 
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
 }
 
 .navbar.scrolled {
