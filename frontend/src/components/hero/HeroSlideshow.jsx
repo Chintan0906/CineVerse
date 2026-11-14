@@ -56,6 +56,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     setIsMuted(true);
     if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = null;
 
     if (featuredMovies.length === 0) return;
 
@@ -95,11 +96,13 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
           (data?.event === "onStateChange" && Number(data?.info) === 1) ||
           Number(data?.info?.playerState) === 1
         ) {
-          // Keep the poster over the player until YouTube's startup bezel has cleared.
-          if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-          revealTimerRef.current = setTimeout(() => {
-            setIsTrailerVisible(true);
-          }, 3000);
+          // Keep the poster over the player through YouTube's longer startup bezel animation.
+          if (!revealTimerRef.current) {
+            revealTimerRef.current = setTimeout(() => {
+              revealTimerRef.current = null;
+              setIsTrailerVisible(true);
+            }, 7500);
+          }
         }
         // YouTube sends info: 0 (ENDED) -> loop
         if (
@@ -133,6 +136,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     if (!isTrailerVisible) {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
       setIsTrailerMounted(true);
       setIsMuted(false);
       sendYouTubeCommand("unMute");
