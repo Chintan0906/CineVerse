@@ -986,6 +986,22 @@ input,
   }
 }
 
+/* Keep the hero artwork crisp behind the header; glass belongs on the pills only. */
+html body .app-shell > header.navbar,
+html body .app-shell > header.navbar.scrolled,
+html body .app-shell > header.navbar:hover {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
+  background-position: center top !important;
+  filter: none !important;
+}
+
 /* Movie details: replace the full-width brand bar with a quiet home control. */
 .movie-details-page > .details-header {
   position: absolute !important;
