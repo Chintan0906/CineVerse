@@ -919,8 +919,106 @@ input,
   transform: translateY(3px) scale(1);
 }
 
+/* Expand cards into their detail view only while hovered or keyboard-focused. */
+.movie-card {
+  transform-origin: center center;
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    filter 320ms ease,
+    box-shadow 320ms ease !important;
+}
+
+.movie-card-info {
+  transition: opacity 150ms ease, transform 220ms ease !important;
+}
+
+.movie-card:hover .movie-card-info,
+.movie-card:focus-visible .movie-card-info,
+.movie-card:focus-within .movie-card-info {
+  opacity: 0 !important;
+  transform: translateY(5px) !important;
+  pointer-events: none !important;
+}
+
+.movie-card:focus-visible .card-overlay {
+  opacity: 1;
+}
+
+.movie-card:focus-visible .card-overlay-content {
+  transform: translateY(0);
+}
+
+.movie-card .card-overlay {
+  padding: 14px !important;
+  background: linear-gradient(
+    to top,
+    rgba(5, 10, 12, 0.98) 0%,
+    rgba(5, 10, 12, 0.88) 36%,
+    rgba(5, 10, 12, 0.28) 70%,
+    transparent 100%
+  ) !important;
+}
+
+.movie-card .card-overlay-title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0 0 7px !important;
+  color: #f4fbf9 !important;
+  font-size: clamp(13px, 1vw, 15px) !important;
+  font-weight: 760 !important;
+  line-height: 1.25 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.movie-card .overlay-rating,
+.movie-card .overlay-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.movie-card .overlay-rating {
+  color: #bcf6e9;
+  font-weight: 700;
+}
+
+.movie-card .overlay-duration {
+  color: rgba(235, 245, 243, 0.76);
+}
+
+.movie-card:hover .movie-poster,
+.movie-card:focus-visible .movie-poster,
+.movie-card:focus-within .movie-poster {
+  border-color: rgba(190, 245, 232, 0.48) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.54), 0 0 22px rgba(117, 227, 205, 0.15) !important;
+}
+
+.movie-card:hover .movie-poster img,
+.movie-card:focus-visible .movie-poster img,
+.movie-card:focus-within .movie-poster img {
+  filter: saturate(1.12) brightness(0.58) !important;
+  transform: scale(1.085) !important;
+}
+
+@media (hover: hover) and (min-width: 769px) {
+  .movie-card:hover {
+    z-index: 14 !important;
+    filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.52)) !important;
+    transform: translateY(-7px) scale(1.09) !important;
+  }
+}
+
+.movie-card:focus-visible {
+  z-index: 14 !important;
+  transform: translateY(-4px) scale(1.045) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .movie-card::before {
+  .movie-card::before,
+  .movie-card,
+  .movie-card-info {
     transition: none;
   }
 }

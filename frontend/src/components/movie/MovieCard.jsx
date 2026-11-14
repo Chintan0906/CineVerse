@@ -172,6 +172,8 @@ function MovieCard({
                 </button>
               </div>
 
+              <h3 className="card-overlay-title">{movie.title}</h3>
+
               <div className="card-overlay-meta">
                 <span className="match-score">{matchPercent}% Match</span>
                 <span className="quality-pill">HD</span>
@@ -181,6 +183,18 @@ function MovieCard({
                   </span>
                 ) : (
                   movie.year && <span>{movie.year}</span>
+                )}
+                {movie.rating && (
+                  <span className="overlay-rating">
+                    <Star size={12} fill="currentColor" aria-hidden="true" />
+                    {movie.rating}
+                  </span>
+                )}
+                {movie.duration && (
+                  <span className="overlay-duration">
+                    <Clock3 size={12} aria-hidden="true" />
+                    {movie.duration}
+                  </span>
                 )}
               </div>
 
