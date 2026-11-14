@@ -827,6 +827,67 @@ input,
   }
 }
 
+/* Movie details: replace the full-width brand bar with a quiet home control. */
+.movie-details-page > .details-header {
+  position: absolute !important;
+  top: 22px !important;
+  right: auto !important;
+  left: clamp(18px, 5vw, 72px) !important;
+  z-index: 110 !important;
+  display: block !important;
+  width: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.details-header .details-home-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(235, 248, 246, 0.2) !important;
+  border-radius: 50% !important;
+  background: rgba(8, 15, 17, 0.62) !important;
+  color: #f4fbf9 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(16px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(145%) !important;
+}
+
+.details-header .details-home-back-btn:hover {
+  transform: translateX(-2px) !important;
+  background: rgba(22, 35, 37, 0.84) !important;
+  border-color: rgba(190, 245, 232, 0.42) !important;
+}
+
+.details-header .details-home-back-btn:focus-visible {
+  outline: 2px solid rgba(168, 255, 235, 0.94) !important;
+  outline-offset: 4px !important;
+}
+
+@media (max-width: 768px) {
+  .movie-details-page > .details-header {
+    top: 16px !important;
+    left: 16px !important;
+  }
+
+  .details-header .details-home-back-btn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
 
 /* Desktop default for secondary details actions wrapper */
 .details-actions-secondary {

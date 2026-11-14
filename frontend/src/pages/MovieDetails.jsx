@@ -622,28 +622,15 @@ function MovieDetails() {
 
   return (
     <div className="movie-details-page">
-      {/* GLASS HEADER BAR */}
+      {/* Compact home control over the movie backdrop */}
       <header className="details-header">
         <button
-          className="btn-secondary back-btn"
+          className="btn-secondary back-btn details-home-back-btn"
           onClick={() => navigate("/")}
-          aria-label="Back to Browse"
+          aria-label="Back to home"
+          title="Back to home"
         >
-          <ArrowLeft size={18} />
-          <span className="back-btn-text">Back to Browse</span>
-        </button>
-
-        <Link className="brand-logo-link" to="/" aria-label="CineVerse home">
-          <CineVerseLogo size="md" />
-        </Link>
-
-        <button
-          className="btn-secondary details-header-list-btn"
-          onClick={() => toggleWatchlist(movie)}
-          aria-label={isSaved ? "Saved in List" : "Add to List"}
-        >
-          {isSaved ? <Check size={18} /> : <Plus size={18} />}
-          <span className="details-header-list-text">{isSaved ? "Saved" : "Add to List"}</span>
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
       </header>
 
