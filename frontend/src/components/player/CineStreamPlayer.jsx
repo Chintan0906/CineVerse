@@ -639,9 +639,7 @@ function CineStreamPlayer({
   const [subEnabled, setSubEnabled] = useState(true);
   const [subSize, setSubSize] = useState("normal"); // "normal" | "large" | "xlarge"
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
-  const [currentDuration, setCurrentDuration] = useState(0);
   const [subPlaying, setSubPlaying] = useState(true);
-  const [isNextEpisodeDismissed, setIsNextEpisodeDismissed] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const iframeRef = useRef(null);
@@ -668,12 +666,6 @@ function CineStreamPlayer({
   useEffect(() => {
     setCurrEpisode(propEpisode);
   }, [propEpisode]);
-
-  useEffect(() => {
-    setCurrentPlayTime(0);
-    setCurrentDuration(0);
-    setIsNextEpisodeDismissed(false);
-  }, [currSeason, currEpisode]);
 
   // Dynamic AniList ID resolution for AnimeEmbed (Server Kage)
   useEffect(() => {
@@ -761,38 +753,9 @@ function CineStreamPlayer({
 
   const episodeList = episodes?.length > 0 ? episodes : fallbackEpisodes;
 
-  const nextEpisodeTarget = (() => {
-    const nextEpisode = episodeList
-      .map((episode) => Number(episode.episodeNumber))
-      .filter((episodeNumber) => Number.isFinite(episodeNumber) && episodeNumber > currEpisode)
-      .sort((a, b) => a - b)[0];
-
-    if (nextEpisode) return { season: currSeason, episode: nextEpisode };
-
-    const nextSeason = seasonList
-      .filter((season) => Number(season.season_number) > currSeason && Number(season.episode_count || 0) > 0)
-      .sort((a, b) => Number(a.season_number) - Number(b.season_number))[0];
-
-    return nextSeason
-      ? { season: Number(nextSeason.season_number), episode: 1 }
-      : null;
-  })();
-
-  const secondsRemaining = currentDuration > 0
-    ? Math.max(0, currentDuration - currentPlayTime)
-    : null;
-  const showNextEpisodePrompt = Boolean(
-    isTv && nextEpisodeTarget && !isNextEpisodeDismissed && secondsRemaining !== null &&
-    secondsRemaining > 0 && secondsRemaining <= 20
-  );
-  const nextEpisodeCountdown = secondsRemaining === null ? 0 : Math.ceil(secondsRemaining);
-
   // Current episode title
   const currentEpData = episodeList.find((e) => e.episodeNumber === currEpisode);
   const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${currEpisode}`;
-  const nextEpisodeData = nextEpisodeTarget?.season === currSeason
-    ? episodeList.find((episode) => Number(episode.episodeNumber) === nextEpisodeTarget.episode)
-    : null;
 
   // Handle custom subtitle file parsing
   const handleSubtitleFile = (file) => {
@@ -891,34 +854,6 @@ function CineStreamPlayer({
     }
   };
 
-  const handlePlayNextEpisode = () => {
-    if (!nextEpisodeTarget) return;
-    setIsNextEpisodeDismissed(true);
-    if (nextEpisodeTarget.season !== currSeason) {
-      handleSeasonSelect(nextEpisodeTarget.season);
-    } else {
-      handleEpisodeSelect(nextEpisodeTarget.episode);
-    }
-  };
-
-  const handleStayOnEpisode = () => setIsNextEpisodeDismissed(true);
-
-  useEffect(() => {
-    if (
-      isTv && nextEpisodeTarget && subPlaying && !isNextEpisodeDismissed &&
-      secondsRemaining !== null && secondsRemaining <= 0.5
-    ) {
-      handlePlayNextEpisode();
-    }
-  }, [
-    isTv,
-    nextEpisodeTarget?.season,
-    nextEpisodeTarget?.episode,
-    subPlaying,
-    isNextEpisodeDismissed,
-    secondsRemaining,
-  ]);
-
   // Listen for playback events (Real-time telemetry and video playback seconds)
   useEffect(() => {
     let lastSavedAt = 0;
@@ -938,7 +873,6 @@ function CineStreamPlayer({
 
         if (playerEvent.event === "timeupdate" && typeof playerEvent.currentTime === "number") {
           setCurrentPlayTime(playerEvent.currentTime);
-          setCurrentDuration(Number(playerEvent.duration) || 0);
           setSubPlaying(true);
           if (Date.now() - lastSavedAt >= 15000) {
             const currentMedia = mediaRef.current;
@@ -973,7 +907,6 @@ function CineStreamPlayer({
           const { currentTime, duration } = eventData;
           if (typeof currentTime === "number") {
             setCurrentPlayTime(currentTime);
-            setCurrentDuration(Number(duration) || 0);
             setSubPlaying(true);
             if (Date.now() - lastSavedAt >= 15000) {
               const currentMedia = mediaRef.current;
@@ -1014,7 +947,6 @@ function CineStreamPlayer({
           const duration = Number(eventData.duration || 0);
           if (currentTime > 0) {
             setCurrentPlayTime(currentTime);
-            setCurrentDuration(duration);
             setSubPlaying(true);
             if (Date.now() - lastSavedAt >= 15000) {
               const currentMedia = mediaRef.current;
@@ -1563,62 +1495,6 @@ function CineStreamPlayer({
           mozallowfullscreen="true"
           referrerPolicy="origin-when-cross-origin"
         />
-
-        {showNextEpisodePrompt && (
-          <div className="cine-next-episode-card" role="group" aria-label="Next episode controls">
-            <div className="cine-next-episode-art" aria-hidden="true">
-              <span className="cine-next-orbit cine-next-orbit-one" />
-              <span className="cine-next-orbit cine-next-orbit-two" />
-              <Play size={18} fill="currentColor" />
-            </div>
-
-            <div className="cine-next-episode-copy">
-              <span className="cine-next-episode-eyebrow">
-                <Sparkles size={12} /> Up next
-              </span>
-              <strong>{nextEpisodeData?.name || `Episode ${nextEpisodeTarget.episode}`}</strong>
-              <span className="cine-next-episode-meta">
-                Season {nextEpisodeTarget.season} · Episode {nextEpisodeTarget.episode}
-              </span>
-              <span className="cine-next-episode-status" aria-live="polite">
-                {secondsRemaining <= 10
-                  ? subPlaying
-                    ? "The current episode is still playing"
-                    : "Paused · resume to continue"
-                  : "Your next episode is ready"}
-              </span>
-            </div>
-
-            {secondsRemaining <= 10 && (
-              <div
-                className="cine-next-countdown"
-                aria-label={subPlaying ? `Next episode in ${nextEpisodeCountdown} seconds` : "Next episode countdown paused"}
-              >
-                <svg viewBox="0 0 44 44" aria-hidden="true">
-                  <circle className="cine-next-countdown-track" cx="22" cy="22" r="18" />
-                  <circle
-                    className="cine-next-countdown-progress"
-                    cx="22"
-                    cy="22"
-                    r="18"
-                    style={{ strokeDashoffset: 113.1 * (1 - Math.min(nextEpisodeCountdown, 10) / 10) }}
-                  />
-                </svg>
-                <span>{subPlaying ? nextEpisodeCountdown : "Ⅱ"}</span>
-              </div>
-            )}
-
-            <div className="cine-next-episode-actions">
-              <button type="button" className="cine-next-play-button" onClick={handlePlayNextEpisode}>
-                <Play size={13} fill="currentColor" />
-                Play next
-              </button>
-              <button type="button" className="cine-next-stay-button" onClick={handleStayOnEpisode}>
-                Keep watching
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* SERIES EPISODES & SEASONS NAVIGATION CONTAINER (BEFORE MORE LIKE THIS) */}
