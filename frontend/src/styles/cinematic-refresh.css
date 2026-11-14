@@ -3735,7 +3735,6 @@ html {
 }
 
 /* Make glass readable through its edge, top highlight, and layered tint. */
-.navbar,
 .details-header,
 .player-header {
   background: rgba(7, 12, 14, 0.76) !important;
@@ -3748,6 +3747,16 @@ html {
 .navbar.scrolled,
 .navbar:hover {
   background: rgba(7, 12, 14, 0.9) !important;
+}
+
+.navbar,
+.navbar.scrolled,
+.navbar:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .glass-card,
@@ -4227,6 +4236,17 @@ html {
     height: 27px !important;
     border-radius: 50% !important;
   }
+}
+
+/* Keep the hero poster sharp underneath the floating navigation. */
+header.navbar,
+header.navbar.scrolled,
+header.navbar:hover {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
 }
 
 
