@@ -49,7 +49,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       .catch(() => {});
   }, [currentIndex, currentMovie, activeTrailerKey]);
 
-  // 1. Mount trailer in background at 600ms, cross-fade in at 4.8s
+  // Mount the trailer behind the poster; reveal it only after playback is confirmed.
   useEffect(() => {
     setIsTrailerMounted(false);
     setIsTrailerVisible(false);
@@ -62,10 +62,6 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     trailerTimerRef.current = setTimeout(() => {
       setIsTrailerMounted(true);
     }, 600);
-
-    revealTimerRef.current = setTimeout(() => {
-      setIsTrailerVisible(true);
-    }, 4800);
 
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
@@ -92,17 +88,24 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
   useEffect(() => {
     const handleMessage = (e) => {
       try {
+        if (e.source !== trailerIframeRef.current?.contentWindow) return;
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         // YouTube sends info: 1 (PLAYING)
-        if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
-          // Wait 2400ms for YouTube's play/pause bezel animation to finish and vanish completely
+        if (
+          (data?.event === "onStateChange" && Number(data?.info) === 1) ||
+          Number(data?.info?.playerState) === 1
+        ) {
+          // Keep the poster over the player until YouTube's startup bezel has cleared.
           if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
           revealTimerRef.current = setTimeout(() => {
             setIsTrailerVisible(true);
-          }, 2400);
+          }, 3000);
         }
         // YouTube sends info: 0 (ENDED) -> loop
-        if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
+        if (
+          (data?.event === "onStateChange" && Number(data?.info) === 0) ||
+          Number(data?.info?.playerState) === 0
+        ) {
           sendYouTubeCommand("seekTo", [0, true]);
           sendYouTubeCommand("playVideo");
         }
@@ -132,9 +135,9 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
       setIsTrailerMounted(true);
       setIsMuted(false);
-      revealTimerRef.current = setTimeout(() => {
-        setIsTrailerVisible(true);
-      }, 2400);
+      sendYouTubeCommand("unMute");
+      sendYouTubeCommand("setVolume", [100]);
+      sendYouTubeCommand("playVideo");
       return;
     }
 
@@ -234,7 +237,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                   <iframe
                     ref={trailerIframeRef}
                     className="hero-trailer-iframe"
-                    src={`https://www.youtube.com/embed/${slideTrailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3`}
+                    src={`https://www.youtube.com/embed/${slideTrailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3&origin=${encodeURIComponent(window.location.origin)}`}
                     title={`${movie.title} Trailer`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     tabIndex="-1"
@@ -244,6 +247,14 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                           JSON.stringify({ event: "listening", id: "hero-trailer" }),
                           "*"
                         );
+                      e.target?.contentWindow?.postMessage(
+                        JSON.stringify({
+                          event: "command",
+                          func: "addEventListener",
+                          args: ["onStateChange"],
+                        }),
+                        "*"
+                      );
                       } catch (_) {}
                       if (!isMuted) {
                         sendYouTubeCommand("unMute");

@@ -118,11 +118,6 @@ function MovieDetails() {
       setIsTrailerMounted(true);
     }, 600);
 
-    // 2. Cross-fade in at 4.8s (giving YouTube 4.2 full seconds to start and hide bezel completely)
-    revealTimerRef.current = setTimeout(() => {
-      setIsTrailerVisible(true);
-    }, 4800);
-
     return () => {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
@@ -133,17 +128,24 @@ function MovieDetails() {
   useEffect(() => {
     const handleMessage = (e) => {
       try {
+        if (e.source !== trailerIframeRef.current?.contentWindow) return;
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         // YouTube sends info: 1 (PLAYING)
-        if ((data?.event === "onStateChange" && data?.info === 1) || data?.info?.playerState === 1) {
-          // Video has begun playing; wait 2400ms for YouTube's play/pause bezel animation to finish and vanish completely
+        if (
+          (data?.event === "onStateChange" && Number(data?.info) === 1) ||
+          Number(data?.info?.playerState) === 1
+        ) {
+          // Keep the backdrop over the player until YouTube's startup bezel has cleared.
           if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
           revealTimerRef.current = setTimeout(() => {
             setIsTrailerVisible(true);
-          }, 2400);
+          }, 3000);
         }
         // YouTube sends info: 0 (ENDED) -> loop
-        if ((data?.event === "onStateChange" && data?.info === 0) || data?.info?.playerState === 0) {
+        if (
+          (data?.event === "onStateChange" && Number(data?.info) === 0) ||
+          Number(data?.info?.playerState) === 0
+        ) {
           sendYouTubeCommand("seekTo", [0, true]);
           sendYouTubeCommand("playVideo");
         }
@@ -172,9 +174,9 @@ function MovieDetails() {
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
       setIsTrailerMounted(true);
       setIsTrailerMuted(false);
-      revealTimerRef.current = setTimeout(() => {
-        setIsTrailerVisible(true);
-      }, 2400);
+      sendYouTubeCommand("unMute");
+      sendYouTubeCommand("setVolume", [100]);
+      sendYouTubeCommand("playVideo");
       return;
     }
 
@@ -650,7 +652,7 @@ function MovieDetails() {
             <iframe
               ref={trailerIframeRef}
               className="details-hero-trailer-iframe"
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3&origin=${encodeURIComponent(window.location.origin)}`}
               title={`${movie.title} Trailer`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               tabIndex="-1"
@@ -658,6 +660,14 @@ function MovieDetails() {
                 try {
                   e.target?.contentWindow?.postMessage(
                     JSON.stringify({ event: "listening", id: "details-trailer" }),
+                    "*"
+                  );
+                  e.target?.contentWindow?.postMessage(
+                    JSON.stringify({
+                      event: "command",
+                      func: "addEventListener",
+                      args: ["onStateChange"],
+                    }),
                     "*"
                   );
                 } catch (_) {}
