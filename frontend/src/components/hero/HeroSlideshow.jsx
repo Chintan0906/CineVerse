@@ -414,10 +414,6 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
         </div>
       )}
 
-      {/* Maturity Rating Badge */}
-      <div className="hero-maturity-badge">
-        18+
-      </div>
     </section>
   );
 }

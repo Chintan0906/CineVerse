@@ -827,6 +827,165 @@ input,
   }
 }
 
+/* Replace the full-width header slab with individual floating navigation pills. */
+.navbar,
+.navbar.scrolled,
+.navbar:hover {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 84px !important;
+  min-height: 84px !important;
+  padding: 14px clamp(18px, 4.2vw, 68px) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.navbar > .brand-logo-link {
+  display: none !important;
+}
+
+.navbar .nav-links {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(6px, 0.9vw, 14px) !important;
+  margin: 0 !important;
+}
+
+.navbar .nav-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(245, 249, 248, 0.22) !important;
+  border-radius: 999px !important;
+  background: rgba(7, 10, 12, 0.62) !important;
+  color: rgba(243, 249, 247, 0.88) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1) !important;
+}
+
+.navbar .nav-link::after {
+  display: none !important;
+}
+
+.navbar .nav-link:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(30, 36, 38, 0.88) !important;
+  color: #ffffff !important;
+  box-shadow: 0 9px 24px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.14) !important;
+}
+
+.navbar .nav-link.active {
+  border-color: rgba(255, 255, 255, 0.92) !important;
+  background: #f3f7f6 !important;
+  color: #090d0e !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.26), inset 0 1px #ffffff !important;
+}
+
+.navbar .nav-link.active:hover {
+  background: #ffffff !important;
+  color: #090d0e !important;
+}
+
+.navbar .account-mobile-link,
+.navbar .watchlist-mobile-link {
+  display: inline-flex !important;
+}
+
+.navbar .nav-actions {
+  flex: 0 0 auto !important;
+  gap: 9px !important;
+  margin-left: 16px !important;
+}
+
+.navbar .nav-profile-pill,
+.navbar .nav-watchlist-button,
+.navbar .nav-search-button {
+  border-color: rgba(245, 249, 248, 0.24) !important;
+  background: rgba(7, 10, 12, 0.66) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(14px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+}
+
+.navbar .nav-profile-pill:hover,
+.navbar .nav-watchlist-button:hover,
+.navbar .nav-search-button:hover {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(30, 36, 38, 0.9) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+}
+
+@media (max-width: 1100px) and (min-width: 769px) {
+  .navbar {
+    padding-inline: 18px !important;
+  }
+
+  .navbar .nav-links {
+    gap: 6px !important;
+  }
+
+  .navbar .nav-link {
+    gap: 5px !important;
+    min-height: 38px !important;
+    padding-inline: 10px !important;
+    font-size: 11px !important;
+  }
+
+  .navbar .nav-actions {
+    gap: 6px !important;
+    margin-left: 8px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar,
+  .navbar.scrolled,
+  .navbar:hover {
+    height: 62px !important;
+    min-height: 62px !important;
+    padding: 10px 14px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .navbar .brand-logo-link {
+    display: none !important;
+  }
+
+  .navbar .nav-links {
+    display: none !important;
+  }
+}
+
 /* Movie details: replace the full-width brand bar with a quiet home control. */
 .movie-details-page > .details-header {
   position: absolute !important;
@@ -3945,6 +4104,52 @@ html {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* Final header overrides keep navigation pills floating over the hero. */
+.navbar,
+.navbar.scrolled,
+.navbar:hover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (max-width: 768px) {
+  .navbar,
+  .navbar.scrolled,
+  .navbar:hover {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .navbar .nav-profile-pill {
+    width: auto !important;
+    min-width: 88px !important;
+    height: 38px !important;
+    padding: 4px 12px 4px 6px !important;
+    border-radius: 999px !important;
+  }
+
+  .navbar .nav-profile-name,
+  .navbar .nav-profile-chevron {
+    display: inline-flex !important;
+  }
+
+  .navbar .nav-profile-name {
+    font-size: 12px !important;
+  }
+
+  .navbar .nav-avatar-box {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 50% !important;
   }
 }
 
