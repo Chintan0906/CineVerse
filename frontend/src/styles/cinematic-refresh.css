@@ -4120,12 +4120,12 @@ html {
 
 /* Let the hero artwork begin behind the floating navigation. */
 .app-shell > main > .hero-slideshow {
-  margin-top: -72px !important;
-  height: calc(min(82svh, 900px) + 72px) !important;
+  margin-top: -118px !important;
+  height: calc(min(82svh, 900px) + 118px) !important;
 }
 
 .app-shell > main > .hero-slideshow .hero-slideshow-content {
-  padding-top: calc(max(85px, 11vh) + 72px) !important;
+  padding-top: calc(max(85px, 11vh) + 118px) !important;
 }
 
 /* Keep the artwork visible through the navigation pills. */
@@ -4169,12 +4169,12 @@ html {
 
 @media (max-width: 768px) {
   .app-shell > main > .hero-slideshow {
-    margin-top: -66px !important;
-    height: calc(min(82svh, 900px) + 66px) !important;
+    margin-top: -54px !important;
+    height: calc(min(82svh, 900px) + 54px) !important;
   }
 
   .app-shell > main > .hero-slideshow .hero-slideshow-content {
-    padding-top: calc(max(85px, 11vh) + 66px) !important;
+    padding-top: calc(max(85px, 11vh) + 54px) !important;
   }
 }
 
