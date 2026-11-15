@@ -122,20 +122,6 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           <Bookmark size={16} />
           <span>My Watchlist</span>
         </button>
-        <button
-          type="button"
-          className="nav-link account-mobile-link"
-          aria-label={user ? "Sign out" : "Sign in / Register"}
-          title={user ? "Sign out" : "Sign in / Register"}
-          onClick={() => {
-            setMenuOpen(false);
-            if (user) logout().catch((error) => console.error("Sign out failed:", error));
-            else navigate("/login");
-          }}
-        >
-          {user ? <LogOut size={16} /> : <ChevronDown size={16} />}
-          <span>{user ? "Sign out" : "Sign in / Register"}</span>
-        </button>
       </nav>
 
       {/* RIGHT ACTIONS - REDESIGNED PRO OVAL GLASS BUTTONS */}
@@ -149,17 +135,6 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           title="Search any movie in the world"
         >
           <Search size={17} strokeWidth={2.2} />
-        </button>
-
-        {/* My List button */}
-        <button
-          type="button"
-          className="nav-watchlist-button"
-          onClick={handleWatchlist}
-          title="View your saved movies"
-        >
-          <Bookmark size={15} strokeWidth={2.2} />
-          <span>My List</span>
         </button>
 
         {/* Profile Pill */}
