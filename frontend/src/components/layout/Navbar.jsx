@@ -12,6 +12,7 @@ import {
   ChevronDown,
   LogOut,
   User,
+  Clapperboard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./Navbar.css";
@@ -43,6 +44,11 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
       href: "#history",
       icon: History,
     },
+    {
+      name: "Reels",
+      href: "/reels",
+      icon: Clapperboard,
+    },
   ];
 
   function handleNavigation(name, href) {
@@ -66,6 +72,11 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
 
     if (name === "Trending") {
       onTrending?.();
+      return;
+    }
+
+    if (name === "Reels") {
+      navigate("/reels");
       return;
     }
 
@@ -199,6 +210,16 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
         >
           <Sparkles size={18} strokeWidth={activeLink === "Trending" ? 2.4 : 1.8} />
           <span>Series</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleNavigation("Reels", "/reels")}
+          className={`framex-nav-tab ${activeLink === "Reels" ? "active" : ""}`}
+          aria-label="Movie Reels"
+        >
+          <Clapperboard size={18} strokeWidth={activeLink === "Reels" ? 2.4 : 1.8} />
+          <span>Reels</span>
         </button>
 
         <button
