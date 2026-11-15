@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Film, Info, LoaderCircle, Volume2, VolumeX } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, ExternalLink, Film, Info, LoaderCircle, ShieldAlert, Volume2, VolumeX } from "lucide-react";
 import { getKinoCheckMovieReels } from "../services/movieService";
 import "./ReelsPage.css";
 import "./MovieReelsPage.css";
@@ -30,6 +30,7 @@ function MovieReelsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [isMuted, setIsMuted] = useState(true);
+  const [blockedVideos, setBlockedVideos] = useState(new Set());
 
   useEffect(() => {
     const priorTitle = document.title;
@@ -166,6 +167,34 @@ function MovieReelsPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeIndex, navigate, scrollToVideo]);
 
+  // Catch YouTube iframe player errors (e.g. 150 / 101: geo-restricted or embed blocked in region)
+  useEffect(() => {
+    function handlePlayerMessage(event) {
+      try {
+        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const isError =
+          data?.event === "onError" ||
+          data?.info === 150 ||
+          data?.info === 101 ||
+          data?.info === 100 ||
+          data?.info === 2 ||
+          data?.data === 150 ||
+          data?.data === 101 ||
+          data?.data === 100;
+
+        if (isError) {
+          const currentVideo = videos[activeIndex];
+          if (currentVideo?.youtubeVideoId) {
+            setBlockedVideos((prev) => new Set(prev).add(currentVideo.youtubeVideoId));
+          }
+        }
+      } catch (_) {}
+    }
+
+    window.addEventListener("message", handlePlayerMessage);
+    return () => window.removeEventListener("message", handlePlayerMessage);
+  }, [activeIndex, videos]);
+
   const sendPlayerCommand = useCallback((func, args = []) => {
     playerRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
   }, []);
@@ -198,6 +227,7 @@ function MovieReelsPage() {
       <div className="reels-feed" ref={feedRef}>
         {videos.map((video, index) => {
           const isActive = index === activeIndex;
+          const isBlocked = blockedVideos.has(video.youtubeVideoId);
           const categoryLabel = video.categories.length ? video.categories.join(" · ").toUpperCase() : "MOVIE PREVIEW";
           const detailsHref = video.tmdbId ? `/movie/${video.tmdbId}${video.mediaType === "tv" ? "?type=tv" : ""}` : null;
           const playerSrc = `https://www.youtube-nocookie.com/embed/${video.youtubeVideoId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&playsinline=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
@@ -247,7 +277,82 @@ function MovieReelsPage() {
                   ) : (
                     <div className="reel-player-poster" style={{ backgroundImage: `url("${video.thumbnail || ""}")` }} />
                   )}
-                  {isActive && <div className="reel-player-shield" aria-hidden="true" />}
+                  {isActive && !isBlocked && <div className="reel-player-shield" aria-hidden="true" />}
+                  {isBlocked && (
+                    <div className="reel-player-blocked" style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(10, 15, 17, 0.94)",
+                      backdropFilter: "blur(18px)",
+                      padding: "24px",
+                      textAlign: "center",
+                      zIndex: 10,
+                      gap: "14px",
+                      borderRadius: "24px"
+                    }}>
+                      <div style={{
+                        width: "54px",
+                        height: "54px",
+                        borderRadius: "50%",
+                        background: "rgba(255, 85, 85, 0.16)",
+                        border: "1px solid rgba(255, 85, 85, 0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ff6b6b"
+                      }}>
+                        <ShieldAlert size={28} />
+                      </div>
+                      <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "700", color: "#fff" }}>
+                        Region-Locked by Uploader
+                      </h3>
+                      <p style={{ margin: 0, fontSize: "12px", color: "rgba(255, 255, 255, 0.72)", maxWidth: "340px", lineHeight: 1.5 }}>
+                        The YouTube upload for this specific clip is restricted in your country.
+                      </p>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", marginTop: "4px" }}>
+                        <button
+                          type="button"
+                          onClick={() => scrollToVideo(activeIndex + 1)}
+                          style={{
+                            padding: "9px 18px",
+                            borderRadius: "999px",
+                            background: "var(--movie-reels-accent, #baffec)",
+                            color: "#051310",
+                            border: "none",
+                            fontWeight: "750",
+                            fontSize: "12px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Skip to Next Reel
+                        </button>
+                        <a
+                          href={`https://www.youtube.com/watch?v=${video.youtubeVideoId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            padding: "9px 16px",
+                            borderRadius: "999px",
+                            background: "rgba(255, 255, 255, 0.1)",
+                            color: "#fff",
+                            border: "1px solid rgba(255, 255, 255, 0.2)",
+                            fontWeight: "600",
+                            fontSize: "12px",
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px"
+                          }}
+                        >
+                          <ExternalLink size={13} /> Open on YouTube
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

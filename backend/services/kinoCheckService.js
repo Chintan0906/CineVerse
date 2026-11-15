@@ -132,9 +132,31 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
       .filter(Boolean)
       .filter((video) => !allowedCategories || video.categories.some((item) => allowedCategories.includes(item)));
 
+    const fallbackService = getTmdbService();
+
+    // Enhance videos: Replace regional/geo-blocked channel keys with official global studio trailers from TMDB
+    if (fallbackService && videos.length) {
+      videos = await Promise.all(videos.map(async (v) => {
+        if (!v.tmdbId) return v;
+        try {
+          const details = v.mediaType === "tv"
+            ? await fallbackService.getTVShowDetails(v.tmdbId)
+            : await fallbackService.getMovieDetails(v.tmdbId);
+          if (details?.trailerKey) {
+            return {
+              ...v,
+              youtubeVideoId: details.trailerKey,
+              kinoCheckVideoId: v.youtubeVideoId,
+              thumbnail: details.backdrop || details.poster || v.thumbnail,
+            };
+          }
+        } catch (_) {}
+        return v;
+      }));
+    }
+
     // Graceful fallback to TMDB / local catalogue trailers if KinoCheck returns empty or fails
     if (!videos.length) {
-      const fallbackService = getTmdbService();
       if (fallbackService?.getMovieReels) {
         try {
           const offset = (safePage - 1) * requestedLimit;
