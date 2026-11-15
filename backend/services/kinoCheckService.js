@@ -75,7 +75,33 @@ function normalizeVideo(video) {
   };
 }
 
-async function requestMovieReels({ feed = "trending", page = 1, limit = 12, category = "all", language = "en" } = {}) {
+function shuffleArray(items) {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function arrangeReels(videoList = [], category = "all") {
+  if (!videoList.length) return [];
+  if (category === "all") {
+    const moments = shuffleArray(videoList.filter((v) => v.source === "GIPHY" || v.isDirectVideo));
+    const trailers = shuffleArray(videoList.filter((v) => v.source !== "GIPHY" && !v.isDirectVideo));
+    const arranged = [];
+
+    // GIPHY reels are placed 1st, then interleaved with YouTube trailers: [GIPHY, YouTube, GIPHY, YouTube, ...]
+    while (moments.length > 0 || trailers.length > 0) {
+      if (moments.length > 0) arranged.push(moments.shift());
+      if (trailers.length > 0) arranged.push(trailers.shift());
+    }
+    return arranged;
+  }
+  return shuffleArray(videoList);
+}
+
+async function requestMovieReels({ feed = "trending", page = 1, limit = 12, category = "all", language = "en", seed } = {}) {
   const safeFeed = feed === "latest" ? "latest" : "trending";
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
   const requestedLimit = Math.max(1, Math.min(24, Number.parseInt(limit, 10) || 12));
@@ -85,7 +111,13 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
   const cacheKey = `${safeFeed}:${safePage}:${safeLimit}:${safeCategory}:${safeLanguage}`;
   const cached = responseCache.get(cacheKey);
 
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return cached.result;
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    // Reorder every time a reload happens so the user sees a freshly shuffled mix, with GIPHY 1st
+    return {
+      ...cached.result,
+      videos: arrangeReels(cached.result.videos, safeCategory),
+    };
+  }
   if (inFlightRequests.has(cacheKey)) return inFlightRequests.get(cacheKey);
 
   const params = new URLSearchParams({ page: String(safePage), limit: String(safeLimit), language: safeLanguage });
@@ -95,10 +127,13 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
       const giphy = getGiphyService();
       if (giphy) {
         try {
-          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: requestedLimit });
+          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: requestedLimit, seed });
           if (momentsData?.videos?.length) {
             responseCache.set(cacheKey, { result: momentsData, timestamp: Date.now() });
-            return momentsData;
+            return {
+              ...momentsData,
+              videos: shuffleArray(momentsData.videos),
+            };
           }
         } catch (giphyErr) {
           console.error("Giphy service error:", giphyErr.message);
@@ -183,22 +218,28 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
       }));
     }
 
-    // In "All videos" mode, blend YouTube trailers with GIPHY movie moments for maximum variety
-    if (safeCategory === "all" && videos.length) {
+    // In "All videos" mode, place GIPHY movie moments 1st, then interleave with YouTube trailers
+    if (safeCategory === "all") {
       const giphy = getGiphyService();
       if (giphy) {
         try {
-          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: Math.min(6, Math.floor(requestedLimit / 2)) });
+          const momentsNeeded = Math.max(6, Math.ceil(requestedLimit / 2));
+          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: momentsNeeded, seed });
           if (momentsData?.videos?.length) {
+            const moments = shuffleArray(momentsData.videos);
+            const trailers = shuffleArray(videos);
             const interleaved = [];
-            const moments = [...momentsData.videos];
-            videos.forEach((v) => {
-              interleaved.push(v);
-              if (moments.length) interleaved.push(moments.shift());
-            });
+
+            // GIPHY movie moments are 1st: [GIPHY, YouTube, GIPHY, YouTube, ...]
+            while (moments.length > 0 || trailers.length > 0) {
+              if (moments.length > 0) interleaved.push(moments.shift());
+              if (trailers.length > 0) interleaved.push(trailers.shift());
+            }
             videos = interleaved.slice(0, requestedLimit);
           }
-        } catch (_) {}
+        } catch (err) {
+          console.error("Giphy interleaving error:", err.message);
+        }
       }
     }
 
@@ -242,7 +283,12 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
 
     responseCache.set(cacheKey, { result, timestamp: Date.now() });
     if (responseCache.size > 120) responseCache.delete(responseCache.keys().next().value);
-    return result;
+
+    // Arrange reels with GIPHY 1st and freshly reordered
+    return {
+      ...result,
+      videos: arrangeReels(result.videos, safeCategory),
+    };
   })().finally(() => inFlightRequests.delete(cacheKey));
 
   inFlightRequests.set(cacheKey, request);

@@ -78,7 +78,7 @@ router.get("/reels", async (req, res) => {
 // GET /api/movies/movie-reels?feed=trending&page=1&category=all
 // Proxy KinoCheck video metadata so optional API credentials stay server-side.
 router.get("/movie-reels", async (req, res) => {
-  const { feed, page, limit, category, language } = req.query;
+  const { feed, page, limit, category, language, seed } = req.query;
   if (feed && !["trending", "latest"].includes(String(feed))) {
     return res.status(400).json({ success: false, message: "Feed must be trending or latest." });
   }
@@ -87,7 +87,7 @@ router.get("/movie-reels", async (req, res) => {
   }
 
   try {
-    const result = await requestMovieReels({ feed, page, limit, category, language });
+    const result = await requestMovieReels({ feed, page, limit, category, language, seed });
     res.json({ success: true, ...result });
   } catch (error) {
     console.error("KinoCheck movie reels error:", error.message);

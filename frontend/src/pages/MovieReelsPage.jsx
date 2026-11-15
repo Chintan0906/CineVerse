@@ -11,13 +11,19 @@ const CATEGORIES = [
   { id: "moments", label: "Movie moments" },
 ];
 
+function getVideoKey(video) {
+  return video?.id || video?.youtubeVideoId || video?.videoUrl;
+}
+
 function MovieReelsPage() {
   const navigate = useNavigate();
   const feedRef = useRef(null);
   const slideRefs = useRef([]);
   const playerRef = useRef(null);
+  const videoElementRef = useRef(null);
   const requestLockRef = useRef(false);
   const requestIdRef = useRef(0);
+  const reloadSeedRef = useRef(Date.now());
   const [videos, setVideos] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [feed, setFeed] = useState("trending");
@@ -39,6 +45,12 @@ function MovieReelsPage() {
   }, []);
 
   useEffect(() => {
+    if (videoElementRef.current) {
+      videoElementRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
     requestLockRef.current = true;
@@ -53,14 +65,32 @@ function MovieReelsPage() {
     setIsMuted(true);
     if (feedRef.current) feedRef.current.scrollTop = 0;
 
-    getKinoCheckMovieReels({ feed, page: 1, limit: 12, category, language, signal: controller.signal })
+    getKinoCheckMovieReels({
+      feed,
+      page: 1,
+      limit: 12,
+      category,
+      language,
+      seed: reloadSeedRef.current,
+      signal: controller.signal,
+    })
       .then((result) => {
         if (requestId !== requestIdRef.current) return;
-        setVideos(result.videos);
+        const incoming = result.videos || [];
+        // Ensure GIPHY movie moment is 1st when available in feed
+        let ordered = [...incoming];
+        const firstGiphyIdx = ordered.findIndex((v) => v.isDirectVideo || v.source === "GIPHY");
+        if (firstGiphyIdx > 0) {
+          const [giphyItem] = ordered.splice(firstGiphyIdx, 1);
+          ordered.unshift(giphyItem);
+        }
+        setVideos(ordered);
         setPage(result.page);
         setTotalPages(result.totalPages);
         setHasMore(result.hasMore);
-        if (!result.videos.length && !result.hasMore) setError("No clips were found for this selection. Try another category or feed.");
+        if (!ordered.length && !result.hasMore) {
+          setError("No clips were found for this selection. Try another category or feed.");
+        }
       })
       .catch((fetchError) => {
         if (requestId === requestIdRef.current && fetchError.name !== "AbortError") {
@@ -111,14 +141,22 @@ function MovieReelsPage() {
     requestLockRef.current = true;
     setLoadingMore(true);
 
-    getKinoCheckMovieReels({ feed, page: nextPage, limit: 12, category, language })
+    getKinoCheckMovieReels({
+      feed,
+      page: nextPage,
+      limit: 12,
+      category,
+      language,
+      seed: reloadSeedRef.current,
+    })
       .then((result) => {
         if (requestId !== requestIdRef.current) return;
         setVideos((current) => {
-          const seen = new Set(current.map((video) => video.youtubeVideoId));
+          const seen = new Set(current.map(getVideoKey));
           const newVideos = result.videos.filter((video) => {
-            if (seen.has(video.youtubeVideoId)) return false;
-            seen.add(video.youtubeVideoId);
+            const key = getVideoKey(video);
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
             return true;
           });
           return [...current, ...newVideos];
@@ -202,6 +240,13 @@ function MovieReelsPage() {
   const toggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
+    if (videoElementRef.current) {
+      videoElementRef.current.muted = nextMuted;
+      if (!nextMuted) {
+        videoElementRef.current.volume = 1.0;
+        videoElementRef.current.play().catch(() => {});
+      }
+    }
     sendPlayerCommand(nextMuted ? "mute" : "unMute");
     if (!nextMuted) sendPlayerCommand("setVolume", [100]);
   };
@@ -227,15 +272,18 @@ function MovieReelsPage() {
       <div className="reels-feed" ref={feedRef}>
         {videos.map((video, index) => {
           const isActive = index === activeIndex;
-          const isBlocked = blockedVideos.has(video.youtubeVideoId);
-          const categoryLabel = video.categories.length ? video.categories.join(" · ").toUpperCase() : "MOVIE PREVIEW";
+          const isBlocked = Boolean(video.youtubeVideoId && blockedVideos.has(video.youtubeVideoId));
+          const videoKey = getVideoKey(video) || `reel_${index}`;
+          const categoryLabel = video.categories?.length ? video.categories.join(" · ").toUpperCase() : "MOVIE PREVIEW";
           const detailsHref = video.tmdbId ? `/movie/${video.tmdbId}${video.mediaType === "tv" ? "?type=tv" : ""}` : null;
-          const playerSrc = `https://www.youtube-nocookie.com/embed/${video.youtubeVideoId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&playsinline=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+          const playerSrc = video.youtubeVideoId
+            ? `https://www.youtube-nocookie.com/embed/${video.youtubeVideoId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&playsinline=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`
+            : "";
 
           return (
             <section
               className="reel-slide"
-              key={video.youtubeVideoId}
+              key={videoKey}
               data-reel-index={index}
               ref={(node) => { slideRefs.current[index] = node; }}
               aria-label={`${video.movieTitle}, ${categoryLabel.toLowerCase()}, reel ${index + 1}`}
@@ -275,6 +323,7 @@ function MovieReelsPage() {
                   {isActive ? (
                     video.isDirectVideo && video.videoUrl ? (
                       <video
+                        ref={videoElementRef}
                         src={video.videoUrl}
                         autoPlay
                         loop

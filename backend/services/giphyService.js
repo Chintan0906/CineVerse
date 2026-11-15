@@ -2,20 +2,42 @@ require("../src/dnsConfig");
 
 const GIPHY_BASE_URL = "https://api.giphy.com/v1/gifs";
 const CACHE_TTL_MS = 5 * 60 * 1000;
-const cache = new Map();
+const poolCache = new Map();
 
-// Movie search terms to ensure rich variety of cinematic moments
+// High-impact cinematic search terms to ensure rich variety of iconic movie moments
 const MOVIE_THEMES = [
   "movie scene",
   "iconic movie moment",
-  "cinema movie clip",
-  "marvel scene",
-  "classic movie moment",
-  "sci fi movie scene",
+  "marvel movie scene",
   "action movie scene",
-  "movie dialogue",
-  "film scene",
+  "sci fi movie scene",
+  "cinema movie clip",
+  "classic movie moment",
+  "hollywood movie clip",
+  "christopher nolan movie",
+  "star wars scene",
+  "jurassic park scene",
+  "the dark knight scene",
+  "interstellar scene",
+  "matrix movie scene",
+  "gladiator movie scene",
+  "avengers scene",
+  "fight club scene",
+  "pulp fiction scene",
+  "lord of the rings scene",
+  "harry potter scene",
+  "blade runner 2049 scene",
+  "spider man movie scene",
 ];
+
+function shuffleArray(items) {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
 
 function cleanMovieTitle(title = "") {
   return String(title)
@@ -51,55 +73,68 @@ function normalizeGiphyItem(item) {
   };
 }
 
-async function getMovieMoments({ page = 1, limit = 12, query = "" } = {}) {
+async function getMovieMoments({ page = 1, limit = 12, query = "", seed } = {}) {
   const apiKey = process.env.GIPHY_API_KEY || "QWBtpLAcmMFfdfoO63lNYqhjAByeuD3Y";
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
   const safeLimit = Math.max(1, Math.min(25, Number.parseInt(limit, 10) || 12));
-  const offset = (safePage - 1) * safeLimit;
 
-  // Rotate themes across pages for diverse movie content
-  const themeIndex = (safePage - 1) % MOVIE_THEMES.length;
+  // Pick themes with offset randomization so each reload produces fresh clips
+  const themeIndex = (safePage - 1 + Math.floor(Math.random() * MOVIE_THEMES.length)) % MOVIE_THEMES.length;
   const searchQuery = query.trim() || MOVIE_THEMES[themeIndex];
-  const cacheKey = `${searchQuery}:${offset}:${safeLimit}`;
-  const cached = cache.get(cacheKey);
+  const randomOffset = Math.floor(Math.random() * 20);
+  const offset = (safePage - 1) * safeLimit + randomOffset;
+  const cacheKey = `${searchQuery}:${safePage}:${safeLimit}`;
 
+  let rawList = [];
+  let totalCount = 1000;
+
+  const cached = poolCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.result;
+    rawList = cached.data;
+    totalCount = cached.totalCount;
+  } else {
+    try {
+      const params = new URLSearchParams({
+        api_key: apiKey,
+        q: searchQuery,
+        limit: String(safeLimit * 2), // Fetch extra so filtering leaves plenty
+        offset: String(offset),
+        rating: "pg-13",
+        lang: "en",
+      });
+
+      const response = await fetch(`${GIPHY_BASE_URL}/search?${params}`);
+      if (response.ok) {
+        const payload = await response.json();
+        rawList = Array.isArray(payload.data) ? payload.data : [];
+        totalCount = payload.pagination?.total_count || 1000;
+        poolCache.set(cacheKey, { data: rawList, totalCount, timestamp: Date.now() });
+        if (poolCache.size > 80) poolCache.delete(poolCache.keys().next().value);
+      }
+    } catch (err) {
+      console.error("GIPHY search error:", err.message);
+    }
   }
 
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    q: searchQuery,
-    limit: String(safeLimit),
-    offset: String(offset),
-    rating: "pg-13",
-    lang: "en",
-  });
-
-  const response = await fetch(`${GIPHY_BASE_URL}/search?${params}`);
-  if (!response.ok) {
-    throw new Error(`GIPHY API returned status ${response.status}`);
+  // Fallback to cached pool or default trending if search returned no results
+  if (!rawList.length && poolCache.size > 0) {
+    const randomCached = Array.from(poolCache.values())[Math.floor(Math.random() * poolCache.size)];
+    if (randomCached?.data) rawList = randomCached.data;
   }
 
-  const payload = await response.json();
-  const rawList = Array.isArray(payload.data) ? payload.data : [];
-  const videos = rawList.map(normalizeGiphyItem).filter(Boolean);
-  const pagination = payload.pagination || {};
-  const totalCount = pagination.total_count || 1000;
+  const normalized = rawList.map(normalizeGiphyItem).filter(Boolean);
+  // Reorder / shuffle every time so the user gets a fresh mix on each reload
+  const shuffledVideos = shuffleArray(normalized).slice(0, safeLimit);
+
   const totalPages = Math.ceil(totalCount / safeLimit);
 
-  const result = {
-    videos,
+  return {
+    videos: shuffledVideos,
     page: safePage,
     totalPages,
     totalCount,
     hasMore: safePage < totalPages,
   };
-
-  cache.set(cacheKey, { result, timestamp: Date.now() });
-  if (cache.size > 80) cache.delete(cache.keys().next().value);
-
-  return result;
 }
 
-module.exports = { getMovieMoments };
+module.exports = { getMovieMoments, shuffleArray };
