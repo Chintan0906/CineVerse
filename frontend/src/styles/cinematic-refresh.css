@@ -4444,4 +4444,38 @@ header.navbar:hover {
   }
 }
 
+/* Let the hero poster/trailer remain visible beneath the copy on the left. */
+.hero-slideshow-gradient-left {
+  width: 68% !important;
+  background: linear-gradient(
+    90deg,
+    rgba(7, 10, 13, 0.74) 0%,
+    rgba(7, 10, 13, 0.66) 24%,
+    rgba(7, 10, 13, 0.38) 52%,
+    rgba(7, 10, 13, 0.08) 78%,
+    transparent 100%
+  ) !important;
+}
+
+.hero-slideshow-vignette {
+  background: radial-gradient(
+    ellipse at 72% 45%,
+    transparent 34%,
+    rgba(7, 10, 13, 0.12) 76%,
+    rgba(7, 10, 13, 0.28) 100%
+  ) !important;
+}
+
+@media (max-width: 768px) {
+  .hero-slideshow-gradient-left {
+    width: 100% !important;
+    background: linear-gradient(
+      90deg,
+      rgba(7, 10, 13, 0.64),
+      rgba(7, 10, 13, 0.34) 48%,
+      rgba(7, 10, 13, 0.08) 100%
+    ) !important;
+  }
+}
+
 
