@@ -78,7 +78,10 @@ function parseSubtitles(content) {
     const text = textLines.join("\n").replace(/<[^>]*>/g, ""); // Strip HTML/formatting
 
     if (!isNaN(start) && !isNaN(end) && text) {
-      cues.push({ start, end, text });
+      // Filter out promotional/credit cues like free tier notices
+      if (!/sub\.wyzie\.io|Unlock every source|You're on the free plan/i.test(text)) {
+        cues.push({ start, end, text });
+      }
     }
   }
   return cues;
