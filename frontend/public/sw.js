@@ -1,4 +1,4 @@
-const CACHE_NAME = "cineverse-shell-v12";
+const CACHE_NAME = "cineverse-shell-v13";
 const APP_SHELL = ["/", "/favicon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

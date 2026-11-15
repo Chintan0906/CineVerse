@@ -738,14 +738,18 @@ function CineStreamPlayer({
 
   // Available seasons list
   const rawSeasons = (seasons?.length ? seasons : media?.seasons || media?.availableSeasons || [])
-    .filter((s) => s.season_number >= 0);
+    .filter((s) => s && (Number(s.season_number) >= 0 || Number(s.seasonNumber) >= 0))
+    .map((s) => ({
+      ...s,
+      season_number: s.season_number != null ? Number(s.season_number) : Number(s.seasonNumber),
+    }));
   const seasonList = rawSeasons.length > 0
     ? rawSeasons
     : [{ season_number: currSeason, name: `Season ${currSeason}` }];
 
   // Fallback episodes if TMDB episode list is still fetching or empty
-  const currentSeasonObj = seasonList.find((s) => s.season_number === currSeason);
-  const epCount = currentSeasonObj?.episode_count || 10;
+  const currentSeasonObj = seasonList.find((s) => Number(s.season_number) === Number(currSeason));
+  const epCount = Math.max(1, Math.min(100, Number(currentSeasonObj?.episode_count) || 10));
   const fallbackEpisodes = Array.from({ length: epCount }, (_, i) => ({
     episodeNumber: i + 1,
     name: `Episode ${i + 1}`,
@@ -754,7 +758,7 @@ function CineStreamPlayer({
   const episodeList = episodes?.length > 0 ? episodes : fallbackEpisodes;
 
   // Current episode title
-  const currentEpData = episodeList.find((e) => e.episodeNumber === currEpisode);
+  const currentEpData = episodeList.find((e) => Number(e?.episodeNumber || e?.episode_number) === Number(currEpisode));
   const currentEpTitle = currentEpData?.name || media?.episodeTitle || `Episode ${currEpisode}`;
 
   // Handle custom subtitle file parsing
