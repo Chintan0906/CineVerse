@@ -1237,6 +1237,7 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   }
 }
 
+
 .movie-card:focus-visible {
   z-index: 14 !important;
   transform: translateY(-4px) scale(1.045) !important;
@@ -4527,6 +4528,39 @@ header.navbar:hover {
   .movie-card-info,
   .movie-card .card-overlay,
   .movie-card .card-overlay-content {
+    transition: none !important;
+  }
+}
+
+/* Keep pointer clicks from leaving a teal focus halo on the card during navigation. */
+.movie-card:focus:not(:focus-visible),
+.movie-card:focus-within:not(:focus-visible) {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+.movie-card:focus-within:not(:focus-visible) .movie-poster {
+  border-color: rgba(215, 240, 236, 0.11) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38) !important;
+}
+
+@media (hover: hover) and (min-width: 769px) {
+  .movie-poster img {
+    transition:
+      transform 360ms cubic-bezier(0.22, 0.8, 0.2, 1),
+      filter 240ms ease !important;
+  }
+
+  .movie-card::before {
+    transition:
+      opacity 280ms ease,
+      transform 360ms cubic-bezier(0.22, 0.8, 0.2, 1) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movie-poster img,
+  .movie-card::before {
     transition: none !important;
   }
 }

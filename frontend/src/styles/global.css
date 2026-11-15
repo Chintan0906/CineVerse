@@ -55,8 +55,8 @@
 
   --navbar-height: 76px;
 
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
+  --transition-fast: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-normal: 280ms cubic-bezier(0.22, 0.8, 0.2, 1);
 }
 
 /* -------------------------
