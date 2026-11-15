@@ -4354,6 +4354,11 @@ header.navbar:hover {
 
 /* Keep the floating navigation compact and make its hover expansion feel light. */
 @media (min-width: 769px) {
+  .navbar .nav-links {
+    justify-content: flex-start !important;
+    margin-left: clamp(24px, 6.5vw, 124px) !important;
+  }
+
   .navbar .nav-link {
     --nav-pill-width: 120px;
     box-sizing: border-box !important;
