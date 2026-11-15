@@ -5,7 +5,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const responseCache = new Map();
 const inFlightRequests = new Map();
 
-// Lazy-loaded fallback service to avoid circular dependencies
+// Lazy-loaded services
 let tmdbService = null;
 function getTmdbService() {
   if (!tmdbService) {
@@ -16,6 +16,18 @@ function getTmdbService() {
     }
   }
   return tmdbService;
+}
+
+let giphyService = null;
+function getGiphyService() {
+  if (!giphyService) {
+    try {
+      giphyService = require("./giphyService");
+    } catch (_) {
+      giphyService = null;
+    }
+  }
+  return giphyService;
 }
 
 const CATEGORY_FILTERS = {
@@ -78,6 +90,22 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
 
   const params = new URLSearchParams({ page: String(safePage), limit: String(safeLimit), language: safeLanguage });
   const request = (async () => {
+    // If user requested "Movie moments", serve direct movie clips via GIPHY API
+    if (safeCategory === "moments") {
+      const giphy = getGiphyService();
+      if (giphy) {
+        try {
+          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: requestedLimit });
+          if (momentsData?.videos?.length) {
+            responseCache.set(cacheKey, { result: momentsData, timestamp: Date.now() });
+            return momentsData;
+          }
+        } catch (giphyErr) {
+          console.error("Giphy service error:", giphyErr.message);
+        }
+      }
+    }
+
     const headers = { Accept: "application/json", "Content-Type": "application/json" };
     if (process.env.KINOCHECK_API_KEY) {
       headers["X-Api-Key"] = process.env.KINOCHECK_API_KEY;
@@ -153,6 +181,25 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
         } catch (_) {}
         return v;
       }));
+    }
+
+    // In "All videos" mode, blend YouTube trailers with GIPHY movie moments for maximum variety
+    if (safeCategory === "all" && videos.length) {
+      const giphy = getGiphyService();
+      if (giphy) {
+        try {
+          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: Math.min(6, Math.floor(requestedLimit / 2)) });
+          if (momentsData?.videos?.length) {
+            const interleaved = [];
+            const moments = [...momentsData.videos];
+            videos.forEach((v) => {
+              interleaved.push(v);
+              if (moments.length) interleaved.push(moments.shift());
+            });
+            videos = interleaved.slice(0, requestedLimit);
+          }
+        } catch (_) {}
+      }
     }
 
     // Graceful fallback to TMDB / local catalogue trailers if KinoCheck returns empty or fails

@@ -273,12 +273,28 @@ function MovieReelsPage() {
               <div className="reel-stage">
                 <div className="reel-player-frame">
                   {isActive ? (
-                    <iframe ref={playerRef} src={playerSrc} title={`${video.movieTitle} ${categoryLabel.toLowerCase()}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
+                    video.isDirectVideo && video.videoUrl ? (
+                      <video
+                        src={video.videoUrl}
+                        autoPlay
+                        loop
+                        muted={isMuted}
+                        playsInline
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "24px"
+                        }}
+                      />
+                    ) : (
+                      <iframe ref={playerRef} src={playerSrc} title={`${video.movieTitle} ${categoryLabel.toLowerCase()}`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" />
+                    )
                   ) : (
                     <div className="reel-player-poster" style={{ backgroundImage: `url("${video.thumbnail || ""}")` }} />
                   )}
-                  {isActive && !isBlocked && <div className="reel-player-shield" aria-hidden="true" />}
-                  {isBlocked && (
+                  {isActive && !isBlocked && !video.isDirectVideo && <div className="reel-player-shield" aria-hidden="true" />}
+                  {isBlocked && !video.isDirectVideo && (
                     <div className="reel-player-blocked" style={{
                       position: "absolute",
                       inset: 0,
@@ -357,13 +373,13 @@ function MovieReelsPage() {
               </div>
 
               <div className="reel-caption movie-reels-caption">
-                <div className="reel-type"><span className="reel-live-dot" /> {categoryLabel} <span className="movie-reels-source">· KINOCHECK</span></div>
+                <div className="reel-type"><span className="reel-live-dot" /> {categoryLabel} <span className="movie-reels-source">· {video.source || "KINOCHECK"}</span></div>
                 <h1>{video.movieTitle}</h1>
-                <p className="reel-meta"><span>{video.language.toUpperCase()}</span>{video.views ? <><span>•</span> {Number(video.views).toLocaleString()} views</> : null}</p>
+                <p className="reel-meta"><span>{video.language.toUpperCase()}</span>{video.views ? <><span>•</span> {Number(video.views) ? Number(video.views).toLocaleString() + " views" : video.views}</> : null}</p>
                 <p className="reel-description">{video.title}</p>
                 <div className="movie-reels-actions">
                   {detailsHref && <button className="reel-details-button" type="button" onClick={() => navigate(detailsHref)}><Info size={16} /> Explore title</button>}
-                  {video.sourceUrl && <a className="movie-reels-source-link" href={video.sourceUrl} target="_blank" rel="noreferrer">KinoCheck source</a>}
+                  {video.sourceUrl && <a className="movie-reels-source-link" href={video.sourceUrl} target="_blank" rel="noreferrer">{video.source === "GIPHY" ? "GIPHY source" : "KinoCheck source"}</a>}
                 </div>
               </div>
 
