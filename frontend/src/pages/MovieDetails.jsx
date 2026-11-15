@@ -697,8 +697,6 @@ function MovieDetails() {
                 <Sparkles size={13} />
                 WORLDWIDE CINEMA
               </span>
-              <span className="quality-pill">4K ULTRA HD</span>
-              <span className="quality-pill">DOLBY ATMOS</span>
             </div>
 
             <h1 className="details-title">{movie.title}</h1>
