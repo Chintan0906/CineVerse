@@ -5,7 +5,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const responseCache = new Map();
 const inFlightRequests = new Map();
 
-// Lazy-loaded services
+// Lazy-loaded TMDB fallback service
 let tmdbService = null;
 function getTmdbService() {
   if (!tmdbService) {
@@ -16,18 +16,6 @@ function getTmdbService() {
     }
   }
   return tmdbService;
-}
-
-let giphyService = null;
-function getGiphyService() {
-  if (!giphyService) {
-    try {
-      giphyService = require("./giphyService");
-    } catch (_) {
-      giphyService = null;
-    }
-  }
-  return giphyService;
 }
 
 const CATEGORY_FILTERS = {
@@ -84,23 +72,6 @@ function shuffleArray(items) {
   return list;
 }
 
-function arrangeReels(videoList = [], category = "all") {
-  if (!videoList.length) return [];
-  if (category === "all") {
-    const moments = shuffleArray(videoList.filter((v) => v.source === "GIPHY" || v.isDirectVideo));
-    const trailers = shuffleArray(videoList.filter((v) => v.source !== "GIPHY" && !v.isDirectVideo));
-    const arranged = [];
-
-    // GIPHY reels are placed 1st, then interleaved with YouTube trailers: [GIPHY, YouTube, GIPHY, YouTube, ...]
-    while (moments.length > 0 || trailers.length > 0) {
-      if (moments.length > 0) arranged.push(moments.shift());
-      if (trailers.length > 0) arranged.push(trailers.shift());
-    }
-    return arranged;
-  }
-  return shuffleArray(videoList);
-}
-
 async function requestMovieReels({ feed = "trending", page = 1, limit = 12, category = "all", language = "en", seed } = {}) {
   const safeFeed = feed === "latest" ? "latest" : "trending";
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
@@ -112,35 +83,16 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
   const cached = responseCache.get(cacheKey);
 
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    // Reorder every time a reload happens so the user sees a freshly shuffled mix, with GIPHY 1st
+    // Reorder every time a reload happens so the user sees a freshly shuffled mix
     return {
       ...cached.result,
-      videos: arrangeReels(cached.result.videos, safeCategory),
+      videos: shuffleArray(cached.result.videos),
     };
   }
   if (inFlightRequests.has(cacheKey)) return inFlightRequests.get(cacheKey);
 
   const params = new URLSearchParams({ page: String(safePage), limit: String(safeLimit), language: safeLanguage });
   const request = (async () => {
-    // If user requested "Movie moments", serve direct movie clips via GIPHY API
-    if (safeCategory === "moments") {
-      const giphy = getGiphyService();
-      if (giphy) {
-        try {
-          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: requestedLimit, seed });
-          if (momentsData?.videos?.length) {
-            responseCache.set(cacheKey, { result: momentsData, timestamp: Date.now() });
-            return {
-              ...momentsData,
-              videos: shuffleArray(momentsData.videos),
-            };
-          }
-        } catch (giphyErr) {
-          console.error("Giphy service error:", giphyErr.message);
-        }
-      }
-    }
-
     const headers = { Accept: "application/json", "Content-Type": "application/json" };
     if (process.env.KINOCHECK_API_KEY) {
       headers["X-Api-Key"] = process.env.KINOCHECK_API_KEY;
@@ -218,31 +170,6 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
       }));
     }
 
-    // In "All videos" mode, place GIPHY movie moments 1st, then interleave with YouTube trailers
-    if (safeCategory === "all") {
-      const giphy = getGiphyService();
-      if (giphy) {
-        try {
-          const momentsNeeded = Math.max(6, Math.ceil(requestedLimit / 2));
-          const momentsData = await giphy.getMovieMoments({ page: safePage, limit: momentsNeeded, seed });
-          if (momentsData?.videos?.length) {
-            const moments = shuffleArray(momentsData.videos);
-            const trailers = shuffleArray(videos);
-            const interleaved = [];
-
-            // GIPHY movie moments are 1st: [GIPHY, YouTube, GIPHY, YouTube, ...]
-            while (moments.length > 0 || trailers.length > 0) {
-              if (moments.length > 0) interleaved.push(moments.shift());
-              if (trailers.length > 0) interleaved.push(trailers.shift());
-            }
-            videos = interleaved.slice(0, requestedLimit);
-          }
-        } catch (err) {
-          console.error("Giphy interleaving error:", err.message);
-        }
-      }
-    }
-
     // Graceful fallback to TMDB / local catalogue trailers if KinoCheck returns empty or fails
     if (!videos.length) {
       if (fallbackService?.getMovieReels) {
@@ -284,10 +211,10 @@ async function requestMovieReels({ feed = "trending", page = 1, limit = 12, cate
     responseCache.set(cacheKey, { result, timestamp: Date.now() });
     if (responseCache.size > 120) responseCache.delete(responseCache.keys().next().value);
 
-    // Arrange reels with GIPHY 1st and freshly reordered
+    // Reorder reels on every request/reload
     return {
       ...result,
-      videos: arrangeReels(result.videos, safeCategory),
+      videos: shuffleArray(result.videos),
     };
   })().finally(() => inFlightRequests.delete(cacheKey));
 
