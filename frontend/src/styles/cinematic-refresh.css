@@ -2537,115 +2537,114 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   to { transform: rotate(360deg); }
 }
 
-/* Movie Details Skeleton Loading */
+/* Movie details loading state mirrors the full-width hero and lower details grid. */
 .details-skeleton-root {
   min-height: 100vh;
-  background: #070a0d;
+  overflow: hidden;
+  background: #07090b;
 }
 
-.skeleton-hero-backdrop {
+.skeleton-details-hero {
+  min-height: min(76vh, 790px) !important;
+  align-items: flex-end !important;
+  padding: 120px clamp(24px, 5vw, 76px) clamp(42px, 6vh, 72px) !important;
+  background:
+    radial-gradient(ellipse at 77% 25%, rgba(69, 111, 116, 0.2), transparent 42%),
+    radial-gradient(ellipse at 57% 65%, rgba(83, 94, 104, 0.13), transparent 44%),
+    linear-gradient(115deg, #11161b 0%, #11151a 49%, #0c1014 100%) !important;
+}
+
+.skeleton-backdrop-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 75% 38%, rgba(135, 158, 164, 0.13), transparent 28%),
+    radial-gradient(ellipse at 83% 62%, rgba(72, 114, 119, 0.12), transparent 32%),
+    linear-gradient(90deg, rgba(7, 9, 11, 0.02), rgba(200, 213, 215, 0.025) 70%, rgba(7, 9, 11, 0.02));
+  animation: skeletonBackdropDrift 7s ease-in-out infinite alternate;
+}
+
+.skeleton-details-info {
   position: relative;
-  width: 100%;
-  min-height: 60vh;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, #070a0d 100%);
-  display: flex;
-  align-items: flex-end;
-  padding: 40px clamp(16px, 4vw, 48px);
-}
-
-.skeleton-hero-inner {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  gap: 32px;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: flex-end;
-}
-
-.skeleton-poster-box {
-  width: clamp(140px, 20vw, 240px);
-  aspect-ratio: 2/3;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  animation: skeletonPulse 1.8s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-.skeleton-info-stack {
+  z-index: 4;
+  width: min(100%, 820px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  flex: 1;
+  align-items: flex-start;
+  gap: 15px;
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.03) 100%);
-  background-size: 200% 100%;
+  background: linear-gradient(100deg, rgba(225, 239, 238, 0.075) 15%, rgba(225, 239, 238, 0.15) 42%, rgba(225, 239, 238, 0.075) 70%);
+  background-size: 220% 100%;
   border-radius: 8px;
-  animation: shimmerMove 1.8s ease-in-out infinite;
+  animation: shimmerMove 2s ease-in-out infinite;
 }
 
-.skeleton-title-bar {
-  width: clamp(200px, 50%, 420px);
-  height: 38px;
-  border-radius: 10px;
+.skeleton-eyebrow { width: 190px; height: 15px; border-radius: 999px; }
+.skeleton-title-bar { width: min(680px, 82vw); height: clamp(44px, 6.2vw, 78px); border-radius: 12px; }
+.skeleton-tagline-bar { width: min(360px, 58vw); height: 18px; border-radius: 999px; opacity: 0.8; }
+.skeleton-meta-row, .skeleton-genre-row, .skeleton-btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.skeleton-meta-row { margin-top: 4px; }
+.skeleton-meta-chip { width: 82px; height: 36px; border-radius: 999px; }
+.skeleton-meta-chip.wide { width: 112px; }
+.skeleton-genre-row { margin: 2px 0 3px; }
+.skeleton-genre-chip { width: 110px; height: 39px; border-radius: 999px; }
+.skeleton-genre-chip.short { width: 82px; }
+.skeleton-btn-row { gap: 12px; margin-top: 1px; }
+.skeleton-action-btn { width: 150px; height: 50px; border-radius: 999px; }
+.skeleton-action-btn.primary { width: 220px; background-color: rgba(240, 247, 246, 0.16); }
+.skeleton-action-btn.compact { width: 54px; }
+.skeleton-progress-bar { width: min(330px, 65vw); height: 6px; margin-top: 5px; border-radius: 999px; }
+
+.skeleton-details-body {
+  margin-top: 10px !important;
+  padding-bottom: 52px;
 }
 
-.skeleton-meta-bar {
-  width: clamp(150px, 35%, 260px);
-  height: 20px;
-}
-
-.skeleton-desc-line {
-  width: 90%;
-  height: 15px;
-}
-
-.skeleton-desc-line.short {
-  width: 65%;
-}
-
-.skeleton-btn-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.skeleton-action-btn {
-  width: 130px;
-  height: 44px;
-  border-radius: 9999px;
-}
-
-.skeleton-pill-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-@keyframes skeletonPulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
+.skeleton-story { padding: 24px 0; display: flex; flex-direction: column; gap: 15px; }
+.skeleton-facts-card { padding: 24px; border: 1px solid rgba(210, 235, 231, 0.1); border-radius: 20px; background: rgba(16, 23, 25, 0.68); display: flex; flex-direction: column; gap: 15px; }
+.skeleton-section-heading { width: 150px; height: 24px; border-radius: 7px; margin-bottom: 6px; }
+.skeleton-desc-line { width: min(100%, 680px); height: 14px; border-radius: 999px; }
+.skeleton-desc-line.short { width: 58%; }
+.skeleton-fact-row { width: 100%; height: 32px; border-radius: 6px; }
 
 @keyframes shimmerMove {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  from { background-position: 180% 0; }
+  to { background-position: -40% 0; }
+}
+
+@keyframes skeletonBackdropDrift {
+  from { opacity: 0.55; transform: scale(1); }
+  to { opacity: 0.95; transform: scale(1.035); }
 }
 
 @media (max-width: 768px) {
-  .skeleton-hero-inner {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  .skeleton-details-hero {
+    min-height: 68svh !important;
+    padding: 90px 22px 34px !important;
   }
-  .skeleton-info-stack {
-    align-items: center;
-    width: 100%;
-  }
+  .skeleton-details-info { gap: 13px; }
+  .skeleton-eyebrow { width: 155px; }
+  .skeleton-title-bar { width: min(88vw, 520px); height: 46px; }
+  .skeleton-tagline-bar { width: min(70vw, 280px); }
+  .skeleton-meta-row, .skeleton-genre-row, .skeleton-btn-row { gap: 8px; }
+  .skeleton-meta-chip { width: 68px; height: 33px; }
+  .skeleton-meta-chip.wide { width: 90px; }
+  .skeleton-genre-chip { width: 93px; height: 35px; }
+  .skeleton-genre-chip.short { width: 70px; }
+  .skeleton-action-btn { width: 112px; height: 43px; }
+  .skeleton-action-btn.primary { width: 165px; }
+  .skeleton-action-btn.compact { width: 45px; }
+  .skeleton-details-body .details-grid { gap: 12px !important; }
+  .skeleton-story { padding: 10px 0; }
+  .skeleton-facts-card { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .details-skeleton-root .skeleton-shimmer,
+  .details-skeleton-root .skeleton-backdrop-art { animation: none !important; }
 }
 
 /* ====================================================

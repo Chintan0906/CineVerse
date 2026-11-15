@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import { Link, useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Play,
@@ -25,34 +25,58 @@ import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/mo
 import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
-import CineVerseLogo from "../components/common/CineVerseLogo";
 import { useLibrary } from "../hooks/useLibrary";
 
 function MovieDetailsSkeleton({ onBack }) {
   return (
     <div className="movie-details-page details-skeleton-root" aria-busy="true" aria-label="Loading movie details">
       <header className="details-header">
-        <button className="btn-secondary back-btn" onClick={onBack} aria-label="Back to Browse">
-          <ArrowLeft size={18} />
-          Back to Browse
+        <button className="btn-secondary back-btn details-home-back-btn" onClick={onBack} aria-label="Back to home" title="Back to home">
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
-        <Link className="brand-logo-link" to="/" aria-label="CineVerse home">
-          <CineVerseLogo size="md" />
-        </Link>
-        <div className="skeleton-pill-box" />
       </header>
-      <div className="skeleton-hero-backdrop">
-        <div className="skeleton-hero-inner">
-          <div className="skeleton-poster-box" />
-          <div className="skeleton-info-stack">
+      <section className="details-hero skeleton-details-hero" aria-hidden="true">
+        <div className="skeleton-backdrop-art" />
+        <div className="details-hero-gradient-left" />
+        <div className="details-hero-gradient-bottom" />
+        <div className="details-hero-vignette" />
+        <div className="details-hero-container">
+          <div className="details-hero-info skeleton-details-info">
+            <div className="skeleton-shimmer skeleton-eyebrow" />
             <div className="skeleton-shimmer skeleton-title-bar" />
-            <div className="skeleton-shimmer skeleton-meta-bar" />
+            <div className="skeleton-shimmer skeleton-tagline-bar" />
+            <div className="skeleton-meta-row">
+              <span className="skeleton-shimmer skeleton-meta-chip" />
+              <span className="skeleton-shimmer skeleton-meta-chip wide" />
+              <span className="skeleton-shimmer skeleton-meta-chip" />
+            </div>
+            <div className="skeleton-genre-row">
+              <span className="skeleton-shimmer skeleton-genre-chip" />
+              <span className="skeleton-shimmer skeleton-genre-chip short" />
+              <span className="skeleton-shimmer skeleton-genre-chip" />
+            </div>
+            <div className="skeleton-btn-row">
+              <div className="skeleton-shimmer skeleton-action-btn primary" />
+              <div className="skeleton-shimmer skeleton-action-btn" />
+              <div className="skeleton-shimmer skeleton-action-btn compact" />
+            </div>
+            <div className="skeleton-shimmer skeleton-progress-bar" />
+          </div>
+        </div>
+      </section>
+      <div className="details-body-container skeleton-details-body" aria-hidden="true">
+        <div className="details-grid">
+          <div className="skeleton-story">
+            <div className="skeleton-shimmer skeleton-section-heading" />
+            <div className="skeleton-shimmer skeleton-desc-line" />
             <div className="skeleton-shimmer skeleton-desc-line" />
             <div className="skeleton-shimmer skeleton-desc-line short" />
-            <div className="skeleton-btn-row">
-              <div className="skeleton-shimmer skeleton-action-btn" />
-              <div className="skeleton-shimmer skeleton-action-btn" />
-            </div>
+          </div>
+          <div className="skeleton-facts-card">
+            <div className="skeleton-shimmer skeleton-section-heading" />
+            <div className="skeleton-shimmer skeleton-fact-row" />
+            <div className="skeleton-shimmer skeleton-fact-row" />
+            <div className="skeleton-shimmer skeleton-fact-row" />
           </div>
         </div>
       </div>
