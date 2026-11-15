@@ -102,6 +102,8 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
               className={`nav-link ${
                 activeLink === item.name ? "active" : ""
               }`}
+              aria-label={item.name}
+              title={item.name}
               onClick={() => handleNavigation(item.name, item.href)}
             >
               <Icon size={16} strokeWidth={1.8} />
@@ -113,6 +115,8 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
         <button
           type="button"
           className="nav-link watchlist-mobile-link"
+          aria-label="My Watchlist"
+          title="My Watchlist"
           onClick={handleWatchlist}
         >
           <Bookmark size={16} />
@@ -121,6 +125,8 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
         <button
           type="button"
           className="nav-link account-mobile-link"
+          aria-label={user ? "Sign out" : "Sign in / Register"}
+          title={user ? "Sign out" : "Sign in / Register"}
           onClick={() => {
             setMenuOpen(false);
             if (user) logout().catch((error) => console.error("Sign out failed:", error));
