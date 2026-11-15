@@ -39,6 +39,22 @@ export async function getMovieReels(offset = 0, limit = 8) {
   };
 }
 
+export async function getKinoCheckMovieReels({ feed = "trending", page = 1, limit = 12, category = "all", language = "en", signal } = {}) {
+  const params = new URLSearchParams({ feed, page: String(page), limit: String(limit), category, language });
+  const response = await fetch(`${API_BASE_URL}/movies/movie-reels?${params}`, { signal });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Unable to load Movie Reels.");
+  }
+
+  return {
+    videos: result.videos || [],
+    page: result.page || page,
+    totalPages: result.totalPages || page,
+    hasMore: Boolean(result.hasMore),
+  };
+}
+
 export async function getMovieById(id, type) {
   const query = type ? `?type=${encodeURIComponent(type)}` : "";
   const response = await fetch(

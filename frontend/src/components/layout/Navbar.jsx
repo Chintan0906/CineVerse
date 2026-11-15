@@ -13,6 +13,7 @@ import {
   LogOut,
   User,
   Clapperboard,
+  Film,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./Navbar.css";
@@ -49,6 +50,11 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
       href: "/reels",
       icon: Clapperboard,
     },
+    {
+      name: "Movie Reels",
+      href: "/movie-reels",
+      icon: Film,
+    },
   ];
 
   function handleNavigation(name, href) {
@@ -77,6 +83,11 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
 
     if (name === "Reels") {
       navigate("/reels");
+      return;
+    }
+
+    if (name === "Movie Reels") {
+      navigate("/movie-reels");
       return;
     }
 
@@ -214,12 +225,12 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
 
         <button
           type="button"
-          onClick={() => handleNavigation("Reels", "/reels")}
-          className={`framex-nav-tab ${activeLink === "Reels" ? "active" : ""}`}
+          onClick={() => handleNavigation("Movie Reels", "/movie-reels")}
+          className={`framex-nav-tab ${activeLink === "Movie Reels" ? "active" : ""}`}
           aria-label="Movie Reels"
         >
-          <Clapperboard size={18} strokeWidth={activeLink === "Reels" ? 2.4 : 1.8} />
-          <span>Reels</span>
+          <Film size={18} strokeWidth={activeLink === "Movie Reels" ? 2.4 : 1.8} />
+          <span>Movie Reels</span>
         </button>
 
         <button

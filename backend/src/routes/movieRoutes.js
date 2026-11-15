@@ -12,6 +12,7 @@ const {
   discoverByGenre,
   getMovieReels,
 } = require("../../services/tmdbService");
+const { requestMovieReels } = require("../../services/kinoCheckService");
 
 // GET /api/movies/netflix
 // Return curated Netflix categories (Top 10, Trending, Action, Sci-Fi, etc.)
@@ -71,6 +72,26 @@ router.get("/reels", async (req, res) => {
   } catch (error) {
     console.error("Movie reels error:", error.message);
     res.status(502).json({ success: false, message: "Unable to load more reels." });
+  }
+});
+
+// GET /api/movies/movie-reels?feed=trending&page=1&category=all
+// Proxy KinoCheck video metadata so optional API credentials stay server-side.
+router.get("/movie-reels", async (req, res) => {
+  const { feed, page, limit, category, language } = req.query;
+  if (feed && !["trending", "latest"].includes(String(feed))) {
+    return res.status(400).json({ success: false, message: "Feed must be trending or latest." });
+  }
+  if (category && !["all", "trailers", "moments"].includes(String(category))) {
+    return res.status(400).json({ success: false, message: "Unsupported video category." });
+  }
+
+  try {
+    const result = await requestMovieReels({ feed, page, limit, category, language });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("KinoCheck movie reels error:", error.message);
+    res.status(502).json({ success: false, message: "Unable to load Movie Reels right now." });
   }
 });
 
