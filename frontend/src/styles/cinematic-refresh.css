@@ -2728,10 +2728,10 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   .wyzie-subtitle-result { padding: 8px; }
 }
 
-/* Cinematic Video Subtitles Overlay */
+/* Cinematic Video Subtitles Overlay - Clean Broadcast/Netflix Style (No background by default) */
 .cine-custom-subtitles-overlay {
   position: absolute;
-  bottom: clamp(35px, 7vw, 65px);
+  bottom: clamp(30px, 6vw, 65px);
   left: 0;
   right: 0;
   display: flex;
@@ -2741,40 +2741,203 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   pointer-events: none;
   z-index: 25;
   user-select: none;
+  transition: bottom 0.2s ease, top 0.2s ease;
+}
+
+.cine-custom-subtitles-overlay.pos-top {
+  top: clamp(30px, 6vw, 65px);
+  bottom: auto;
+}
+
+.cine-custom-subtitles-overlay.pos-middle {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
 }
 
 .cine-sub-pill {
-  max-width: min(88%, 960px);
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 6px 18px;
-  border-radius: 8px;
+  max-width: min(90%, 960px);
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
   text-align: center;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: none;
   transition: all 0.15s ease-out;
+}
+
+/* Background variants */
+.cine-sub-pill.bg-none {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.cine-sub-pill.bg-glass {
+  background: rgba(12, 20, 24, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 6px 16px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cine-sub-pill.bg-solid {
+  background: rgba(0, 0, 0, 0.88) !important;
+  backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 6px 18px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.8) !important;
 }
 
 .cine-sub-line {
   display: block;
-  color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 700;
+  font-weight: 750;
   line-height: 1.35;
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+  letter-spacing: 0.025em;
+  /* Cinematic text outline + deep drop shadow - sharp readability with NO background */
+  text-shadow:
+    -1.5px -1.5px 0 #000000,
+     1.5px -1.5px 0 #000000,
+    -1.5px  1.5px 0 #000000,
+     1.5px  1.5px 0 #000000,
+     0px 2px 6px rgba(0, 0, 0, 0.98),
+     0px 0px 4px #000000;
+}
+
+/* Font sizes */
+.cine-custom-subtitles-overlay.size-small .cine-sub-line {
+  font-size: clamp(12px, 1.7vw, 17px);
 }
 
 .cine-custom-subtitles-overlay.size-normal .cine-sub-line {
-  font-size: clamp(14px, 2.1vw, 21px);
+  font-size: clamp(15px, 2.2vw, 22px);
 }
 
 .cine-custom-subtitles-overlay.size-large .cine-sub-line {
-  font-size: clamp(17px, 2.7vw, 27px);
+  font-size: clamp(18px, 2.8vw, 28px);
 }
 
 .cine-custom-subtitles-overlay.size-xlarge .cine-sub-line {
-  font-size: clamp(21px, 3.3vw, 33px);
+  font-size: clamp(22px, 3.5vw, 36px);
+}
+
+/* Subtitle Customization Card & Live Preview */
+.cine-sub-customizer-card {
+  margin: 0 0 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(14, 25, 28, 0.72);
+  border: 1px solid rgba(186, 255, 236, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cine-sub-customizer-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #e5fbf4;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cine-sub-customizer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.cine-sub-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cine-sub-option-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(220, 236, 233, 0.75);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cine-sub-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cine-sub-chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e0ecea;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cine-sub-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(186, 255, 236, 0.35);
+  transform: translateY(-1px);
+}
+
+.cine-sub-chip.active {
+  background: rgba(30, 95, 80, 0.45);
+  border-color: #baffec;
+  color: #baffec;
+  font-weight: 750;
+  box-shadow: 0 0 10px rgba(186, 255, 236, 0.15);
+}
+
+.cine-color-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+/* Subtitle Live Preview Box */
+.cine-sub-live-preview {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: radial-gradient(circle at center, rgba(35, 52, 58, 0.7), rgba(10, 16, 18, 0.95)), repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0, rgba(255, 255, 255, 0.02) 10px, transparent 10px, transparent 20px);
+  border: 1px dashed rgba(186, 255, 236, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cine-sub-live-preview-badge {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(186, 255, 236, 0.65);
 }
 
 /* Modal Subtitle Uploader & Controls */

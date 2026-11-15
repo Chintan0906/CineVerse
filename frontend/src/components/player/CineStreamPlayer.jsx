@@ -642,7 +642,55 @@ function CineStreamPlayer({
   const [customSubName, setCustomSubName] = useState("");
   const [subOffset, setSubOffset] = useState(0.0); // seconds offset
   const [subEnabled, setSubEnabled] = useState(true);
-  const [subSize, setSubSize] = useState("normal"); // "normal" | "large" | "xlarge"
+  const [subSize, setSubSize] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_size_pref") || "normal";
+    } catch {
+      return "normal";
+    }
+  });
+  const [subBg, setSubBg] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_bg_pref") || "none";
+    } catch {
+      return "none";
+    }
+  });
+  const [subColor, setSubColor] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_color_pref") || "#ffffff";
+    } catch {
+      return "#ffffff";
+    }
+  });
+  const [subPosition, setSubPosition] = useState(() => {
+    try {
+      return localStorage.getItem("cineverse_sub_pos_pref") || "bottom";
+    } catch {
+      return "bottom";
+    }
+  });
+
+  const updateSubBg = (bg) => {
+    setSubBg(bg);
+    try { localStorage.setItem("cineverse_sub_bg_pref", bg); } catch {}
+  };
+
+  const updateSubColor = (col) => {
+    setSubColor(col);
+    try { localStorage.setItem("cineverse_sub_color_pref", col); } catch {}
+  };
+
+  const updateSubSize = (sz) => {
+    setSubSize(sz);
+    try { localStorage.setItem("cineverse_sub_size_pref", sz); } catch {}
+  };
+
+  const updateSubPosition = (pos) => {
+    setSubPosition(pos);
+    try { localStorage.setItem("cineverse_sub_pos_pref", pos); } catch {}
+  };
+
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
   const [subPlaying, setSubPlaying] = useState(true);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -675,7 +723,7 @@ function CineStreamPlayer({
     if (!tmdbId) {
       setWyzieError("This title does not have a TMDB ID for subtitle lookup.");
       setWyzieTracks([]);
-      return;
+      return [];
     }
 
     const requestId = ++wyzieSearchIdRef.current;
@@ -689,17 +737,19 @@ function CineStreamPlayer({
         episode: isTv ? currEpisode : undefined,
         language,
       });
-      if (requestId !== wyzieSearchIdRef.current) return;
+      if (requestId !== wyzieSearchIdRef.current) return [];
       setWyzieTracks(tracks);
       if (!tracks.length) setWyzieError("No subtitles were found for this title and language.");
+      return tracks;
     } catch (error) {
       if (requestId === wyzieSearchIdRef.current) setWyzieError(error.message || "Subtitle search failed. Try again.");
+      return [];
     } finally {
       if (requestId === wyzieSearchIdRef.current) setWyzieLoading(false);
     }
   }, [currEpisode, currSeason, isTv, tmdbId, wyzieLanguage]);
 
-  const loadWyzieTrack = async (track) => {
+  const loadWyzieTrack = useCallback(async (track) => {
     setWyzieLoadingTrack(track.id);
     setWyzieError("");
     try {
@@ -707,19 +757,62 @@ function CineStreamPlayer({
       const cues = parseSubtitles(content);
       if (!cues.length) {
         setWyzieError("This subtitle file could not be read. Choose another result or upload an SRT/VTT file.");
-        return;
+        return false;
       }
       setCustomCues(cues);
       setCustomSubName(`${track.display} · ${track.source}`);
       setSubOffset(0);
       setSubEnabled(true);
       setActiveWyzieTrack(track.id);
+      return true;
     } catch (error) {
       setWyzieError(error.message || "Could not load this subtitle track.");
+      return false;
     } finally {
       setWyzieLoadingTrack("");
     }
-  };
+  }, []);
+
+  // Automatic 1-click English subtitle loader
+  const handleSubtitleButtonClick = useCallback(async () => {
+    // If subtitles are already active, open assistant to customize
+    if (customCues.length > 0 && subEnabled) {
+      setAudioSubTab("subtitles");
+      setShowAudioSubModal(true);
+      return;
+    }
+
+    // If subtitle cues already loaded but user toggled them off, re-enable
+    if (customCues.length > 0 && !subEnabled) {
+      setSubEnabled(true);
+      return;
+    }
+
+    // Auto-fetch and load English subtitles immediately!
+    setAudioSubTab("subtitles");
+    setShowAudioSubModal(true);
+    setWyzieLanguage("en");
+    setWyzieLoading(true);
+    setWyzieError("");
+    try {
+      const tracks = await searchWyzieSubtitles({
+        id: tmdbId,
+        season: isTv ? currSeason : undefined,
+        episode: isTv ? currEpisode : undefined,
+        language: "en",
+      });
+      setWyzieTracks(tracks);
+      if (tracks && tracks.length > 0) {
+        await loadWyzieTrack(tracks[0]);
+      } else {
+        setWyzieError("No English subtitles were found for this title.");
+      }
+    } catch (error) {
+      setWyzieError(error.message || "Could not automatically load English subtitles.");
+    } finally {
+      setWyzieLoading(false);
+    }
+  }, [currEpisode, currSeason, customCues.length, isTv, loadWyzieTrack, subEnabled, tmdbId]);
 
   useEffect(() => {
     setCurrSeason(propSeason);
@@ -1487,16 +1580,24 @@ function CineStreamPlayer({
           </button>
           <button
             type="button"
-            className={`cine-server-action-btn ${customCues.length ? "active-subs" : ""}`}
-            onClick={() => {
-              setAudioSubTab("subtitles");
-              setShowAudioSubModal(true);
-              searchWyzieTracks();
-            }}
-            title="Find subtitles, upload a subtitle file, or adjust subtitle timing"
+            className={`cine-server-action-btn ${customCues.length && subEnabled ? "active-subs" : ""}`}
+            onClick={handleSubtitleButtonClick}
+            title={
+              customCues.length
+                ? "Subtitles are active. Click to customize styles or switch tracks"
+                : "Click to automatically load English subtitles and customize"
+            }
           >
             <Captions size={13} />
-            <span>{wyzieLoading ? "Finding subtitles…" : customCues.length ? "Subtitles: Active" : "Subtitles"}</span>
+            <span>
+              {wyzieLoading
+                ? "Loading English…"
+                : customCues.length && subEnabled
+                ? "Subtitles: Active"
+                : customCues.length && !subEnabled
+                ? "Subtitles: Off"
+                : "Subtitles"}
+            </span>
           </button>
           <button
             type="button"
@@ -1540,12 +1641,18 @@ function CineStreamPlayer({
           </div>
         )}
 
-        {/* CINEMATIC SUBTITLE TEXT OVERLAY */}
+        {/* CINEMATIC SUBTITLE TEXT OVERLAY (NO BACKGROUND BY DEFAULT) */}
         {subEnabled && activeSubtitleText && (
-          <div className={`cine-custom-subtitles-overlay size-${subSize}`}>
-            <div className="cine-sub-pill">
+          <div className={`cine-custom-subtitles-overlay size-${subSize} pos-${subPosition}`}>
+            <div className={`cine-sub-pill bg-${subBg}`}>
               {activeSubtitleText.split("\n").map((line, idx) => (
-                <span key={idx} className="cine-sub-line">{line}</span>
+                <span
+                  key={idx}
+                  className="cine-sub-line"
+                  style={{ color: subColor }}
+                >
+                  {line}
+                </span>
               ))}
             </div>
           </div>
@@ -1976,6 +2083,152 @@ function CineStreamPlayer({
               )}
               {audioSubTab === "subtitles" ? (
                 <div className="cine-sub-panel">
+                  {/* SUBTITLE CUSTOMIZATION & LIVE PREVIEW CARD */}
+                  <section className="cine-sub-customizer-card" aria-label="Subtitle Customization">
+                    <div className="cine-sub-customizer-title">
+                      <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                        <Sliders size={14} />
+                        <span>Subtitle Style & Customization</span>
+                      </div>
+                      {customCues.length > 0 && (
+                        <button
+                          type="button"
+                          className="cine-offset-step-btn"
+                          style={{
+                            fontSize: "11px",
+                            padding: "3px 10px",
+                            background: subEnabled ? "rgba(73,152,132,.25)" : "rgba(255,255,255,0.06)",
+                            borderColor: subEnabled ? "#baffec" : "rgba(255,255,255,0.2)",
+                            color: subEnabled ? "#baffec" : "rgba(255,255,255,0.6)"
+                          }}
+                          onClick={() => setSubEnabled((prev) => !prev)}
+                        >
+                          {subEnabled ? "Subtitles: ON" : "Subtitles: OFF"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* LIVE PREVIEW OF CUSTOMIZED SUBTITLE */}
+                    <div className="cine-sub-live-preview">
+                      <span className="cine-sub-live-preview-badge">Live Style Preview</span>
+                      <div className={`cine-sub-pill bg-${subBg}`}>
+                        <span
+                          className="cine-sub-line"
+                          style={{ color: subColor }}
+                        >
+                          I'm going to make him an offer he can't refuse.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="cine-sub-customizer-grid">
+                      {/* Background Style */}
+                      <div className="cine-sub-option-group">
+                        <span className="cine-sub-option-label">Background Style</span>
+                        <div className="cine-sub-chips-row">
+                          {[
+                            { id: "none", label: "No Background (Default)" },
+                            { id: "glass", label: "Glass Blur" },
+                            { id: "solid", label: "Dark Box" },
+                          ].map((bg) => (
+                            <button
+                              key={bg.id}
+                              type="button"
+                              className={`cine-sub-chip ${subBg === bg.id ? "active" : ""}`}
+                              onClick={() => updateSubBg(bg.id)}
+                            >
+                              {bg.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Text Color */}
+                      <div className="cine-sub-option-group">
+                        <span className="cine-sub-option-label">Text Color</span>
+                        <div className="cine-sub-chips-row">
+                          {[
+                            { hex: "#ffffff", label: "White" },
+                            { hex: "#ffeb3b", label: "Yellow" },
+                            { hex: "#00e5ff", label: "Cyan" },
+                            { hex: "#69f0ae", label: "Green" },
+                          ].map((col) => (
+                            <button
+                              key={col.hex}
+                              type="button"
+                              className={`cine-sub-chip ${subColor === col.hex ? "active" : ""}`}
+                              onClick={() => updateSubColor(col.hex)}
+                            >
+                              <span className="cine-color-swatch" style={{ background: col.hex }} />
+                              <span>{col.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Font Size */}
+                      <div className="cine-sub-option-group">
+                        <span className="cine-sub-option-label">Font Size</span>
+                        <div className="cine-sub-chips-row">
+                          {[
+                            { id: "small", label: "Small" },
+                            { id: "normal", label: "Normal (Default)" },
+                            { id: "large", label: "Large" },
+                            { id: "xlarge", label: "Extra Large" },
+                          ].map((sz) => (
+                            <button
+                              key={sz.id}
+                              type="button"
+                              className={`cine-sub-chip ${subSize === sz.id ? "active" : ""}`}
+                              onClick={() => updateSubSize(sz.id)}
+                            >
+                              {sz.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Screen Position */}
+                      <div className="cine-sub-option-group">
+                        <span className="cine-sub-option-label">Screen Position</span>
+                        <div className="cine-sub-chips-row">
+                          {[
+                            { id: "bottom", label: "Bottom (Default)" },
+                            { id: "middle", label: "Center" },
+                            { id: "top", label: "Top" },
+                          ].map((pos) => (
+                            <button
+                              key={pos.id}
+                              type="button"
+                              className={`cine-sub-chip ${subPosition === pos.id ? "active" : ""}`}
+                              onClick={() => updateSubPosition(pos.id)}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timing Adjustment */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "10px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <strong style={{ fontSize: "12px", color: "#e0ecea" }}>Timing Synchronization</strong>
+                        <span style={{ fontSize: "10px", color: "rgba(220,236,233,0.6)" }}>
+                          Current Offset: {subOffset > 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}
+                        </span>
+                      </div>
+                      <div className="cine-offset-btn-group">
+                        <button type="button" className="cine-offset-step-btn" onClick={() => handleOffsetChange(-1.0)} title="Speed up by 1 second">-1s</button>
+                        <button type="button" className="cine-offset-step-btn" onClick={() => handleOffsetChange(-0.5)} title="Speed up by 0.5s">-0.5s</button>
+                        <button type="button" className="cine-offset-step-btn" onClick={() => handleOffsetChange(0.5)} title="Delay by 0.5s">+0.5s</button>
+                        <button type="button" className="cine-offset-step-btn" onClick={() => handleOffsetChange(1.0)} title="Delay by 1s">+1s</button>
+                        {subOffset !== 0 && (
+                          <button type="button" className="cine-offset-step-btn" onClick={() => setSubOffset(0.0)} title="Reset offset">Reset</button>
+                        )}
+                      </div>
+                    </div>
+                  </section>
                   <section className="wyzie-subtitle-search" aria-label="Search Wyzie subtitles">
                     <div className="wyzie-search-heading">
                       <div>
