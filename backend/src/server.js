@@ -4,6 +4,7 @@ require("dotenv").config();
 require("./dnsConfig");
 
 const movieRoutes = require("./routes/movieRoutes");
+const subtitleRoutes = require("./routes/subtitleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const { getTrendingMovies } = require("../services/tmdbService");
 
@@ -25,6 +26,7 @@ app.use(express.json());
 
 // Movie API
 app.use("/api/movies", movieRoutes);
+app.use("/api/subtitles", subtitleRoutes);
 app.use("/api/auth", authRoutes);
 
 // Root endpoint
