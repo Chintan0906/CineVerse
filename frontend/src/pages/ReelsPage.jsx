@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Info, LoaderCircle, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Info, LoaderCircle, Volume2, VolumeX } from "lucide-react";
 import { useMovies } from "../hooks/useMovies";
+import { getMovieReels } from "../services/movieService";
 import "./ReelsPage.css";
 
 function extractTrailerKey(movie) {
@@ -19,22 +20,33 @@ function ReelsPage() {
   const feedRef = useRef(null);
   const slideRefs = useRef([]);
   const playerRef = useRef(null);
+  const loadingMoreRef = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [moreReels, setMoreReels] = useState([]);
+  const [nextOffset, setNextOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const reels = useMemo(() => {
     const seen = new Set();
-    return [...(featuredMovies || []), ...(movies || [])]
-      .map((movie) => ({ ...movie, resolvedTrailerKey: extractTrailerKey(movie) }))
+    return [...(featuredMovies || []), ...(movies || []), ...moreReels]
+      .map((movie) => ({
+        ...movie,
+        resolvedTrailerKey: movie.resolvedTrailerKey || extractTrailerKey(movie),
+      }))
       .filter((movie) => {
-        const id = String(movie.id);
+        const mediaType = movie.mediaType === "tv" || movie.isTV ? "tv" : "movie";
+        const id = String(movie.reelId || `${mediaType}:${movie.id}:${movie.resolvedTrailerKey}`);
         if (!movie.resolvedTrailerKey || seen.has(id)) return false;
         seen.add(id);
         return true;
       })
-      .slice(0, 24);
-  }, [featuredMovies, movies]);
+      .map((movie) => {
+        const mediaType = movie.mediaType === "tv" || movie.isTV ? "tv" : "movie";
+        return { ...movie, reelId: movie.reelId || `${mediaType}:${movie.id}:${movie.resolvedTrailerKey}` };
+      });
+  }, [featuredMovies, movies, moreReels]);
 
   useEffect(() => {
     const priorTitle = document.title;
@@ -59,10 +71,27 @@ function ReelsPage() {
     return () => observer.disconnect();
   }, [reels.length]);
 
+  useEffect(() => setIsMuted(true), [activeIndex]);
+
   useEffect(() => {
-    setIsMuted(true);
-    setIsPlaying(true);
-  }, [activeIndex]);
+    if (!hasMore || loadingMoreRef.current || activeIndex < reels.length - 3) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    getMovieReels(nextOffset, 8)
+      .then((page) => {
+        setMoreReels((current) => [...current, ...page.reels]);
+        setNextOffset(page.nextOffset);
+        setHasMore(page.hasMore);
+      })
+      .catch(() => {
+        setHasMore(false);
+      })
+      .finally(() => {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
+  }, [activeIndex, hasMore, nextOffset, reels.length]);
 
   const scrollToReel = useCallback((index) => {
     const bounded = Math.max(0, Math.min(index, reels.length - 1));
@@ -98,12 +127,6 @@ function ReelsPage() {
       "*"
     );
   }, []);
-
-  const togglePlayback = () => {
-    const nextPlaying = !isPlaying;
-    setIsPlaying(nextPlaying);
-    sendPlayerCommand(nextPlaying ? "playVideo" : "pauseVideo");
-  };
 
   const toggleMute = () => {
     const nextMuted = !isMuted;
@@ -147,10 +170,10 @@ function ReelsPage() {
           return (
             <section
               className="reel-slide"
-              key={`${reel.id}-${reel.resolvedTrailerKey}`}
+              key={reel.reelId}
               data-reel-index={index}
               ref={(node) => { slideRefs.current[index] = node; }}
-              aria-label={`${reel.title} trailer, ${index + 1} of ${reels.length}`}
+              aria-label={`${reel.title} ${reel.videoType || "trailer"}, reel ${index + 1}`}
               style={{ "--reel-backdrop": `url("${reel.backdrop || reel.poster || ""}")` }}
             >
               <div className="reel-backdrop" aria-hidden="true" />
@@ -160,8 +183,8 @@ function ReelsPage() {
                   <ArrowLeft size={19} />
                 </button>
                 <div className="reels-wordmark"><Clapperboard size={18} /><span>CINEVERSE <b>REELS</b></span></div>
-                <div className="reels-position" aria-label={`Reel ${index + 1} of ${reels.length}`}>
-                  {String(index + 1).padStart(2, "0")} <span>/</span> {String(reels.length).padStart(2, "0")}
+                <div className="reels-position" aria-label={`Reel ${index + 1}${hasMore ? ", more reels loading as you scroll" : ` of ${reels.length}`}`}>
+                  {String(index + 1).padStart(2, "0")} <span>/</span> {hasMore ? "∞" : String(reels.length).padStart(2, "0")}
                 </div>
               </header>
 
@@ -171,7 +194,7 @@ function ReelsPage() {
                     <iframe
                       ref={playerRef}
                       src={trailerSrc}
-                      title={`${reel.title} official trailer`}
+                      title={`${reel.title} ${reel.videoType || "trailer"}`}
                       allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                       referrerPolicy="strict-origin-when-cross-origin"
                     />
@@ -183,7 +206,7 @@ function ReelsPage() {
               </div>
 
               <div className="reel-caption">
-                <div className="reel-type"><span className="reel-live-dot" /> OFFICIAL TRAILER</div>
+                <div className="reel-type"><span className="reel-live-dot" /> {reel.videoOfficial ? "OFFICIAL " : ""}{String(reel.videoType || "Trailer").toUpperCase()}</div>
                 <h1>{reel.title}</h1>
                 <p className="reel-meta">
                   {reel.year || (reel.releaseDate || reel.firstAirDate || "").slice(0, 4)}
@@ -197,9 +220,6 @@ function ReelsPage() {
               </div>
 
               <div className="reel-controls" aria-label="Trailer controls">
-                <button type="button" onClick={togglePlayback} aria-label={isPlaying ? "Pause trailer" : "Play trailer"} title={isPlaying ? "Pause" : "Play"}>
-                  {isPlaying ? <Pause size={19} fill="currentColor" /> : <Play size={19} fill="currentColor" />}
-                </button>
                 <button type="button" onClick={toggleMute} aria-label={isMuted ? "Turn sound on" : "Mute trailer"} title={isMuted ? "Turn sound on" : "Mute"}>
                   {isMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
                 </button>
@@ -211,6 +231,7 @@ function ReelsPage() {
             </section>
           );
         })}
+        {loadingMore && <div className="reels-more-loading" aria-live="polite"><LoaderCircle size={18} className="reels-loading-icon" /> Finding more clips…</div>}
       </div>
     </main>
   );

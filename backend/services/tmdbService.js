@@ -77,6 +77,8 @@ const cache = {
   timestamp: 0,
   ttl: 15 * 60 * 1000, // 15 minutes
 };
+const reelsVideoCache = new Map();
+const reelsVideoInFlight = new Map();
 
 async function tmdbRequest(endpoint, params = {}) {
   const apiKey = process.env.TMDB_API_KEY;
@@ -804,6 +806,87 @@ async function getNetflixCatalogue() {
   }
 }
 
+// Paginated official trailer and clip feed. Video metadata is cached per title
+// so scrolling does not repeat TMDB video lookups for the same catalogue.
+async function getMovieReels(offset = 0, limit = 8) {
+  const catalogue = await getNetflixCatalogue();
+  const allMovies = catalogue.allMovies || [];
+  const start = Math.max(0, Math.min(Number(offset) || 0, allMovies.length));
+  const pageSize = Math.max(1, Math.min(Number(limit) || 8, 12));
+  const page = allMovies.slice(start, start + pageSize);
+  const videoTypePriority = new Map([
+    ["Trailer", 0], ["Teaser", 1], ["Clip", 2], ["Featurette", 3],
+    ["Behind the Scenes", 4], ["Bloopers", 5], ["Recap", 6],
+  ]);
+
+  const reelGroups = await Promise.all(page.map(async (movie) => {
+    const isTV = Boolean(movie.isTV || movie.mediaType === "tv");
+    const cacheKey = `${isTV ? "tv" : "movie"}:${movie.id}`;
+    const cached = reelsVideoCache.get(cacheKey);
+    let videos = cached && Date.now() - cached.timestamp < cache.ttl ? cached.videos : null;
+
+    if (!videos) {
+      let pending = reelsVideoInFlight.get(cacheKey);
+      if (!pending) {
+        const endpoint = isTV ? `/tv/${movie.id}/videos` : `/movie/${movie.id}/videos`;
+        pending = tmdbRequest(endpoint, {
+          include_video_language: "en,hi,ja,ko,es,fr,null",
+        })
+          .then((result) => {
+            const allowedTypes = new Set(videoTypePriority.keys());
+            const items = (result.results || [])
+              .filter((video) => video.site === "YouTube" && video.key && allowedTypes.has(video.type))
+              .sort((a, b) =>
+                (Number(b.official) - Number(a.official)) ||
+                (videoTypePriority.get(a.type) - videoTypePriority.get(b.type)) ||
+                String(b.published_at || "").localeCompare(String(a.published_at || ""))
+              );
+            reelsVideoCache.set(cacheKey, { videos: items, timestamp: Date.now() });
+            if (reelsVideoCache.size > 400) {
+              const oldestKey = reelsVideoCache.keys().next().value;
+              reelsVideoCache.delete(oldestKey);
+            }
+            return items;
+          })
+          .finally(() => reelsVideoInFlight.delete(cacheKey));
+        reelsVideoInFlight.set(cacheKey, pending);
+      }
+      try {
+        videos = await pending;
+      } catch (_) {
+        videos = [];
+      }
+    }
+
+    // Keep the feed varied: at most one item of each video type per title.
+    const pickedTypes = new Set();
+    return videos
+      .filter((video) => {
+        if (pickedTypes.has(video.type)) return false;
+        pickedTypes.add(video.type);
+        return true;
+      })
+      .slice(0, 4)
+      .map((video) => ({
+        ...movie,
+        id: movie.id,
+        reelId: `${cacheKey}:${video.key}`,
+        trailerKey: video.key,
+        videoType: video.type,
+        videoName: video.name,
+        videoOfficial: Boolean(video.official),
+      }));
+  }));
+
+  const nextOffset = start + page.length;
+  return {
+    reels: reelGroups.flat(),
+    nextOffset,
+    hasMore: nextOffset < allMovies.length,
+    totalTitles: allMovies.length,
+  };
+}
+
 module.exports = {
   searchMovies,
   searchMultimedia,
@@ -823,4 +906,5 @@ module.exports = {
   getTVShowsByGenre,
   discoverByGenre,
   getNetflixCatalogue,
+  getMovieReels,
 };

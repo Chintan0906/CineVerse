@@ -26,6 +26,19 @@ export async function getNetflixCatalogue() {
   return response.json();
 }
 
+export async function getMovieReels(offset = 0, limit = 8) {
+  const response = await fetch(
+    `${API_BASE_URL}/movies/reels?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}`
+  );
+  if (!response.ok) throw new Error("Unable to load more reels.");
+  const result = await response.json();
+  return {
+    reels: result.reels || [],
+    nextOffset: result.nextOffset ?? offset,
+    hasMore: Boolean(result.hasMore),
+  };
+}
+
 export async function getMovieById(id, type) {
   const query = type ? `?type=${encodeURIComponent(type)}` : "";
   const response = await fetch(

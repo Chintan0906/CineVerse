@@ -10,6 +10,7 @@ const {
   getTVShowDetails,
   getTVSeasonEpisodes,
   discoverByGenre,
+  getMovieReels,
 } = require("../../services/tmdbService");
 
 // GET /api/movies/netflix
@@ -52,6 +53,24 @@ router.get("/", async (req, res) => {
       success: false,
       message: "Unable to load movies.",
     });
+  }
+});
+
+// GET /api/movies/reels?offset=0&limit=8
+// Return official YouTube trailers, teasers, and short clips page by page.
+router.get("/reels", async (req, res) => {
+  const offset = Number.parseInt(req.query.offset, 10) || 0;
+  const limit = Number.parseInt(req.query.limit, 10) || 8;
+  if (offset < 0 || limit < 1 || limit > 12) {
+    return res.status(400).json({ success: false, message: "Invalid reels page." });
+  }
+
+  try {
+    const result = await getMovieReels(offset, limit);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("Movie reels error:", error.message);
+    res.status(502).json({ success: false, message: "Unable to load more reels." });
   }
 });
 
