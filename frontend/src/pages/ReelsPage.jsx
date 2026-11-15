@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Info, LoaderCircle, Volume2, VolumeX } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Clapperboard, Film, Info, LoaderCircle, Volume2, VolumeX } from "lucide-react";
 import { useMovies } from "../hooks/useMovies";
-import { getMovieReels } from "../services/movieService";
+import { getMovieReels, getKinoCheckMovieReels } from "../services/movieService";
 import "./ReelsPage.css";
 
 function extractTrailerKey(movie) {
@@ -73,6 +73,61 @@ function ReelsPage() {
 
   useEffect(() => setIsMuted(true), [activeIndex]);
 
+  // Fetch initial batch of reels immediately if catalogue movies lack trailers
+  useEffect(() => {
+    if (loading || moreReels.length > 0 || loadingMoreRef.current) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    getMovieReels(0, 8)
+      .then((page) => {
+        if (page?.reels?.length) {
+          setMoreReels(page.reels);
+          setNextOffset(page.nextOffset);
+          setHasMore(page.hasMore);
+        } else {
+          // Fallback to KinoCheck reels if TMDB catalogue has no trailers
+          return getKinoCheckMovieReels({ limit: 12 }).then((kino) => {
+            if (kino?.videos?.length) {
+              const adapted = kino.videos.map((v) => ({
+                id: v.tmdbId || v.id,
+                title: v.movieTitle,
+                resolvedTrailerKey: v.youtubeVideoId,
+                backdrop: v.thumbnail,
+                description: v.title,
+                mediaType: v.mediaType,
+              }));
+              setMoreReels(adapted);
+              setHasMore(false);
+            }
+          });
+        }
+      })
+      .catch(() => {
+        // Try KinoCheck reels as fallback on error
+        getKinoCheckMovieReels({ limit: 12 })
+          .then((kino) => {
+            if (kino?.videos?.length) {
+              const adapted = kino.videos.map((v) => ({
+                id: v.tmdbId || v.id,
+                title: v.movieTitle,
+                resolvedTrailerKey: v.youtubeVideoId,
+                backdrop: v.thumbnail,
+                description: v.title,
+                mediaType: v.mediaType,
+              }));
+              setMoreReels(adapted);
+            }
+          })
+          .catch(() => {});
+        setHasMore(false);
+      })
+      .finally(() => {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
+  }, [loading, moreReels.length]);
+
   useEffect(() => {
     if (!hasMore || loadingMoreRef.current || activeIndex < reels.length - 3) return;
 
@@ -135,7 +190,7 @@ function ReelsPage() {
     if (!nextMuted) sendPlayerCommand("setVolume", [100]);
   };
 
-  if (loading) {
+  if (loading || (loadingMore && !reels.length)) {
     return (
       <main className="reels-state-screen" aria-live="polite" aria-busy="true">
         <LoaderCircle size={28} className="reels-loading-icon" aria-hidden="true" />
@@ -153,7 +208,14 @@ function ReelsPage() {
         <Clapperboard size={34} aria-hidden="true" />
         <h1>{error ? "Reels are taking a break" : "No trailers available right now"}</h1>
         <p>{error ? "We couldn't load the trailer feed. Try again in a moment." : "Check back soon for official trailers and featured previews."}</p>
-        <button className="reels-return-link" type="button" onClick={() => navigate("/")}>Back to CineVerse</button>
+        <div style={{ display: "flex", gap: "10px", marginTop: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button className="reels-return-link" type="button" onClick={() => navigate("/movie-reels")}>
+            Watch KinoCheck Movie Reels
+          </button>
+          <button className="reels-return-link" type="button" onClick={() => navigate("/")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
+            Back to CineVerse
+          </button>
+        </div>
       </main>
     );
   }
@@ -183,6 +245,28 @@ function ReelsPage() {
                   <ArrowLeft size={19} />
                 </button>
                 <div className="reels-wordmark"><Clapperboard size={18} /><span>CINEVERSE <b>REELS</b></span></div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/movie-reels")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    borderRadius: "999px",
+                    background: "rgba(5, 9, 10, 0.75)",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    backdropFilter: "blur(12px)",
+                    transition: "all 180ms ease"
+                  }}
+                  title="Switch to KinoCheck Movie Reels"
+                >
+                  <Film size={14} /> <span>Movie Reels (KinoCheck)</span>
+                </button>
                 <div className="reels-position" aria-label={`Reel ${index + 1}${hasMore ? ", more reels loading as you scroll" : ` of ${reels.length}`}`}>
                   {String(index + 1).padStart(2, "0")} <span>/</span> {hasMore ? "∞" : String(reels.length).padStart(2, "0")}
                 </div>
