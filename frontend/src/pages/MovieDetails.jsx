@@ -102,9 +102,6 @@ function MovieDetails() {
         movie.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
       : null) ||
     null;
-  const heroGlowImage = isTrailerVisible && trailerKey
-    ? `https://i.ytimg.com/vi/${trailerKey}/hqdefault.jpg`
-    : movie?.backdrop || movie?.poster || "";
 
   // Pre-mount trailer behind the poster, then cross-fade smoothly once playback starts
   useEffect(() => {
@@ -693,8 +690,6 @@ function MovieDetails() {
         <div className="details-hero-gradient-left" />
         <div className="details-hero-gradient-bottom" />
         <div className="details-hero-vignette" />
-        <div className="details-hero-live-glass" aria-hidden="true" />
-
         <div className="details-hero-container">
           <div className="details-hero-info">
             <div className="badge-row">
@@ -845,12 +840,6 @@ function MovieDetails() {
           </div>
         </div>
       </section>
-
-      <div
-        className={`details-hero-color-bleed ${isTrailerVisible && trailerKey ? "trailer-active" : ""}`}
-        style={{ "--details-hero-art": `url("${heroGlowImage}")` }}
-        aria-hidden="true"
-      />
 
       {/* MAIN CONTENT SECTION */}
       <div className="details-body-container">
