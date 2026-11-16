@@ -2739,7 +2739,7 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   align-items: center;
   padding: 0 24px;
   pointer-events: none;
-  z-index: 25;
+  z-index: 2147483647 !important;
   user-select: none;
   transition: bottom 0.2s ease, top 0.2s ease;
 }
@@ -3965,6 +3965,10 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
 }
 
 /* Fullscreen Player Styles */
+.cine-screen-box:fullscreen,
+.cine-screen-box:-webkit-full-screen,
+.cine-screen-box:-moz-full-screen,
+.cine-screen-box:-ms-fullscreen,
 .cine-screen-box.is-fullscreen {
   position: fixed !important;
   top: 0 !important;
@@ -3975,33 +3979,146 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   height: 100vh !important;
   max-width: 100vw !important;
   max-height: 100vh !important;
-  z-index: 999999 !important;
-  border-radius: 0 !important;
   aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
   background: #000000 !important;
   margin: 0 !important;
+  padding: 0 !important;
+  z-index: 2147483646 !important;
+  overflow: hidden !important;
 }
 
-.cine-screen-box:fullscreen {
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  background: #000000 !important;
-}
-
-.cine-screen-box:-webkit-full-screen {
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  background: #000000 !important;
-}
-
-.cine-screen-box.is-fullscreen .cine-stream-iframe,
 .cine-screen-box:fullscreen .cine-stream-iframe,
-.cine-screen-box:-webkit-full-screen .cine-stream-iframe {
+.cine-screen-box:-webkit-full-screen .cine-stream-iframe,
+.cine-screen-box:-moz-full-screen .cine-stream-iframe,
+.cine-screen-box:-ms-fullscreen .cine-stream-iframe,
+.cine-screen-box.is-fullscreen .cine-stream-iframe {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
   border-radius: 0 !important;
+  border: none !important;
+  z-index: 1 !important;
+}
+
+/* Fullscreen Subtitle Overlay Positioning & Maximum Z-Index Stacking */
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay,
+.cine-screen-box:-webkit-full-screen .cine-custom-subtitles-overlay,
+.cine-screen-box:-moz-full-screen .cine-custom-subtitles-overlay,
+.cine-screen-box:-ms-fullscreen .cine-custom-subtitles-overlay,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: clamp(40px, 8vh, 100px) !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.pos-top,
+.cine-screen-box:-webkit-full-screen .cine-custom-subtitles-overlay.pos-top,
+.cine-screen-box:-moz-full-screen .cine-custom-subtitles-overlay.pos-top,
+.cine-screen-box:-ms-fullscreen .cine-custom-subtitles-overlay.pos-top,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.pos-top {
+  top: clamp(40px, 8vh, 100px) !important;
+  bottom: auto !important;
+}
+
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.pos-middle,
+.cine-screen-box:-webkit-full-screen .cine-custom-subtitles-overlay.pos-middle,
+.cine-screen-box:-moz-full-screen .cine-custom-subtitles-overlay.pos-middle,
+.cine-screen-box:-ms-fullscreen .cine-custom-subtitles-overlay.pos-middle,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.pos-middle {
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+}
+
+.cine-screen-box:fullscreen .cine-sub-pill,
+.cine-screen-box:-webkit-full-screen .cine-sub-pill,
+.cine-screen-box:-moz-full-screen .cine-sub-pill,
+.cine-screen-box:-ms-fullscreen .cine-sub-pill,
+.cine-screen-box.is-fullscreen .cine-sub-pill {
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Scaled font sizes in fullscreen */
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.size-small .cine-sub-line,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.size-small .cine-sub-line {
+  font-size: clamp(14px, 1.8vw, 22px) !important;
+}
+
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.size-normal .cine-sub-line,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.size-normal .cine-sub-line {
+  font-size: clamp(18px, 2.5vw, 32px) !important;
+}
+
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.size-large .cine-sub-line,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.size-large .cine-sub-line {
+  font-size: clamp(22px, 3.2vw, 42px) !important;
+}
+
+.cine-screen-box:fullscreen .cine-custom-subtitles-overlay.size-xlarge .cine-sub-line,
+.cine-screen-box.is-fullscreen .cine-custom-subtitles-overlay.size-xlarge .cine-sub-line {
+  font-size: clamp(26px, 4vw, 54px) !important;
+}
+
+/* Fullscreen Floating Controls Bar (Fades in on hover) */
+.cine-fs-floating-bar {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 2147483647 !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
+  transform: translateY(-6px);
+}
+
+.cine-screen-box:hover .cine-fs-floating-bar,
+.cine-fs-floating-bar:hover,
+.cine-fs-floating-bar:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.cine-fs-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(14, 23, 26, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cine-fs-action-btn:hover {
+  background: rgba(255, 255, 255, 0.96);
+  color: #08090d;
+  border-color: #ffffff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65);
+  transform: translateY(-1px);
 }
 
 

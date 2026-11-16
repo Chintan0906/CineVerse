@@ -10,6 +10,7 @@ import {
   Film,
   Info,
   Maximize2,
+  Minimize2,
   Layers,
   Languages,
   Captions,
@@ -1178,15 +1179,36 @@ function CineStreamPlayer({
 
   useEffect(() => {
     const handleFsChange = () => {
-      setIsFullscreen(
-        Boolean(
-          document.fullscreenElement ||
-          document.webkitFullscreenElement ||
-          document.mozFullScreenElement ||
-          document.msFullscreenElement
-        )
-      );
+      const fsEl =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+      if (fsEl) {
+        setIsFullscreen(true);
+
+        // If the third-party iframe itself went fullscreen (e.g., from the embedded player's controls),
+        // elevate fullscreen to screenBoxRef so our custom subtitle overlay stays stacked on top!
+        if (fsEl === iframeRef.current && screenBoxRef.current) {
+          const req =
+            screenBoxRef.current.requestFullscreen ||
+            screenBoxRef.current.webkitRequestFullscreen ||
+            screenBoxRef.current.mozRequestFullScreen ||
+            screenBoxRef.current.msRequestFullscreen;
+          if (typeof req === "function") {
+            try {
+              req.call(screenBoxRef.current).catch(() => {});
+            } catch (err) {
+              console.debug("Could not transfer fullscreen to screen-box:", err);
+            }
+          }
+        }
+      } else {
+        setIsFullscreen(false);
+      }
     };
+
     document.addEventListener("fullscreenchange", handleFsChange);
     document.addEventListener("webkitfullscreenchange", handleFsChange);
     document.addEventListener("mozfullscreenchange", handleFsChange);
@@ -1198,6 +1220,21 @@ function CineStreamPlayer({
       document.removeEventListener("MSFullscreenChange", handleFsChange);
     };
   }, []);
+
+  // 'F' key shortcut to toggle fullscreen with subtitles intact
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target && ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) {
+        return;
+      }
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        handleFullscreen();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
 
   const handleFullscreen = () => {
     const el = screenBoxRef.current;
@@ -1641,7 +1678,20 @@ function CineStreamPlayer({
           </div>
         )}
 
-        {/* CINEMATIC SUBTITLE TEXT OVERLAY (NO BACKGROUND BY DEFAULT) */}
+        <iframe
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          ref={iframeRef}
+          className="cine-stream-iframe"
+          src={embedUrl}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
+          allowFullScreen={true}
+          webkitallowfullscreen="true"
+          mozallowfullscreen="true"
+          referrerPolicy="origin-when-cross-origin"
+        />
+
+        {/* CINEMATIC SUBTITLE TEXT OVERLAY (RENDERED ON TOP OF STREAM FOR PERSISTENT FULLSCREEN VISIBILITY) */}
         {subEnabled && activeSubtitleText && (
           <div className={`cine-custom-subtitles-overlay size-${subSize} pos-${subPosition}`}>
             <div className={`cine-sub-pill bg-${subBg}`}>
@@ -1658,18 +1708,29 @@ function CineStreamPlayer({
           </div>
         )}
 
-        <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
-          ref={iframeRef}
-          className="cine-stream-iframe"
-          src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
-          allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
-          allowFullScreen={true}
-          webkitallowfullscreen="true"
-          mozallowfullscreen="true"
-          referrerPolicy="origin-when-cross-origin"
-        />
+        {/* FULLSCREEN FLOATING CONTROL BAR (FADES IN ON HOVER IN FULLSCREEN) */}
+        {isFullscreen && (
+          <div className="cine-fs-floating-bar" aria-label="Fullscreen Controls">
+            <button
+              type="button"
+              className="cine-fs-action-btn"
+              onClick={handleSubtitleButtonClick}
+              title="Subtitle Style & Settings"
+            >
+              <Captions size={14} />
+              <span>Subtitles</span>
+            </button>
+            <button
+              type="button"
+              className="cine-fs-action-btn"
+              onClick={handleFullscreen}
+              title="Exit Fullscreen (Esc or F)"
+            >
+              <Minimize2 size={14} />
+              <span>Exit Fullscreen</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* SERIES EPISODES & SEASONS NAVIGATION CONTAINER (BEFORE MORE LIKE THIS) */}
