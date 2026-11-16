@@ -1,15 +1,22 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 require("./dnsConfig");
+const connectDB = require("./db");
 
 const movieRoutes = require("./routes/movieRoutes");
 const subtitleRoutes = require("./routes/subtitleRoutes");
 const authRoutes = require("./routes/authRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes");
+const activityRoutes = require("./routes/activityRoutes");
 const { getTrendingMovies } = require("../services/tmdbService");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(
@@ -23,11 +30,14 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
 
-// Movie API
+// API Routes
 app.use("/api/movies", movieRoutes);
 app.use("/api/subtitles", subtitleRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/activity", activityRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
