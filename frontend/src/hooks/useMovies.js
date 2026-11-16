@@ -1,11 +1,42 @@
 import { useEffect, useState } from "react";
 import { getMovies } from "../services/movieService";
 
+const CACHE_KEY = "cineverse_catalogue_cache";
+let memoryCache = null;
+
+function readCatalogueCache() {
+  if (memoryCache && Array.isArray(memoryCache.movies) && memoryCache.movies.length > 0) {
+    return memoryCache;
+  }
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY) || localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.movies) && parsed.movies.length > 0) {
+        memoryCache = parsed;
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function saveCatalogueCache(data) {
+  memoryCache = data;
+  try {
+    const serialized = JSON.stringify(data);
+    sessionStorage.setItem(CACHE_KEY, serialized);
+    localStorage.setItem(CACHE_KEY, serialized);
+  } catch (_) {}
+}
+
 export function useMovies() {
-  const [movies, setMovies] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [featuredMovies, setFeaturedMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = readCatalogueCache();
+
+  const [movies, setMovies] = useState(() => initialCache?.movies || []);
+  const [categories, setCategories] = useState(() => initialCache?.categories || []);
+  const [featuredMovies, setFeaturedMovies] = useState(() => initialCache?.featuredMovies || []);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -13,23 +44,39 @@ export function useMovies() {
 
     async function loadMovies() {
       try {
-        setLoading(true);
+        if (!initialCache) {
+          setLoading(true);
+        }
         setError("");
 
         const result = await getMovies();
 
         if (!cancelled) {
-          // Handle both array or object with categories
+          let newMovies = [];
+          let newCategories = [];
+          let newFeatured = [];
+
           if (Array.isArray(result)) {
-            setMovies(result);
+            newMovies = result;
           } else {
-            setMovies(result.movies || []);
-            setCategories(result.categories || []);
-            setFeaturedMovies(result.featuredMovies || []);
+            newMovies = result.movies || [];
+            newCategories = result.categories || [];
+            newFeatured = result.featuredMovies || [];
           }
+
+          setMovies(newMovies);
+          setCategories(newCategories);
+          setFeaturedMovies(newFeatured);
+
+          saveCatalogueCache({
+            movies: newMovies,
+            categories: newCategories,
+            featuredMovies: newFeatured,
+            timestamp: Date.now(),
+          });
         }
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && (!initialCache || movies.length === 0)) {
           setError(err.message || "Unable to load movies.");
         }
       } finally {

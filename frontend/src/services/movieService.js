@@ -141,3 +141,25 @@ export async function getMovieRecommendations(id, type) {
   }
 }
 
+export async function getCuratedRecommendations() {
+  const response = await fetch(`${API_BASE_URL}/recommendations/curated`, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error("Failed to fetch curated recommendations.");
+  }
+  const result = await response.json();
+  return result.data || [];
+}
+
+export async function recordUserStreamingActivity(media) {
+  try {
+    await fetch(`${API_BASE_URL}/activity/record`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(media),
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Failed to record user activity:", error.message);
+  }
+}
+

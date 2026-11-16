@@ -774,3 +774,73 @@
     font-size: 15px;
   }
 }
+
+/* ====================================================
+   HERO SKELETON - INSTANT SEAMLESS PLACEHOLDER ON COLD RELOAD
+   ==================================================== */
+.hero-slideshow.hero-skeleton {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: radial-gradient(circle at 75% 30%, #161c24 0%, #08090d 65%, #050608 100%);
+  pointer-events: none;
+}
+
+.hero-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 15%,
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  animation: heroSkeletonShimmer 2.4s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes heroSkeletonShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.hero-skeleton .hero-skeleton-badge {
+  width: 130px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 14px;
+}
+
+.hero-skeleton .hero-skeleton-title {
+  width: min(560px, 78vw);
+  height: clamp(38px, 5.2vw, 68px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 18px;
+}
+
+.hero-skeleton .hero-skeleton-meta {
+  width: min(300px, 48vw);
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  margin-bottom: 18px;
+}
+
+.hero-skeleton .hero-skeleton-desc {
+  width: min(640px, 82vw);
+  height: 48px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 24px;
+}
+
+.hero-skeleton .hero-skeleton-buttons {
+  width: 250px;
+  height: 46px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+

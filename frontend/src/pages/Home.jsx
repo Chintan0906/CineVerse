@@ -26,13 +26,15 @@ import CineVerseLogo, { CineVerseEmblem } from "../components/common/CineVerseLo
 import CinematicSplashScreen from "../components/common/CinematicSplashScreen";
 import { useLibrary } from "../hooks/useLibrary";
 import { useMovies } from "../hooks/useMovies";
-import { searchMovies, getMovieById, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre, getMovieRecommendations } from "../services/movieService";
+import { useAuth } from "../context/AuthContext";
+import { searchMovies, getMovieById, getTVShowById, getTVSeasonEpisodes, getMoviesByGenre, getMovieRecommendations, getCuratedRecommendations, recordUserStreamingActivity } from "../services/movieService";
 import "../components/hero/HeroSlideshow.css";
 
 function Home() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasRestoredRef = useRef(false);
+  const { user } = useAuth();
   const {
     watchlist,
     history,
@@ -41,6 +43,16 @@ function Home() {
     saveProgress,
     clearHistory,
   } = useLibrary();
+
+  const [curatedRecommendations, setCuratedRecommendations] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+      getCuratedRecommendations()
+        .then(data => setCuratedRecommendations(data))
+        .catch(err => console.error("Failed to load curated recommendations:", err));
+    }
+  }, [user]);
 
   // Fetch the full movie and web-series catalogue for the home page.
   const {
@@ -657,6 +669,9 @@ function getCleanMovieSynopsis(movie, genres = []) {
       mediaType: isTv ? "tv" : "movie",
     };
     recordPlay(playMedia, { season: initialSeason, episode: initialEpisode });
+    if (user) {
+      recordUserStreamingActivity(playMedia);
+    }
     setPlayerMovie(playMedia);
     try {
       sessionStorage.setItem("cineverse_current_stream", JSON.stringify(playMedia));
@@ -1003,13 +1018,28 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
       <main>
         {/* HERO SLIDESHOW - NETFLIX STYLE AUTO-PLAY */}
-        {!searchQuery && activeTab === "Home" && !hasBrowseFilters && featuredList.length > 0 && (
-          <HeroSlideshow
-            featuredMovies={featuredList}
-            watchlist={watchlist}
-            onToggleWatchlist={toggleWatchlist}
-            onPlay={handlePlay}
-          />
+        {!searchQuery && activeTab === "Home" && !hasBrowseFilters && (
+          featuredList.length > 0 ? (
+            <HeroSlideshow
+              featuredMovies={featuredList}
+              watchlist={watchlist}
+              onToggleWatchlist={toggleWatchlist}
+              onPlay={handlePlay}
+            />
+          ) : loading ? (
+            <div className="hero-slideshow hero-skeleton" aria-label="Loading featured showcase">
+              <div className="hero-skeleton-shimmer" />
+              <div className="hero-slideshow-gradient-left" />
+              <div className="hero-slideshow-gradient-bottom" />
+              <div className="hero-slideshow-content">
+                <div className="hero-skeleton-badge" />
+                <div className="hero-skeleton-title" />
+                <div className="hero-skeleton-meta" />
+                <div className="hero-skeleton-desc" />
+                <div className="hero-skeleton-buttons" />
+              </div>
+            </div>
+          ) : null
         )}
 
         {/* DISCOVERY HEADER / GENRE PILLS */}
@@ -1186,6 +1216,21 @@ function getCleanMovieSynopsis(movie, genres = []) {
                   title="Continue Exploring Your Watchlist"
                   subtitle="Saved titles ready for your next movie night"
                   movies={watchlistMovies}
+                  onSelect={handleSelectMovie}
+                  onPlay={handlePlay}
+                  watchlist={watchlist}
+                  onToggleWatchlist={toggleWatchlist}
+                  showCount={true}
+                />
+              )}
+
+              {/* Curated Recommendations for logged-in users */}
+              {user && curatedRecommendations.length > 0 && (
+                <MovieRow
+                  id="curated-recommendations"
+                  title={`Curated for ${user.name}`}
+                  subtitle="Top picks based on your recent streaming activity"
+                  movies={curatedRecommendations}
                   onSelect={handleSelectMovie}
                   onPlay={handlePlay}
                   watchlist={watchlist}

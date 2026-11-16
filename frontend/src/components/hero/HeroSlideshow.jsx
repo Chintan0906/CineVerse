@@ -233,7 +233,18 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                 style={{
                   backgroundImage: `url("${movie.backdrop || movie.poster}")`,
                 }}
-              />
+              >
+                {index === 0 && (
+                  <img
+                    src={movie.backdrop || movie.poster}
+                    alt=""
+                    aria-hidden="true"
+                    loading="eager"
+                    fetchPriority="high"
+                    style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+                  />
+                )}
+              </div>
 
               {/* Active Slide Background Trailer Video */}
               {isActive && isTrailerMounted && slideTrailerKey && (
