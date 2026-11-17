@@ -4009,44 +4009,97 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
 
 
 /* ====================================================
-   CINEVERSE POLISH PASS — SHARED GLASS, MOTION & PAGE RHYTHM
+   TASTESKILL 2.5 — LUXURY LIQUID GLASS & ULTRA-SMOOTH MOTION
    ==================================================== */
 :root {
-  --cv-glass-surface: rgba(17, 27, 30, 0.72);
-  --cv-glass-surface-strong: rgba(12, 20, 23, 0.88);
-  --cv-glass-edge: rgba(210, 239, 234, 0.15);
-  --cv-glass-highlight: rgba(255, 255, 255, 0.075);
-  --cv-glass-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
-  --cv-motion: cubic-bezier(0.2, 0.75, 0.25, 1);
+  /* Tasteskill Timing Curves */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --cv-motion: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Optical Liquid Glass Tokens (Layered Refraction & Specular Physics) */
+  --lg-blur: blur(28px) saturate(180%) contrast(106%);
+  --lg-blur-deep: blur(34px) saturate(190%) contrast(108%);
+  --lg-blur-subtle: blur(18px) saturate(160%);
+
+  /* Liquid Glass Surfaces */
+  --lg-surface-base: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.085) 0%,
+    rgba(255, 255, 255, 0.02) 42%,
+    rgba(10, 16, 22, 0.68) 100%
+  );
+  --lg-surface-hover: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(14, 22, 28, 0.78) 100%
+  );
+  --lg-surface-active: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(18, 28, 36, 0.85) 100%
+  );
+  --lg-surface-card: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.065) 0%,
+    rgba(255, 255, 255, 0.015) 38%,
+    rgba(8, 13, 18, 0.75) 100%
+  );
+
+  /* Hairline Liquid Edges & Specular Highlights */
+  --lg-edge: rgba(255, 255, 255, 0.12);
+  --lg-edge-hover: rgba(255, 255, 255, 0.3);
+  --lg-edge-active: rgba(255, 255, 255, 0.65);
+  --lg-specular: inset 0 1px 1px 0 rgba(255, 255, 255, 0.26);
+  --lg-specular-hover: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.42);
+
+  /* Legacy aliases mapped to upgraded liquid glass */
+  --cv-glass-surface: rgba(16, 24, 30, 0.72);
+  --cv-glass-surface-strong: rgba(10, 16, 21, 0.88);
+  --cv-glass-edge: rgba(255, 255, 255, 0.12);
+  --cv-glass-highlight: rgba(255, 255, 255, 0.2);
+  --cv-glass-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 
 html {
   color-scheme: dark;
 }
 
+/* Liquid Glass Navbar */
+.navbar {
+  background: linear-gradient(
+    180deg,
+    rgba(6, 9, 13, 0.72) 0%,
+    rgba(6, 9, 13, 0.45) 60%,
+    rgba(6, 9, 13, 0.1) 100%
+  ) !important;
+  backdrop-filter: var(--lg-blur) !important;
+  -webkit-backdrop-filter: var(--lg-blur) !important;
+  border-bottom: 1px solid var(--lg-edge) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.navbar.scrolled,
+.navbar:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(6, 9, 13, 0.9) 0%,
+    rgba(6, 9, 13, 0.82) 100%
+  ) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
 /* Make glass readable through its edge, top highlight, and layered tint. */
 .details-header,
 .player-header {
-  background: rgba(7, 12, 14, 0.76) !important;
-  border-color: var(--cv-glass-edge) !important;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.18), inset 0 1px var(--cv-glass-highlight) !important;
-  backdrop-filter: blur(28px) saturate(155%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
-}
-
-.navbar.scrolled,
-.navbar:hover {
-  background: rgba(7, 12, 14, 0.9) !important;
-}
-
-.navbar,
-.navbar.scrolled,
-.navbar:hover {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: rgba(7, 11, 15, 0.78) !important;
+  border-color: var(--lg-edge) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25), var(--lg-specular) !important;
+  backdrop-filter: var(--lg-blur) !important;
+  -webkit-backdrop-filter: var(--lg-blur) !important;
 }
 
 .glass-card,
@@ -4056,12 +4109,12 @@ html {
 .movie-modal.glass-card,
 .cine-audiosub-modal {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 44%),
-    linear-gradient(145deg, var(--cv-glass-surface), rgba(10, 17, 19, 0.84)) !important;
-  border-color: var(--cv-glass-edge) !important;
-  box-shadow: var(--cv-glass-shadow), inset 0 1px var(--cv-glass-highlight) !important;
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+    linear-gradient(145deg, rgba(20, 27, 34, 0.78), rgba(9, 13, 17, 0.88)) !important;
+  border-color: var(--lg-edge) !important;
+  box-shadow: var(--lg-specular), 0 20px 55px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: var(--lg-blur-deep) !important;
+  -webkit-backdrop-filter: var(--lg-blur-deep) !important;
 }
 
 .search-panel,
@@ -4069,34 +4122,34 @@ html {
 .cine-subserver-bar-wrapper,
 .cine-server-status-bar {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 55%),
-    var(--cv-glass-surface-strong) !important;
-  border-color: var(--cv-glass-edge) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3), inset 0 1px var(--cv-glass-highlight) !important;
-  backdrop-filter: blur(24px) saturate(145%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(145%) !important;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 50%),
+    rgba(10, 16, 21, 0.88) !important;
+  border-color: var(--lg-edge) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4), var(--lg-specular) !important;
+  backdrop-filter: var(--lg-blur) !important;
+  -webkit-backdrop-filter: var(--lg-blur) !important;
 }
 
-/* Home: give the discovery controls a calmer, intentional home beneath the hero. */
+/* Home: Tasteskill Liquid Glass Discovery Bar */
 .discovery-bar {
   gap: 20px 28px !important;
-  margin-top: 26px !important;
-  padding: 20px clamp(18px, 2.4vw, 30px) !important;
+  margin-top: 28px !important;
+  padding: 24px clamp(20px, 3vw, 36px) !important;
   background:
-    linear-gradient(120deg, rgba(29, 54, 54, 0.48), rgba(12, 19, 22, 0.86) 52%),
-    rgba(12, 19, 22, 0.84) !important;
-  border: 1px solid rgba(190, 238, 228, 0.13) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26), inset 0 1px rgba(255, 255, 255, 0.065) !important;
-  backdrop-filter: blur(22px) saturate(145%) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(145%) !important;
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 55%),
+    linear-gradient(145deg, rgba(16, 22, 28, 0.72) 0%, rgba(8, 12, 16, 0.84) 100%) !important;
+  border: 1px solid var(--lg-edge) !important;
+  border-radius: 26px !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 0 20px rgba(255, 255, 255, 0.015), 0 22px 55px -12px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: var(--lg-blur-deep) !important;
+  -webkit-backdrop-filter: var(--lg-blur-deep) !important;
 }
 
 .discovery-bar h2 {
   max-width: 720px;
-  color: #f4fbf9 !important;
+  color: #ffffff !important;
   font-size: clamp(20px, 2.2vw, 28px) !important;
-  font-weight: 720 !important;
+  font-weight: 750 !important;
   letter-spacing: -0.035em !important;
   line-height: 1.18 !important;
   text-wrap: balance;
@@ -4104,44 +4157,99 @@ html {
 
 .discovery-bar .section-eyebrow {
   margin-bottom: 8px;
-  color: #a8e8dc !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
 }
 
 .genre-filters {
-  gap: 8px !important;
+  gap: 10px !important;
 }
 
 .genre-filters button {
   min-height: 38px !important;
-  padding-inline: 15px !important;
-  background: rgba(236, 250, 247, 0.045) !important;
-  border: 1px solid rgba(218, 242, 238, 0.13) !important;
-  color: rgba(238, 249, 247, 0.78) !important;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035) !important;
+  padding: 8px 18px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--lg-edge) !important;
+  border-radius: 9999px !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13.5px !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.01em !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: var(--lg-blur-subtle) !important;
+  -webkit-backdrop-filter: var(--lg-blur-subtle) !important;
+  cursor: pointer !important;
+  transition: transform 180ms var(--ease),
+              background 180ms var(--ease),
+              border-color 180ms var(--ease),
+              box-shadow 180ms var(--ease),
+              color 180ms var(--ease) !important;
+}
+
+.genre-filters button:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px) !important; /* Tasteskill Rule 5: 2px lift */
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.38), 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+.genre-filters button:active {
+  transform: translateY(1px) scale(0.985) !important;
 }
 
 .genre-filters button.active {
-  color: #07120f !important;
-  background: linear-gradient(135deg, #b8fff0, #75e3cd) !important;
-  border-color: rgba(200, 255, 245, 0.8) !important;
-  box-shadow: 0 5px 18px rgba(75, 198, 175, 0.2), inset 0 1px rgba(255, 255, 255, 0.65) !important;
+  color: #07090d !important;
+  background: #ffffff !important;
+  font-weight: 700 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 22px rgba(255, 255, 255, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(0) !important;
 }
 
 .movie-section-title::before {
   width: 3px !important;
   height: 22px !important;
   border-radius: 999px !important;
-  box-shadow: 0 0 18px rgba(117, 227, 205, 0.36) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.5) !important;
 }
 
-.movie-card:hover .movie-poster,
-.episode-card:hover {
-  border-color: rgba(181, 245, 232, 0.3) !important;
+.movie-card {
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease) !important;
+}
+
+.movie-card:hover {
+  transform: translateY(-2px) !important; /* Tasteskill Rule 5: 2px lift */
+}
+
+.movie-poster {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  transition: border-color 220ms var(--ease), box-shadow 220ms var(--ease) !important;
+}
+
+.movie-poster img {
+  transition: transform 600ms var(--ease) !important;
+}
+
+.movie-card:hover .movie-poster {
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+.movie-card:hover .movie-poster img {
+  transform: scale(1.03) !important; /* Tasteskill photo zoom 1.02-1.03 inside frame */
 }
 
 .movie-card:focus-visible,
 .movie-card:focus-within {
-  outline: 2px solid rgba(168, 255, 235, 0.86) !important;
+  outline: 2px solid rgba(255, 255, 255, 0.86) !important;
   outline-offset: 4px !important;
   border-radius: 14px !important;
 }

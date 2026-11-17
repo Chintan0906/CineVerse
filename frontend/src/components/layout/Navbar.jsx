@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -23,6 +23,16 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Home");
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navigation = [
     {
@@ -108,7 +118,7 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
   }
 
   return (
-    <header className="navbar">
+    <header className={`navbar ${isScrolled ? "scrolled" : ""}`}>
       {/* DESKTOP NAVIGATION */}
       <nav
         className={`nav-links ${menuOpen ? "active" : ""}`}
