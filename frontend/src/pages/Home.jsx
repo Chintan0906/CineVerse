@@ -1017,29 +1017,14 @@ function getCleanMovieSynopsis(movie, genres = []) {
       )}
 
       <main>
-        {/* HERO SLIDESHOW - NETFLIX STYLE AUTO-PLAY */}
-        {!searchQuery && activeTab === "Home" && !hasBrowseFilters && (
-          featuredList.length > 0 ? (
-            <HeroSlideshow
-              featuredMovies={featuredList}
-              watchlist={watchlist}
-              onToggleWatchlist={toggleWatchlist}
-              onPlay={handlePlay}
-            />
-          ) : loading ? (
-            <div className="hero-slideshow hero-skeleton" aria-label="Loading featured showcase">
-              <div className="hero-skeleton-shimmer" />
-              <div className="hero-slideshow-gradient-left" />
-              <div className="hero-slideshow-gradient-bottom" />
-              <div className="hero-slideshow-content">
-                <div className="hero-skeleton-badge" />
-                <div className="hero-skeleton-title" />
-                <div className="hero-skeleton-meta" />
-                <div className="hero-skeleton-desc" />
-                <div className="hero-skeleton-buttons" />
-              </div>
-            </div>
-          ) : null
+        {/* HERO SLIDESHOW - NETFLIX STYLE AUTO-PLAY (SYNCHRONOUS LOAD WITH HOMEPAGE) */}
+        {!searchQuery && activeTab === "Home" && !hasBrowseFilters && featuredList.length > 0 && (
+          <HeroSlideshow
+            featuredMovies={featuredList}
+            watchlist={watchlist}
+            onToggleWatchlist={toggleWatchlist}
+            onPlay={handlePlay}
+          />
         )}
 
         {/* DISCOVERY HEADER / GENRE PILLS */}
