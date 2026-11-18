@@ -4653,94 +4653,161 @@ header.navbar:hover {
   filter: none !important;
 }
 
-/* Keep the floating navigation compact and make its hover expansion feel light. */
+/* ==========================================================================
+   TASTESKILL 2.5 — FLUID CIRCLE-TO-OVAL LIQUID GLASS NAVIGATION BUTTONS
+   Continuous cubic-bezier(0.2, 0.8, 0.2, 1) morphing mechanics
+   ========================================================================== */
 @media (min-width: 769px) {
   .navbar .nav-links {
+    display: flex !important;
+    align-items: center !important;
     justify-content: flex-start !important;
-    margin-left: clamp(24px, 6.5vw, 124px) !important;
+    gap: 10px !important;
+    margin-left: clamp(24px, 5vw, 90px) !important;
   }
 
+  /* Base state: Compact 42px liquid glass circle */
   .navbar .nav-link {
     --nav-pill-width: 120px;
     box-sizing: border-box !important;
-    width: 48px !important;
-    min-width: 48px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    min-width: 42px !important;
     max-width: var(--nav-pill-width) !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    flex: 0 0 48px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    flex: 0 0 42px !important;
     gap: 0 !important;
     padding: 0 !important;
+    border-radius: 9999px !important;
     overflow: hidden !important;
+    white-space: nowrap !important;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.02) 42%,
+      rgba(10, 16, 22, 0.6) 100%
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-size: 13.5px !important;
+    font-weight: 550 !important;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(24px) saturate(180%) contrast(106%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) contrast(106%) !important;
+    cursor: pointer !important;
     transition:
-      width 190ms cubic-bezier(0.4, 0, 1, 1),
-      flex-basis 190ms cubic-bezier(0.4, 0, 1, 1),
-      gap 160ms ease-in,
-      padding 160ms ease-in,
-      color 150ms ease,
-      background-color 150ms ease,
-      border-color 150ms ease,
-      box-shadow 180ms ease,
-      transform 180ms ease-out !important;
+      width 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      flex-basis 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      color 180ms ease !important;
   }
 
-  .navbar .nav-link:nth-child(1) { --nav-pill-width: 104px; }
-  .navbar .nav-link:nth-child(2) { --nav-pill-width: 120px; }
-  .navbar .nav-link:nth-child(3) { --nav-pill-width: 116px; }
-  .navbar .nav-link:nth-child(4) { --nav-pill-width: 108px; }
-  .navbar .nav-link:nth-child(5) { --nav-pill-width: 148px; }
-  .navbar .nav-link:nth-child(6) { --nav-pill-width: 176px; }
+  /* Specific pill widths for natural label fit */
+  .navbar .nav-link:nth-child(1) { --nav-pill-width: 98px; }   /* Home */
+  .navbar .nav-link:nth-child(2) { --nav-pill-width: 114px; }  /* Discover */
+  .navbar .nav-link:nth-child(3) { --nav-pill-width: 114px; }  /* Trending */
+  .navbar .nav-link:nth-child(4) { --nav-pill-width: 108px; }  /* History */
+  .navbar .nav-link:nth-child(5) { --nav-pill-width: 96px; }   /* Reels */
+  .navbar .nav-link:nth-child(6) { --nav-pill-width: 142px; }  /* Movie Reels */
 
   .navbar .nav-link > svg {
-    flex: 0 0 auto;
+    flex-shrink: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
+  /* Label text: zero-delay fluid slide and fade reveal */
   .navbar .nav-link > span {
-    max-width: 0;
-    margin-left: 0;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateX(-4px);
+    display: inline-block !important;
+    max-width: 0 !important;
+    margin-left: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    transform: translateX(-4px) scale(0.96) !important;
+    pointer-events: none !important;
     transition:
-      max-width 150ms ease-in,
-      opacity 100ms ease-in,
-      transform 140ms ease-in;
+      max-width 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      margin-left 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
   }
 
+  /* Hover State: Fluid expansion from circle to liquid glass oval */
   .navbar .nav-link:hover,
   .navbar .nav-link:focus-visible {
     width: var(--nav-pill-width) !important;
     flex-basis: var(--nav-pill-width) !important;
-    gap: 7px !important;
-    padding-inline: 14px !important;
-    transform: translateY(-1px) scale(1.015) !important;
-    transition:
-      width 340ms cubic-bezier(0.22, 1, 0.36, 1),
-      flex-basis 340ms cubic-bezier(0.22, 1, 0.36, 1),
-      gap 260ms cubic-bezier(0.22, 1, 0.36, 1),
-      padding 260ms cubic-bezier(0.22, 1, 0.36, 1),
-      color 150ms ease,
-      background-color 150ms ease,
-      border-color 150ms ease,
-      box-shadow 180ms ease,
-      transform 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    padding: 0 16px 0 13px !important;
+    justify-content: flex-start !important;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.04) 45%,
+      rgba(14, 22, 28, 0.75) 100%
+    ) !important;
+    border-color: rgba(255, 255, 255, 0.32) !important;
+    color: #ffffff !important;
+    transform: translateY(-1.5px) !important; /* Tasteskill Rule 5 micro-lift */
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.42), 0 8px 24px rgba(0, 0, 0, 0.45) !important;
   }
 
   .navbar .nav-link:hover > span,
   .navbar .nav-link:focus-visible > span {
-    max-width: 150px;
-    opacity: 1;
-    transform: translateX(0);
-    transition:
-      max-width 260ms cubic-bezier(0.22, 1, 0.36, 1) 45ms,
-      opacity 180ms ease-out 55ms,
-      transform 260ms cubic-bezier(0.22, 1, 0.36, 1) 45ms;
+    max-width: 120px !important;
+    margin-left: 7px !important;
+    opacity: 1 !important;
+    transform: translateX(0) scale(1) !important;
+    pointer-events: auto !important;
+  }
+
+  /* Active State: Rest as an illuminated oval liquid glass pill */
+  .navbar .nav-link.active {
+    width: var(--nav-pill-width) !important;
+    flex-basis: var(--nav-pill-width) !important;
+    padding: 0 16px 0 13px !important;
+    justify-content: flex-start !important;
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #07090d !important;
+    font-weight: 700 !important;
+    transform: translateY(0) !important;
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .navbar .nav-link.active > span {
+    max-width: 120px !important;
+    margin-left: 7px !important;
+    opacity: 1 !important;
+    transform: translateX(0) scale(1) !important;
+    pointer-events: auto !important;
+  }
+
+  .navbar .nav-link.active:hover {
+    background: #ffffff !important;
+    color: #07090d !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 24px rgba(255, 255, 255, 0.45), inset 0 1px 1px #ffffff !important;
+  }
+
+  /* Press / click sink physics */
+  .navbar .nav-link:active {
+    transform: translateY(1px) scale(0.985) !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) and (min-width: 769px) {
   .navbar .nav-link,
-  .navbar .nav-link > span {
+  .navbar .nav-link > span,
+  .nav-search-button,
+  .nav-search-text {
     transition: none !important;
   }
 }

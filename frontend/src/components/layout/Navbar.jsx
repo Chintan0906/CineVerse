@@ -166,7 +166,8 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           aria-label="Search movies"
           title="Search any movie in the world"
         >
-          <Search size={17} strokeWidth={2.2} />
+          <Search size={16} strokeWidth={2.2} />
+          <span className="nav-search-text">Search</span>
         </button>
 
         {/* Profile Pill */}
