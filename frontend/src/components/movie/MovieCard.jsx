@@ -42,7 +42,7 @@ function MovieCard({
   const handleViewDetails = (event) => {
     event.stopPropagation();
     navigate(`/movie/${movie.id}${isTv ? "?type=tv" : ""}`, {
-      state: { mediaType: isTv ? "tv" : "movie", isTV: isTv },
+      state: { mediaType: isTv ? "tv" : "movie", isTV: isTv, movie },
     });
   };
 

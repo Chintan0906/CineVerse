@@ -349,7 +349,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                     onClick={() => {
                       const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
                       navigate(`/movie/${movie.id}${isTv ? "?type=tv" : ""}`, {
-                        state: { mediaType: isTv ? "tv" : "movie", isTV: isTv },
+                        state: { mediaType: isTv ? "tv" : "movie", isTV: isTv, movie },
                       });
                     }}
                   >

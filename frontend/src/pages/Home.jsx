@@ -737,6 +737,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
         season: movie.season,
         episode: movie.episode,
         title: movie.title,
+        movie,
       },
     });
   }, [navigate]);
