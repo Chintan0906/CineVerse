@@ -990,12 +990,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
         onHome={showHome}
         onDiscover={() => showHomeSection("discovery")}
         onTrending={() => showHomeSection("trending-now")}
-        onSearch={() => {
-          setSearchOpen(true);
-          setActiveType("all");
-          setActiveYear("all");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
+        onSearch={() => navigate("/search")}
         onWatchlist={() => {
           setActiveTab("Watchlist");
           setSearchQuery("");

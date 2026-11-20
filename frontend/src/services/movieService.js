@@ -730,3 +730,68 @@ export async function recordUserStreamingActivity(media) {
   } catch (_) {}
 }
 
+export async function getRecommendedDiscoveries({ seed, count = 28, genre } = {}) {
+  const page = Math.floor(Math.random() * 4) + 1;
+  const normalizedResults = [];
+
+  // 1. Try to fetch fresh trending or genre discoveries from TMDB edge
+  try {
+    const endpoint = genre && genre !== "All" && genre !== "Trending"
+      ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&page=${page}&with_genres=${encodeURIComponent(genre)}`
+      : `${TMDB_BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&page=${page}`;
+
+    const res = await fetchWithTimeout(endpoint, {}, 3200);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.results) && data.results.length > 0) {
+        for (const item of data.results) {
+          if (!item.media_type || item.media_type === "movie" || item.media_type === "tv") {
+            const norm = normalizeTMDBMovie(item);
+            if (norm && norm.poster && !norm.poster.includes("unsplash")) {
+              normalizedResults.push(norm);
+            }
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 2. Fallback / supplementary pool from cached catalogue + fallback movies
+  const cached = readCatalogueCache();
+  const pool = [
+    ...normalizedResults,
+    ...(cached?.movies || []),
+    ...fallbackMovies,
+  ];
+
+  const seen = new Set();
+  const unique = [];
+
+  for (const m of pool) {
+    const id = String(m.id || m.tmdbId || "");
+    if (!id || seen.has(id)) continue;
+
+    if (genre && genre !== "All" && genre !== "Trending") {
+      const mGenres = (Array.isArray(m.genres) ? m.genres : [m.genre])
+        .filter(Boolean)
+        .map((g) => String(typeof g === "string" ? g : g?.name || "").toLowerCase());
+      const target = genre.toLowerCase();
+      if (!mGenres.some((g) => g.includes(target) || target.includes(g))) {
+        continue;
+      }
+    }
+
+    seen.add(id);
+    unique.push(m);
+  }
+
+  // Shuffle thoroughly using Fisher-Yates
+  const shuffled = [...unique];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.slice(0, count);
+}
+

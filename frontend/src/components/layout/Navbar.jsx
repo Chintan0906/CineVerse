@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
   Bookmark,
@@ -20,6 +20,7 @@ import "./Navbar.css";
 
 function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrending }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Home");
@@ -109,7 +110,11 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
 
   function handleSearch() {
     setMenuOpen(false);
-    onSearch?.();
+    if (onSearch) {
+      onSearch();
+    } else {
+      navigate("/search");
+    }
   }
 
   function handleWatchlist() {
@@ -161,7 +166,7 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
         {/* Search button */}
         <button
           type="button"
-          className="nav-search-button"
+          className={`nav-search-button ${location.pathname === "/search" ? "active" : ""}`}
           onClick={handleSearch}
           aria-label="Search movies"
           title="Search any movie in the world"
@@ -247,10 +252,10 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
         <button
           type="button"
           onClick={handleSearch}
-          className="framex-nav-tab"
+          className={`framex-nav-tab ${location.pathname === "/search" ? "active" : ""}`}
           aria-label="Search titles"
         >
-          <Search size={18} strokeWidth={1.8} />
+          <Search size={18} strokeWidth={location.pathname === "/search" ? 2.4 : 1.8} />
           <span>Search</span>
         </button>
 
