@@ -111,12 +111,12 @@ const STREAM_SERVERS = [
     id: "langchan",
     name: "Server LangChan",
     quality: "1080p / 4K Auto-Stream",
-    speed: "MegaCloud / Consumet Core",
-    badge: "MegaCloud VIP",
+    speed: "MegaCloud / MultiStream Core",
+    badge: "MultiStream VIP",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://player.autoembed.cc/embed/movie/${tmdbId}`;
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
     },
   },
   {
@@ -420,19 +420,8 @@ const ANIMEEMBED_SUB_SERVERS = [
   },
 ];
 
-// Internal mirror providers available within Server LangChan (MegaCloud / Consumet Cluster)
+// Internal mirror providers available within Server LangChan (High-Stability Multi-Source Cluster)
 const LANGCHAN_SUB_SERVERS = [
-  {
-    id: "megacloud",
-    name: "LangChan MegaCloud",
-    badge: "MegaCloud HLS",
-    quality: "1080p / 4K Adaptive HLS",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://player.autoembed.cc/embed/movie/${tmdbId}`;
-    },
-  },
   {
     id: "multiembed",
     name: "LangChan MultiStream",
@@ -445,25 +434,36 @@ const LANGCHAN_SUB_SERVERS = [
     },
   },
   {
-    id: "rabbit",
-    name: "LangChan RabbitStream",
-    badge: "Fast Buffer",
-    quality: "1080p Fast Direct Feed",
+    id: "embedsu",
+    name: "LangChan EmbedSu",
+    badge: "EmbedSu VIP",
+    quality: "1080p Ultra HD / Subtitles",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://autoembed.co/tv/tmdb/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://autoembed.co/movie/tmdb/${tmdbId}`;
+        ? `https://embed.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://embed.su/embed/movie/${tmdbId}`;
     },
   },
   {
-    id: "vipcloud",
-    name: "LangChan VIP Cloud",
-    badge: "VIP Mirror",
-    quality: "1080p VIP Stream Mirror",
+    id: "vidsrcxyz",
+    name: "LangChan VidSrc Pro",
+    badge: "VidSrc High-Speed",
+    quality: "1080p High Bitrate Stream",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
-        ? `https://vidsrc.vip/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidsrc.vip/embed/movie/${tmdbId}`;
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
+        : `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`;
+    },
+  },
+  {
+    id: "smashy",
+    name: "LangChan Smashy",
+    badge: "Multi-Audio",
+    quality: "1080p Multi-Audio Auto-Failover",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://player.smashystream.vip/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}`
+        : `https://player.smashystream.vip/movie/${tmdbId}`;
     },
   },
 ];

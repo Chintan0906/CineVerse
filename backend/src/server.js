@@ -10,6 +10,7 @@ const subtitleRoutes = require("./routes/subtitleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const recommendationRoutes = require("./routes/recommendationRoutes");
 const activityRoutes = require("./routes/activityRoutes");
+const streamRoutes = require("./routes/streamRoutes");
 const { getTrendingMovies } = require("../services/tmdbService");
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/subtitles", subtitleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/activity", activityRoutes);
+app.use("/api/stream", streamRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
