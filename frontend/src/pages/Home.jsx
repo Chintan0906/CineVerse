@@ -499,28 +499,37 @@ function getCleanMovieSynopsis(movie, genres = []) {
       .sort((a, b) => Number(b) - Number(a))
   ), [movies]);
 
-  // Real-time worldwide debounced search across all movies ever made via TMDB
+  // Real-time worldwide debounced search across all movies ever made via TMDB & OMDB
   useEffect(() => {
     const query = searchQuery.trim();
-    if (query.length < 2) {
+    if (!query) {
       setGlobalSearchResults([]);
       setIsSearchingGlobal(false);
       return;
     }
 
     setIsSearchingGlobal(true);
+    let active = true;
+
     const timer = setTimeout(async () => {
       try {
         const results = await searchMovies(query);
-        setGlobalSearchResults(results.map(normalize).filter(Boolean));
+        if (active) {
+          setGlobalSearchResults(results.map(normalize).filter(Boolean));
+        }
       } catch (err) {
         console.error("Global search failed:", err);
       } finally {
-        setIsSearchingGlobal(false);
+        if (active) {
+          setIsSearchingGlobal(false);
+        }
       }
-    }, 280);
+    }, 200);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [searchQuery]);
 
   // Live TMDB genre discovery across worldwide movies & series
@@ -564,18 +573,47 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
   // Display results when searching or filtering
   const displayedSearchResults = useMemo(() => {
-    let results;
-    if (searchQuery.trim().length >= 2) {
-      if (globalSearchResults.length > 0) {
-        results = globalSearchResults;
-      } else {
-        // Fallback to local search if no global results yet
-        const query = searchQuery.trim().toLowerCase();
-        results = movies.filter((m) =>
-          m.title.toLowerCase().includes(query) ||
-          m.genres.some((g) => g.toLowerCase().includes(query))
-        );
+    const trimmed = searchQuery.trim().toLowerCase();
+    let results = [];
+
+    if (trimmed.length > 0) {
+      const globalList = globalSearchResults || [];
+      // Local instant matches from current catalogue cache and movies for immediate feedback
+      const localMatches = movies.filter((m) =>
+        (m.title || "").toLowerCase().includes(trimmed) ||
+        (m.overview || m.description || "").toLowerCase().includes(trimmed) ||
+        (Array.isArray(m.genres) ? m.genres : [m.genre]).some((g) =>
+          String(g || "").toLowerCase().includes(trimmed)
+        )
+      );
+
+      // Merge: unique by id or title
+      const combined = [...globalList];
+      for (const local of localMatches) {
+        const localId = String(local.id || local.tmdbId || "");
+        if (!combined.some((c) => String(c.id || c.tmdbId || "") === localId || (c.title && c.title.toLowerCase() === local.title?.toLowerCase()))) {
+          combined.push(local);
+        }
       }
+
+      // Rank exact matches and starting matches highest
+      combined.sort((a, b) => {
+        const aTitle = (a.title || "").toLowerCase();
+        const bTitle = (b.title || "").toLowerCase();
+        const aExact = aTitle === trimmed;
+        const bExact = bTitle === trimmed;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+
+        const aStarts = aTitle.startsWith(trimmed);
+        const bStarts = bTitle.startsWith(trimmed);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+
+        return Number(b.rating || 0) - Number(a.rating || 0);
+      });
+
+      results = combined;
     } else {
       results = genreFilteredMovies;
     }
@@ -602,6 +640,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
     setActiveYear("all");
     setSortBy("popular");
     setSearchQuery("");
+    setGlobalSearchResults([]);
   }
 
   // Watchlist movies
@@ -953,6 +992,8 @@ function getCleanMovieSynopsis(movie, genres = []) {
         onTrending={() => showHomeSection("trending-now")}
         onSearch={() => {
           setSearchOpen(true);
+          setActiveType("all");
+          setActiveYear("all");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onWatchlist={() => {
@@ -985,6 +1026,19 @@ function getCleanMovieSynopsis(movie, genres = []) {
             onChange={(event) => {
               setSearchQuery(event.target.value);
               setActiveTab("Home");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const q = searchQuery.trim();
+                if (q) {
+                  setIsSearchingGlobal(true);
+                  searchMovies(q)
+                    .then((results) => setGlobalSearchResults(results.map(normalize).filter(Boolean)))
+                    .catch(() => {})
+                    .finally(() => setIsSearchingGlobal(false));
+                }
+              }
             }}
             aria-label="Search movies worldwide"
             autoFocus
@@ -1150,9 +1204,9 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
               {displayedSearchResults.length > 0 ? (
                 <div className="search-results-grid">
-                  {displayedSearchResults.map((movie) => (
+                  {displayedSearchResults.map((movie, idx) => (
                     <MovieCard
-                      key={movie.id}
+                      key={`${movie.mediaType || (movie.isTV ? "tv" : "movie")}-${movie.id || movie.tmdbId}-${idx}`}
                       movie={movie}
                       onSelect={handleSelectMovie}
                       onPlay={handlePlay}
@@ -1161,12 +1215,17 @@ function getCleanMovieSynopsis(movie, genres = []) {
                     />
                   ))}
                 </div>
+              ) : isSearchingGlobal ? (
+                <div className="search-loading-state" style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <Loader2 size={36} className="cv-spin-loader" style={{ margin: "0 auto 16px", color: "#ffffff" }} />
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "15px" }}>Searching worldwide cinema archives for "{searchQuery}"...</p>
+                </div>
               ) : (
                 <div className="empty-state">
                   <Search size={30} />
                   <div>
-                      <h3>No titles match these filters</h3>
-                      <p>Change a filter or clear them to see more movies and series.</p>
+                    <h3>No titles match "{searchQuery || activeGenre}"</h3>
+                    <p>Try searching by movie title, actor, or genre, or reset filters.</p>
                   </div>
                   <button
                     className="btn-secondary"

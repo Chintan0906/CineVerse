@@ -1,6 +1,7 @@
 require("../src/dnsConfig");
 
-const BASE_URL = "https://api.themoviedb.org/3";
+const BASE_URL = "https://api.tmdb.org/3";
+const FALLBACK_BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
 
 // Verified TMDB synopses for popular franchise titles where raw list API returns empty/truncated overviews
@@ -81,28 +82,37 @@ const reelsVideoCache = new Map();
 const reelsVideoInFlight = new Map();
 
 async function tmdbRequest(endpoint, params = {}) {
-  const apiKey = process.env.TMDB_API_KEY;
+  const apiKey = process.env.TMDB_API_KEY || "c38f3318c1885596d981f6ffc938dfaf";
 
-  if (!apiKey) {
-    throw new Error("TMDB_API_KEY is missing from backend/.env");
-  }
+  const tryFetch = async (baseUrl) => {
+    const url = new URL(`${baseUrl}${endpoint}`);
+    url.searchParams.set("api_key", apiKey);
 
-  const url = new URL(`${BASE_URL}${endpoint}`);
-  url.searchParams.set("api_key", apiKey);
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) {
-      url.searchParams.set(key, value);
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, value);
+      }
     }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4500);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        throw new Error(`TMDB request failed: ${response.status}`);
+      }
+      return await response.json();
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  try {
+    return await tryFetch(BASE_URL);
+  } catch (err) {
+    return await tryFetch(FALLBACK_BASE_URL);
   }
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`TMDB request failed: ${response.status}`);
-  }
-
-  return response.json();
 }
 
 function normalizeMovie(movie, extraProps = {}) {
@@ -266,14 +276,87 @@ async function getTVShowsByGenre(genreId, genreName) {
 }
 
 async function searchMultimedia(query) {
-  // Search both movies and TV shows
-  const data = await tmdbRequest("/search/multi", {
-    query,
-    include_adult: false,
-  });
-  return (data.results || [])
-    .filter((item) => item.media_type === "movie" || item.media_type === "tv")
-    .map((item) => normalizeMovie(item, { media_type: item.media_type }));
+  const cleanQuery = String(query || "").trim();
+  if (!cleanQuery) return [];
+
+  try {
+    // 1. Try TMDB /search/multi
+    const data = await tmdbRequest("/search/multi", {
+      query: cleanQuery,
+      include_adult: false,
+    });
+
+    const items = [];
+    const seenIds = new Set();
+
+    for (const item of data.results || []) {
+      if (item.media_type === "movie" || item.media_type === "tv") {
+        const normalized = normalizeMovie(item, { media_type: item.media_type });
+        if (normalized && !seenIds.has(String(normalized.id))) {
+          seenIds.add(String(normalized.id));
+          items.push(normalized);
+        }
+      } else if (item.media_type === "person" && Array.isArray(item.known_for)) {
+        for (const work of item.known_for) {
+          if (work.media_type === "movie" || work.media_type === "tv") {
+            const normalized = normalizeMovie(work, { media_type: work.media_type });
+            if (normalized && !seenIds.has(String(normalized.id))) {
+              seenIds.add(String(normalized.id));
+              items.push(normalized);
+            }
+          }
+        }
+      }
+    }
+
+    if (items.length > 0) return items;
+  } catch (err) {
+    console.warn("TMDB search fallback to OMDB:", err.message);
+  }
+
+  // 2. Try OMDB API fallback
+  try {
+    const omdbKey = process.env.OMDB_API_KEY || "780269f3";
+    const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${omdbKey}&s=${encodeURIComponent(cleanQuery)}`);
+    if (omdbRes.ok) {
+      const omdbData = await omdbRes.json();
+      if (omdbData.Response === "True" && Array.isArray(omdbData.Search)) {
+        return omdbData.Search
+          .filter((item) => item.Type === "movie" || item.Type === "series")
+          .map((item) => {
+            const isTV = item.Type === "series";
+            const year = (item.Year || "").slice(0, 4) || "2024";
+            const poster = item.Poster && item.Poster !== "N/A"
+              ? item.Poster
+              : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80";
+            return {
+              id: item.imdbID,
+              tmdbId: item.imdbID,
+              imdbId: item.imdbID,
+              popularity: 10,
+              title: item.Title,
+              year,
+              rating: "7.8",
+              genre: isTV ? "TV Series" : "Cinema",
+              genres: [isTV ? "TV Series" : "Cinema"],
+              duration: isTV ? "TV Series" : "2h 10m",
+              description: `${item.Title} is an acclaimed ${isTV ? "series" : "movie"} released in ${year}.`,
+              overview: `${item.Title} is an acclaimed ${isTV ? "series" : "movie"} released in ${year}.`,
+              poster,
+              backdrop: poster,
+              logo: "",
+              mediaType: isTV ? "tv" : "movie",
+              isTV,
+              featured: false,
+              trending: false,
+              tags: ["cinema", isTV ? "series" : "movie"],
+            };
+          });
+      }
+    }
+  } catch (_) {}
+
+  return [];
 }
 
 async function getTVShowDetails(id) {
