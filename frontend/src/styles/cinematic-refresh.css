@@ -3379,6 +3379,11 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   color: #34d399;
 }
 
+.cine-status-subname.langchan {
+  color: #fb923c;
+  font-weight: 600;
+}
+
 .cine-status-subname.skypro {
   color: #38bdf8;
   font-weight: 600;
@@ -3570,6 +3575,41 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   background: rgba(16, 185, 129, 0.3);
   color: #d1fae5;
   border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+/* LangChan MegaCloud Sub-Server Switcher Bar */
+.cine-subserver-bar-wrapper.langchan-theme {
+  background: rgba(38, 18, 8, 0.88);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: 0 4px 20px rgba(38, 18, 8, 0.4), inset 0 1px 0 rgba(249, 115, 22, 0.15);
+}
+
+.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-label {
+  color: #fb923c;
+}
+
+.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill:hover {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #ffffff;
+}
+
+.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.35), rgba(194, 65, 12, 0.35));
+  border-color: #fb923c;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
+}
+
+.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active .subserver-dot {
+  background: #f97316;
+  box-shadow: 0 0 8px #f97316;
+}
+
+.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active .subserver-badge {
+  background: rgba(249, 115, 22, 0.3);
+  color: #ffedd5;
+  border: 1px solid rgba(249, 115, 22, 0.5);
 }
 
 /* SkyPro Multi-Resolver Sub-Server Switcher Bar */

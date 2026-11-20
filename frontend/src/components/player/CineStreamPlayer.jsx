@@ -108,6 +108,18 @@ const STREAM_SERVERS = [
     },
   },
   {
+    id: "langchan",
+    name: "Server LangChan",
+    quality: "1080p / 4K Auto-Stream",
+    speed: "MegaCloud / Consumet Core",
+    badge: "MegaCloud VIP",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://player.autoembed.cc/embed/movie/${tmdbId}`;
+    },
+  },
+  {
     id: "skypro",
     name: "Server SkyPro",
     quality: "1080p / 4K UHD Multi-Mirror",
@@ -408,6 +420,54 @@ const ANIMEEMBED_SUB_SERVERS = [
   },
 ];
 
+// Internal mirror providers available within Server LangChan (MegaCloud / Consumet Cluster)
+const LANGCHAN_SUB_SERVERS = [
+  {
+    id: "megacloud",
+    name: "LangChan MegaCloud",
+    badge: "MegaCloud HLS",
+    quality: "1080p / 4K Adaptive HLS",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://player.autoembed.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://player.autoembed.cc/embed/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "multiembed",
+    name: "LangChan MultiStream",
+    badge: "Zero-Ad Multi",
+    quality: "1080p Multi-Source Cloud",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+    },
+  },
+  {
+    id: "rabbit",
+    name: "LangChan RabbitStream",
+    badge: "Fast Buffer",
+    quality: "1080p Fast Direct Feed",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://autoembed.co/tv/tmdb/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://autoembed.co/movie/tmdb/${tmdbId}`;
+    },
+  },
+  {
+    id: "vipcloud",
+    name: "LangChan VIP Cloud",
+    badge: "VIP Mirror",
+    quality: "1080p VIP Stream Mirror",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidsrc.vip/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidsrc.vip/embed/movie/${tmdbId}`;
+    },
+  },
+];
+
 // Dedicated mirror providers available within Server SkyPro (SkyPro Multi-Resolver Cluster)
 const SKYPRO_SUB_SERVERS = [
   {
@@ -587,6 +647,7 @@ const LEGACY_SUB_SERVERS = [
 
 const STORAGE_KEYS = {
   ACTIVE_SERVER: "cineverse_active_server_v5",
+  LANGCHAN_SUB: "cineverse_langchan_sub_id",
   SKYPRO_SUB: "cineverse_skypro_sub_id",
   FRAMEX_SUB: "cineverse_framex_sub_id",
   ECLIPSE_SUB: "cineverse_eclipse_sub_id",
@@ -636,6 +697,17 @@ function CineStreamPlayer({
       }
     } catch {}
     return ECLIPSE_SUB_SERVERS[0];
+  });
+
+  const [langchanSubServer, setLangchanSubServer] = useState(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.LANGCHAN_SUB);
+      if (savedId) {
+        const found = LANGCHAN_SUB_SERVERS.find((s) => s.id === savedId);
+        if (found) return found;
+      }
+    } catch {}
+    return LANGCHAN_SUB_SERVERS[0];
   });
 
   const [skyproSubServer, setSkyproSubServer] = useState(() => {
@@ -1333,6 +1405,8 @@ function CineStreamPlayer({
 
   const embedUrl = activeServer.id === "legacy"
     ? legacySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    : activeServer.id === "langchan"
+    ? langchanSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "skypro"
     ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "eclipse"
@@ -1402,6 +1476,40 @@ function CineStreamPlayer({
                   onClick={() => {
                     setEclipseSubServer(sub);
                     try { localStorage.setItem(STORAGE_KEYS.ECLIPSE_SUB, sub.id); } catch {}
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
+                  title={`Switch to ${sub.name} (${sub.quality})`}
+                >
+                  <span className="subserver-dot" />
+                  <span className="subserver-name">{sub.name}</span>
+                  <span className="subserver-badge">{sub.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* LANGCHAN SUB-SERVER SWITCHER BAR */}
+      {activeServer.id === "langchan" && (
+        <div className="cine-subserver-bar-wrapper langchan-theme">
+          <div className="cine-subserver-label">
+            <Layers size={13} className="subserver-icon" />
+            <span>LangChan MegaCloud Mirrors:</span>
+          </div>
+          <div className="cine-subserver-pills" role="tablist">
+            {LANGCHAN_SUB_SERVERS.map((sub) => {
+              const isSubActive = langchanSubServer.id === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSubActive}
+                  onClick={() => {
+                    setLangchanSubServer(sub);
+                    try { localStorage.setItem(STORAGE_KEYS.LANGCHAN_SUB, sub.id); } catch {}
                     setReloadKey((prev) => prev + 1);
                   }}
                   className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
@@ -1630,6 +1738,9 @@ function CineStreamPlayer({
             {activeServer.id === "legacy" && (
               <span className="cine-status-subname"> &bull; {legacySubServer.name}</span>
             )}
+            {activeServer.id === "langchan" && (
+              <span className="cine-status-subname langchan"> &bull; {langchanSubServer.name}</span>
+            )}
             {activeServer.id === "skypro" && (
               <span className="cine-status-subname skypro"> &bull; {skyproSubServer.name}</span>
             )}
@@ -1649,6 +1760,8 @@ function CineStreamPlayer({
           <span className="cine-status-chip">
             {activeServer.id === "legacy"
               ? legacySubServer.quality
+              : activeServer.id === "langchan"
+              ? langchanSubServer.quality
               : activeServer.id === "skypro"
               ? skyproSubServer.quality
               : activeServer.id === "eclipse"
@@ -1664,6 +1777,8 @@ function CineStreamPlayer({
           <span className="cine-status-chip speed-chip">
             {activeServer.id === "legacy"
               ? legacySubServer.badge
+              : activeServer.id === "langchan"
+              ? langchanSubServer.badge
               : activeServer.id === "skypro"
               ? skyproSubServer.badge
               : activeServer.id === "eclipse"
@@ -1774,11 +1889,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "skypro" ? skyproSubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "langchan" ? langchanSubServer.id : activeServer.id === "skypro" ? skyproSubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "skypro" ? ` (${skyproSubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "langchan" ? ` (${langchanSubServer.name})` : activeServer.id === "skypro" ? ` (${skyproSubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
           allowFullScreen={true}
           webkitallowfullscreen="true"
@@ -2439,7 +2554,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["skypro", "quantum", "eclipse", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["langchan", "skypro", "quantum", "eclipse", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2452,7 +2567,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "skypro"
+                                  {s.id === "langchan"
+                                    ? "MegaCloud & Multi-Stream Subtitles"
+                                    : s.id === "skypro"
                                     ? "SkyPro Multi-Resolver HD & 4K"
                                     : s.id === "framex"
                                     ? "FrameX Multi-Subtitles HLS"
@@ -2515,7 +2632,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["skypro", "quantum", "eclipse", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["langchan", "skypro", "quantum", "eclipse", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2528,7 +2645,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "skypro"
+                                  {s.id === "langchan"
+                                    ? "LangChan Multi-Audio & MegaCloud Feed"
+                                    : s.id === "skypro"
                                     ? "SkyPro Multi-Audio & 4K UHD Feed"
                                     : s.id === "framex"
                                     ? "FrameX Archer Multi-Audio & 4K UHD"
