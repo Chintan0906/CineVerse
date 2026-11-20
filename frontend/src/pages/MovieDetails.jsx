@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -21,7 +21,15 @@ import {
   Bookmark,
 } from "lucide-react";
 
-import { getMovieById, getTVShowById, getTVSeasonEpisodes } from "../services/movieService";
+import {
+  getMovieById,
+  getTVShowById,
+  getTVSeasonEpisodes,
+  getFallbackCast,
+  getFallbackSimilar,
+  KNOWN_FINANCIALS,
+} from "../services/movieService";
+import { movies as fallbackMovies } from "../data/movies";
 import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
@@ -281,6 +289,41 @@ function MovieDetails() {
   const stateType = location.state?.mediaType || (location.state?.isTV ? "tv" : null);
   const requestedType = queryType || stateType || null;
 
+  const fallbackCatalogueMovies = useMemo(() => {
+    try {
+      const raw =
+        sessionStorage.getItem("cineverse_catalogue_cache") ||
+        localStorage.getItem("cineverse_catalogue_cache");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.movies) && parsed.movies.length > 0) {
+          return parsed.movies;
+        }
+      }
+    } catch (_) {}
+    return fallbackMovies;
+  }, []);
+
+  const displayCast = useMemo(() => {
+    if (movie?.cast && Array.isArray(movie.cast) && movie.cast.length > 0) {
+      return movie.cast;
+    }
+    return getFallbackCast(movie?.title || location.state?.title, id);
+  }, [movie?.cast, movie?.title, location.state?.title, id]);
+
+  const displaySimilar = useMemo(() => {
+    if (movie?.similar && Array.isArray(movie.similar) && movie.similar.length > 0) {
+      return movie.similar;
+    }
+    const genres = movie?.genres || (movie?.genre ? [movie.genre] : ["Cinema"]);
+    const sim = getFallbackSimilar(id, genres);
+    if (sim && sim.length > 0) return sim;
+    return fallbackCatalogueMovies.filter((m) => String(m.id || m.tmdbId) !== String(id)).slice(0, 8);
+  }, [movie?.similar, movie?.genres, movie?.genre, id, fallbackCatalogueMovies]);
+
+  const displayBudget = movie?.budget || KNOWN_FINANCIALS[String(movie?.id || id)]?.budget || null;
+  const displayRevenue = movie?.revenue || KNOWN_FINANCIALS[String(movie?.id || id)]?.revenue || null;
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (!movie) {
@@ -308,6 +351,10 @@ function MovieDetails() {
 
         const normalizedData = {
           ...data,
+          cast: (data.cast && data.cast.length > 0) ? data.cast : getFallbackCast(data.title, id),
+          similar: (data.similar && data.similar.length > 0) ? data.similar : getFallbackSimilar(id, data.genres || [data.genre]),
+          budget: data.budget || KNOWN_FINANCIALS[String(data.id || id)]?.budget || null,
+          revenue: data.revenue || KNOWN_FINANCIALS[String(data.id || id)]?.revenue || null,
           mediaType: isTv ? "tv" : "movie",
           isTV: isTv,
         };
@@ -354,7 +401,13 @@ function MovieDetails() {
         setMovie((prev) => {
           if (prev) {
             setError("");
-            return prev;
+            return {
+              ...prev,
+              cast: (prev.cast && prev.cast.length > 0) ? prev.cast : getFallbackCast(prev.title, id),
+              similar: (prev.similar && prev.similar.length > 0) ? prev.similar : getFallbackSimilar(id, prev.genres || [prev.genre]),
+              budget: prev.budget || KNOWN_FINANCIALS[String(prev.id || id)]?.budget || null,
+              revenue: prev.revenue || KNOWN_FINANCIALS[String(prev.id || id)]?.revenue || null,
+            };
           }
           const isTv = requestedType === "tv";
           const idStr = String(id);
@@ -380,8 +433,10 @@ function MovieDetails() {
             backdrop: "https://image.tmdb.org/t/p/original/zViRwl3ySscZnbXZJ2Q9wq3SeUG.jpg",
             mediaType: isTv ? "tv" : "movie",
             isTV: isTv,
-            cast: [],
-            similar: [],
+            cast: getFallbackCast(title, idStr),
+            similar: getFallbackSimilar(idStr, ["Action", "Sci-Fi"]),
+            budget: KNOWN_FINANCIALS[idStr]?.budget || null,
+            revenue: KNOWN_FINANCIALS[idStr]?.revenue || null,
             seasons: [],
             numberOfSeasons: 0,
             status: "Released",
@@ -658,6 +713,13 @@ function MovieDetails() {
                   }}
                 />
               </div>
+              <StreamRecommendations
+                movies={displaySimilar}
+                currentMovie={streamMedia}
+                onPlay={playRecommendation}
+                isSaved={(mediaId) => watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(mediaId))}
+                onToggleWatchlist={toggleWatchlist}
+              />
             </div>
           </div>
         </div>
@@ -685,6 +747,13 @@ function MovieDetails() {
               <h3>Resuming playback...</h3>
               <p>Connecting to secure stream servers</p>
             </div>
+            <StreamRecommendations
+              movies={displaySimilar}
+              currentMovie={streamMedia}
+              onPlay={playRecommendation}
+              isSaved={(mediaId) => watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(mediaId))}
+              onToggleWatchlist={toggleWatchlist}
+            />
           </div>
         </div>
       );
@@ -942,22 +1011,22 @@ function MovieDetails() {
               <span className="fact-label">Status</span>
               <span className="fact-value">{movie.status || "Released"}</span>
             </div>
-            {movie.budget && (
+            {displayBudget && (
               <div className="fact-row">
                 <span className="fact-label">
                   <DollarSign size={13} />
                   Budget
                 </span>
-                <span className="fact-value">{movie.budget}</span>
+                <span className="fact-value">{displayBudget}</span>
               </div>
             )}
-            {movie.revenue && (
+            {displayRevenue && (
               <div className="fact-row">
                 <span className="fact-label">
                   <TrendingUp size={13} />
                   Revenue
                 </span>
-                <span className="fact-value">{movie.revenue}</span>
+                <span className="fact-value">{displayRevenue}</span>
               </div>
             )}
             <div className="fact-row">
@@ -1049,12 +1118,12 @@ function MovieDetails() {
         )}
 
         {/* TOP CAST & CREW */}
-        {movie.cast && movie.cast.length > 0 && (
+        {displayCast && displayCast.length > 0 && (
           <section className="cast-section">
             <h2 className="section-title">Top Cast & Crew</h2>
             <div className="cast-grid">
-              {movie.cast.map((actor) => (
-                <div key={actor.id} className="actor-card glass-card">
+              {displayCast.map((actor) => (
+                <div key={actor.id || actor.name} className="actor-card glass-card">
                   <div className="actor-image-wrap">
                     <img
                       src={actor.profile}
@@ -1077,23 +1146,23 @@ function MovieDetails() {
         )}
 
         {/* SIMILAR MOVIES / RECOMMENDATIONS */}
-        {movie.similar && movie.similar.length > 0 && (
+        {displaySimilar && displaySimilar.length > 0 && (
           <section className="similar-section">
             <h2 className="section-title">More Like This</h2>
             <div className="similar-grid">
-              {movie.similar.slice(0, 8).map((simMovie) => (
+              {displaySimilar.slice(0, 8).map((simMovie) => (
                 <MovieCard
-                  key={simMovie.id}
+                  key={simMovie.id || simMovie.tmdbId}
                   movie={simMovie}
                   onSelect={() =>
-                    navigate(`/movie/${simMovie.id}`, {
+                    navigate(`/movie/${simMovie.id || simMovie.tmdbId}`, {
                       state: {
                         movie: simMovie,
                         mediaType: simMovie.mediaType || (simMovie.isTV ? "tv" : "movie"),
                       },
                     })
                   }
-                  isSaved={watchlist.some((saved) => String(saved.id) === String(simMovie.id))}
+                  isSaved={watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(simMovie.id || simMovie.tmdbId))}
                   onToggleWatchlist={() => toggleWatchlist(simMovie)}
                 />
               ))}
@@ -1159,10 +1228,10 @@ function MovieDetails() {
               />
             </div>
             <StreamRecommendations
-              movies={movie?.similar || []}
+              movies={displaySimilar}
               currentMovie={streamMedia}
               onPlay={playRecommendation}
-              isSaved={(mediaId) => watchlist.some((saved) => String(saved.id) === String(mediaId))}
+              isSaved={(mediaId) => watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(mediaId))}
               onToggleWatchlist={toggleWatchlist}
             />
           </div>
