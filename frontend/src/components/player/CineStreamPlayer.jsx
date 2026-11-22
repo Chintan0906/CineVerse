@@ -92,40 +92,6 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Universal high-performance VidFast URL builder (Server Eclipse & Server PlayTroy)
-function buildVidFastUrl({
-  domain = "vidfast.vc",
-  tmdbId,
-  isTv,
-  season,
-  episode,
-  currentTime,
-  server,
-  theme = "0ea5e9",
-  mediaObj,
-}) {
-  const id = mediaObj?.imdbId || mediaObj?.imdb_id || tmdbId;
-  const params = new URLSearchParams({
-    autoPlay: "true",
-    fullscreenButton: "true",
-    chromecast: "true",
-    sub: "en",
-    theme,
-  });
-  if (server) {
-    params.set("server", server);
-  }
-  if (currentTime && Number(currentTime) >= 15) {
-    params.set("startAt", String(Math.floor(Number(currentTime))));
-  }
-  if (isTv) {
-    params.set("nextButton", "true");
-    params.set("autoNext", "true");
-    return `https://${domain}/tv/${id}/${season || 1}/${episode || 1}?${params.toString()}`;
-  }
-  return `https://${domain}/movie/${id}?${params.toString()}`;
-}
-
 // Disguised high-performance streaming servers (Server Eclipse is primary default)
 const STREAM_SERVERS = [
   {
@@ -134,8 +100,11 @@ const STREAM_SERVERS = [
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
     badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
   },
   {
     id: "playtroy",
@@ -143,8 +112,24 @@ const STREAM_SERVERS = [
     quality: "1080p / 4K UHD",
     speed: "Ultra CDN + Auto-Next",
     badge: "PlayTroy Pro",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "langchan",
@@ -562,56 +547,77 @@ const ECLIPSE_SUB_SERVERS = [
     name: "Eclipse Auto",
     badge: "Auto Stream",
     quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, mediaObj }),
-  },
-  {
-    id: "pro",
-    name: "Eclipse Pro",
-    badge: "Mirror Pro",
-    quality: "1080p / 4K Mirror",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.pro", tmdbId, isTv, season, episode, currentTime, mediaObj }),
-  },
-  {
-    id: "net",
-    name: "Eclipse Net",
-    badge: "Mirror Net",
-    quality: "1080p Cloud Mirror",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.net", tmdbId, isTv, season, episode, currentTime, mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
   },
   {
     id: "vrapid",
     name: "vRapid",
     badge: "4K UHD",
     quality: "4K UHD / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "vrapid", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vrapid`
+        : `https://vidfast.vc/movie/${tmdbId}?server=vrapid`;
+    },
   },
   {
     id: "vblaze",
     name: "vBlaze",
     badge: "4K Fast",
     quality: "4K Fast / Ultra Stream",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "vblaze", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vblaze`
+        : `https://vidfast.vc/movie/${tmdbId}?server=vblaze`;
+    },
   },
   {
     id: "cobra",
     name: "Cobra",
     badge: "Direct HD",
     quality: "1080p Direct / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "cobra", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cobra`
+        : `https://vidfast.vc/movie/${tmdbId}?server=cobra`;
+    },
   },
   {
     id: "cine",
     name: "Cine",
     badge: "Multi-Audio",
     quality: "1080p Multiple Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "cine", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cine`
+        : `https://vidfast.vc/movie/${tmdbId}?server=cine`;
+    },
+  },
+  {
+    id: "bravo",
+    name: "Bravo",
+    badge: "Fast CDN",
+    quality: "1080p Fast CDN / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=bravo`
+        : `https://vidfast.vc/movie/${tmdbId}?server=bravo`;
+    },
+  },
+  {
+    id: "horizon",
+    name: "Horizon",
+    badge: "Cloud Mirror",
+    quality: "1080p Cloud / Original Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=horizon`
+        : `https://vidfast.vc/movie/${tmdbId}?server=horizon`;
+    },
   },
 ];
 
@@ -622,56 +628,174 @@ const PLAYTROY_SUB_SERVERS = [
     name: "PlayTroy Auto",
     badge: "Auto Select",
     quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "vrapid",
     name: "Troy vRapid",
     badge: "4K UHD",
     quality: "4K UHD / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "vrapid", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "vrapid",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "vblaze",
     name: "Troy vBlaze",
     badge: "4K Fast",
     quality: "4K Fast / Ultra Stream",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "vblaze", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "vblaze",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "cobra",
     name: "Troy Cobra",
     badge: "Direct HD",
     quality: "1080p Direct / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "cobra", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "cobra",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "cine",
     name: "Troy Cine",
     badge: "Multi-Audio",
     quality: "1080p Multiple Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "cine", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "cine",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "bravo",
     name: "Troy Bravo",
     badge: "Fast CDN",
     quality: "1080p Fast CDN / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.vc", tmdbId, isTv, season, episode, currentTime, server: "bravo", mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "bravo",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
   {
     id: "horizon",
     name: "Troy Horizon",
     badge: "Cloud Mirror",
     quality: "1080p Cloud / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, mediaObj) =>
-      buildVidFastUrl({ domain: "vidfast.pro", tmdbId, isTv, season, episode, currentTime, mediaObj }),
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        server: "horizon",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    },
   },
 ];
 
@@ -1419,9 +1543,9 @@ function CineStreamPlayer({
     : activeServer.id === "skypro"
     ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "eclipse"
-    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0, media)
+    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "playtroy"
-    ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0, media)
+    ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
     : activeServer.id === "quantum"
     ? quantumSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "wave"
@@ -1435,8 +1559,7 @@ function CineStreamPlayer({
         isTv,
         currSeason,
         currEpisode,
-        media?.currentTime || 0,
-        media
+        media?.currentTime || 0
       );
 
   return (
