@@ -100,10 +100,23 @@ const STREAM_SERVERS = [
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
     badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const params = new URLSearchParams({
+        autoPlay: "true",
+        fullscreenButton: "true",
+        chromecast: "true",
+        sub: "en",
+        theme: "0ea5e9",
+      });
+      if (currentTime && Number(currentTime) >= 15) {
+        params.set("startAt", String(Math.floor(Number(currentTime))));
+      }
+      if (isTv) {
+        params.set("nextButton", "true");
+        params.set("autoNext", "true");
+        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
@@ -540,6 +553,29 @@ const SKYPRO_SUB_SERVERS = [
   },
 ];
 
+// Helper for Server Eclipse (VidFast High-Speed Cluster)
+const getEclipseUrl = (tmdbId, isTv, season, episode, currentTime, serverName) => {
+  const params = new URLSearchParams({
+    autoPlay: "true",
+    fullscreenButton: "true",
+    chromecast: "true",
+    sub: "en",
+    theme: "0ea5e9",
+  });
+  if (serverName) {
+    params.set("server", serverName);
+  }
+  if (currentTime && Number(currentTime) >= 15) {
+    params.set("startAt", String(Math.floor(Number(currentTime))));
+  }
+  if (isTv) {
+    params.set("nextButton", "true");
+    params.set("autoNext", "true");
+    return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+  }
+  return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+};
+
 // Internal mirror servers available within Server Eclipse (VidFast High-Speed Cluster)
 const ECLIPSE_SUB_SERVERS = [
   {
@@ -547,77 +583,56 @@ const ECLIPSE_SUB_SERVERS = [
     name: "Eclipse Auto",
     badge: "Auto Stream",
     quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime),
   },
   {
     id: "vrapid",
     name: "vRapid",
     badge: "4K UHD",
     quality: "4K UHD / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vrapid`
-        : `https://vidfast.vc/movie/${tmdbId}?server=vrapid`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "vrapid"),
   },
   {
     id: "vblaze",
     name: "vBlaze",
     badge: "4K Fast",
     quality: "4K Fast / Ultra Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=vblaze`
-        : `https://vidfast.vc/movie/${tmdbId}?server=vblaze`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "vblaze"),
   },
   {
     id: "cobra",
     name: "Cobra",
     badge: "Direct HD",
     quality: "1080p Direct / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cobra`
-        : `https://vidfast.vc/movie/${tmdbId}?server=cobra`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "cobra"),
   },
   {
     id: "cine",
     name: "Cine",
     badge: "Multi-Audio",
     quality: "1080p Multiple Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cine`
-        : `https://vidfast.vc/movie/${tmdbId}?server=cine`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "cine"),
   },
   {
     id: "bravo",
     name: "Bravo",
     badge: "Fast CDN",
     quality: "1080p Fast CDN / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=bravo`
-        : `https://vidfast.vc/movie/${tmdbId}?server=bravo`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "bravo"),
   },
   {
     id: "horizon",
     name: "Horizon",
     badge: "Cloud Mirror",
     quality: "1080p Cloud / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?server=horizon`
-        : `https://vidfast.vc/movie/${tmdbId}?server=horizon`;
-    },
+    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
+      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "horizon"),
   },
 ];
 
@@ -1543,7 +1558,7 @@ function CineStreamPlayer({
     : activeServer.id === "skypro"
     ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "eclipse"
-    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
+    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
     : activeServer.id === "playtroy"
     ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
     : activeServer.id === "quantum"
