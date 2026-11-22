@@ -25,6 +25,7 @@ import {
   Play,
   Clock,
   Download,
+  Zap,
 } from "lucide-react";
 import { downloadWyzieSubtitle, searchWyzieSubtitles } from "../../services/subtitleService";
 
