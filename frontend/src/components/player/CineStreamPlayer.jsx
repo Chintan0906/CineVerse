@@ -553,88 +553,6 @@ const SKYPRO_SUB_SERVERS = [
   },
 ];
 
-// Helper for Server Eclipse (VidFast High-Speed Cluster)
-const getEclipseUrl = (tmdbId, isTv, season, episode, currentTime, serverName) => {
-  const params = new URLSearchParams({
-    autoPlay: "true",
-    fullscreenButton: "true",
-    chromecast: "true",
-    sub: "en",
-    theme: "0ea5e9",
-  });
-  if (serverName) {
-    params.set("server", serverName);
-  }
-  if (currentTime && Number(currentTime) >= 15) {
-    params.set("startAt", String(Math.floor(Number(currentTime))));
-  }
-  if (isTv) {
-    params.set("nextButton", "true");
-    params.set("autoNext", "true");
-    return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-  }
-  return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
-};
-
-// Internal mirror servers available within Server Eclipse (VidFast High-Speed Cluster)
-const ECLIPSE_SUB_SERVERS = [
-  {
-    id: "auto",
-    name: "Eclipse Auto",
-    badge: "Auto Stream",
-    quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime),
-  },
-  {
-    id: "vrapid",
-    name: "vRapid",
-    badge: "4K UHD",
-    quality: "4K UHD / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "vrapid"),
-  },
-  {
-    id: "vblaze",
-    name: "vBlaze",
-    badge: "4K Fast",
-    quality: "4K Fast / Ultra Stream",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "vblaze"),
-  },
-  {
-    id: "cobra",
-    name: "Cobra",
-    badge: "Direct HD",
-    quality: "1080p Direct / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "cobra"),
-  },
-  {
-    id: "cine",
-    name: "Cine",
-    badge: "Multi-Audio",
-    quality: "1080p Multiple Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "cine"),
-  },
-  {
-    id: "bravo",
-    name: "Bravo",
-    badge: "Fast CDN",
-    quality: "1080p Fast CDN / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "bravo"),
-  },
-  {
-    id: "horizon",
-    name: "Horizon",
-    badge: "Cloud Mirror",
-    quality: "1080p Cloud / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) =>
-      getEclipseUrl(tmdbId, isTv, season, episode, currentTime, "horizon"),
-  },
-];
 
 // Internal mirror servers available within Server PlayTroy (Ultra High-Speed Cluster)
 const PLAYTROY_SUB_SERVERS = [
@@ -867,7 +785,6 @@ const STORAGE_KEYS = {
   LANGCHAN_SUB: "cineverse_langchan_sub_id",
   SKYPRO_SUB: "cineverse_skypro_sub_id",
   FRAMEX_SUB: "cineverse_framex_sub_id",
-  ECLIPSE_SUB: "cineverse_eclipse_sub_id",
   PLAYTROY_SUB: "cineverse_playtroy_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
   WAVE_SUB: "cineverse_wave_sub_id",
@@ -906,16 +823,6 @@ function CineStreamPlayer({
     return STREAM_SERVERS[0];
   });
 
-  const [eclipseSubServer, setEclipseSubServer] = useState(() => {
-    try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.ECLIPSE_SUB);
-      if (savedId) {
-        const found = ECLIPSE_SUB_SERVERS.find((s) => s.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return ECLIPSE_SUB_SERVERS[0];
-  });
 
   const [playtroySubServer, setPlaytroySubServer] = useState(() => {
     try {
@@ -1097,6 +1004,13 @@ function CineStreamPlayer({
   useEffect(() => {
     setCurrEpisode(propEpisode);
   }, [propEpisode]);
+
+  // Clean up legacy Eclipse sub-server cache
+  useEffect(() => {
+    try {
+      localStorage.removeItem("cineverse_eclipse_sub_id");
+    } catch {}
+  }, []);
 
   // Dynamic AniList ID resolution for AnimeEmbed (Server Kage)
   useEffect(() => {
@@ -1557,8 +1471,6 @@ function CineStreamPlayer({
     ? langchanSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "skypro"
     ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
-    : activeServer.id === "eclipse"
-    ? eclipseSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
     : activeServer.id === "playtroy"
     ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
     : activeServer.id === "quantum"
@@ -1607,39 +1519,6 @@ function CineStreamPlayer({
         </div>
       </div>
 
-      {/* ECLIPSE SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "eclipse" && (
-        <div className="cine-subserver-bar-wrapper eclipse-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>Eclipse Server Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {ECLIPSE_SUB_SERVERS.map((sub) => {
-              const isSubActive = eclipseSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setEclipseSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.ECLIPSE_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* PLAYTROY SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "playtroy" && (
@@ -1928,9 +1807,6 @@ function CineStreamPlayer({
             {activeServer.id === "skypro" && (
               <span className="cine-status-subname skypro"> &bull; {skyproSubServer.name}</span>
             )}
-            {activeServer.id === "eclipse" && (
-              <span className="cine-status-subname eclipse"> &bull; {eclipseSubServer.name}</span>
-            )}
             {activeServer.id === "playtroy" && (
               <span className="cine-status-subname playtroy"> &bull; {playtroySubServer.name}</span>
             )}
@@ -1951,8 +1827,6 @@ function CineStreamPlayer({
               ? langchanSubServer.quality
               : activeServer.id === "skypro"
               ? skyproSubServer.quality
-              : activeServer.id === "eclipse"
-              ? eclipseSubServer.quality
               : activeServer.id === "playtroy"
               ? playtroySubServer.quality
               : activeServer.id === "quantum"
@@ -1970,8 +1844,6 @@ function CineStreamPlayer({
               ? langchanSubServer.badge
               : activeServer.id === "skypro"
               ? skyproSubServer.badge
-              : activeServer.id === "eclipse"
-              ? eclipseSubServer.badge
               : activeServer.id === "playtroy"
               ? playtroySubServer.badge
               : activeServer.id === "quantum"
@@ -2101,11 +1973,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "langchan" ? langchanSubServer.id : activeServer.id === "skypro" ? skyproSubServer.id : activeServer.id === "eclipse" ? eclipseSubServer.id : activeServer.id === "playtroy" ? playtroySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "langchan" ? langchanSubServer.id : activeServer.id === "skypro" ? skyproSubServer.id : activeServer.id === "playtroy" ? playtroySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "langchan" ? ` (${langchanSubServer.name})` : activeServer.id === "skypro" ? ` (${skyproSubServer.name})` : activeServer.id === "eclipse" ? ` (${eclipseSubServer.name})` : activeServer.id === "playtroy" ? ` (${playtroySubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "langchan" ? ` (${langchanSubServer.name})` : activeServer.id === "skypro" ? ` (${skyproSubServer.name})` : activeServer.id === "playtroy" ? ` (${playtroySubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
           allowFullScreen={true}
           webkitallowfullscreen="true"
