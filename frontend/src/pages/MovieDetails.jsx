@@ -286,7 +286,10 @@ function MovieDetails() {
 
   // Detect whether this is a TV series from navigation or query parameter
   const queryType = searchParams.get("type");
-  const stateType = location.state?.mediaType || (location.state?.isTV ? "tv" : null);
+  const stateType =
+    location.state?.mediaType ||
+    location.state?.movie?.mediaType ||
+    (location.state?.isTV || location.state?.movie?.isTV ? "tv" : null);
   const requestedType = queryType || stateType || null;
 
   const fallbackCatalogueMovies = useMemo(() => {
@@ -308,8 +311,9 @@ function MovieDetails() {
     if (movie?.cast && Array.isArray(movie.cast) && movie.cast.length > 0) {
       return movie.cast;
     }
-    return getFallbackCast(movie?.title || location.state?.title, id);
-  }, [movie?.cast, movie?.title, location.state?.title, id]);
+    const title = movie?.title || movie?.name || location.state?.title || location.state?.movie?.title || "";
+    return getFallbackCast(title, id);
+  }, [movie?.cast, movie?.title, movie?.name, location.state?.title, location.state?.movie?.title, id]);
 
   const displaySimilar = useMemo(() => {
     if (movie?.similar && Array.isArray(movie.similar) && movie.similar.length > 0) {
@@ -351,7 +355,7 @@ function MovieDetails() {
 
         const normalizedData = {
           ...data,
-          cast: (data.cast && data.cast.length > 0) ? data.cast : getFallbackCast(data.title, id),
+          cast: (data.cast && data.cast.length > 0) ? data.cast : getFallbackCast(data.title || data.name, id),
           similar: (data.similar && data.similar.length > 0) ? data.similar : getFallbackSimilar(id, data.genres || [data.genre]),
           budget: data.budget || KNOWN_FINANCIALS[String(data.id || id)]?.budget || null,
           revenue: data.revenue || KNOWN_FINANCIALS[String(data.id || id)]?.revenue || null,
@@ -363,7 +367,13 @@ function MovieDetails() {
         setError("");
 
         if (isTv) {
-          const validSeasons = (normalizedData.seasons || []).filter((s) => s.season_number >= 0);
+          const validSeasons = (normalizedData.seasons || [])
+            .map((s) => ({
+              ...s,
+              season_number: Number(s.season_number ?? s.seasonNumber ?? 1),
+            }))
+            .filter((s) => s.season_number >= 0);
+
           const firstSeason =
             validSeasons.find((s) => s.season_number > 0)?.season_number ??
             validSeasons[0]?.season_number ??
@@ -403,7 +413,7 @@ function MovieDetails() {
             setError("");
             return {
               ...prev,
-              cast: (prev.cast && prev.cast.length > 0) ? prev.cast : getFallbackCast(prev.title, id),
+              cast: (prev.cast && prev.cast.length > 0) ? prev.cast : getFallbackCast(prev.title || prev.name, id),
               similar: (prev.similar && prev.similar.length > 0) ? prev.similar : getFallbackSimilar(id, prev.genres || [prev.genre]),
               budget: prev.budget || KNOWN_FINANCIALS[String(prev.id || id)]?.budget || null,
               revenue: prev.revenue || KNOWN_FINANCIALS[String(prev.id || id)]?.revenue || null,
@@ -411,7 +421,7 @@ function MovieDetails() {
           }
           const isTv = requestedType === "tv";
           const idStr = String(id);
-          let title = location.state?.title || "Featured Cinema";
+          let title = location.state?.title || location.state?.movie?.title || "Featured Cinema";
           if (idStr === "969681") title = "Spider-Man: Brand New Day";
           else if (idStr === "1170608") title = "Dune: Part Three";
 
@@ -502,41 +512,27 @@ function MovieDetails() {
           const urlEp = Number(searchParams.get("episode"));
           setSelectedEpisode((current) => {
             const candidate = current || urlEp || 1;
-            return data.some((ep) => ep.episodeNumber === candidate)
+            return data.some((ep) => Number(ep.episodeNumber ?? ep.episode_number) === candidate)
               ? candidate
-              : data[0]?.episodeNumber || 1;
+              : Number(data[0]?.episodeNumber ?? data[0]?.episode_number ?? 1);
           });
-        } else {
-          // Provide fallback episodes so user can still play any episode
-          const currentSeasonObj = (movie?.seasons || []).find((s) => s.season_number === selectedSeason);
-          const urlEp = Number(searchParams.get("episode"));
-          const epCount = Math.max(currentSeasonObj?.episode_count || 12, urlEp || 12);
-          const fallbackList = Array.from({ length: epCount }, (_, i) => ({
-            id: `s${selectedSeason}e${i + 1}`,
-            name: `Episode ${i + 1}`,
-            episodeNumber: i + 1,
-            seasonNumber: selectedSeason,
-            overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
-            still: movie?.backdrop || movie?.poster,
-            rating: movie?.rating || 8.0,
-            runtime: 45,
-          }));
-          setEpisodes(fallbackList);
-          setSelectedEpisode((current) => (urlEp > 0 ? urlEp : current || 1));
         }
       })
       .catch(() => {
         if (!active) return;
-        const currentSeasonObj = (movie?.seasons || []).find((s) => s.season_number === selectedSeason);
+        const currentSeasonObj = (movie?.seasons || []).find((s) => Number(s.season_number ?? s.seasonNumber) === Number(selectedSeason));
         const urlEp = Number(searchParams.get("episode"));
-        const epCount = Math.max(currentSeasonObj?.episode_count || 12, urlEp || 12);
+        const epCount = Math.max(Number(currentSeasonObj?.episode_count ?? currentSeasonObj?.episodeCount) || 12, urlEp || 12);
         const fallbackList = Array.from({ length: epCount }, (_, i) => ({
           id: `s${selectedSeason}e${i + 1}`,
           name: `Episode ${i + 1}`,
           episodeNumber: i + 1,
+          episode_number: i + 1,
           seasonNumber: selectedSeason,
+          season_number: selectedSeason,
           overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
           still: movie?.backdrop || movie?.poster,
+          still_path: movie?.backdrop || movie?.poster,
           rating: movie?.rating || 8.0,
           runtime: 45,
         }));
@@ -564,7 +560,14 @@ function MovieDetails() {
     searchParams.get("type") === "tv"
   );
 
-  const rawSeasons = ((movie?.seasons) || []).filter((season) => season.season_number >= 0);
+  const rawSeasons = ((movie?.seasons) || [])
+    .filter((season) => season && Number(season.season_number ?? season.seasonNumber ?? -1) >= 0)
+    .map((season) => ({
+      ...season,
+      season_number: Number(season.season_number ?? season.seasonNumber ?? 1),
+      name: season.name || `Season ${season.season_number ?? season.seasonNumber ?? 1}`,
+      episode_count: Number(season.episode_count ?? season.episodeCount ?? 10),
+    }));
   const availableSeasons = rawSeasons.length > 0
     ? rawSeasons
     : isTvShow
@@ -916,11 +919,14 @@ function MovieDetails() {
                     onChange={(event) => setSelectedEpisode(Number(event.target.value))}
                     disabled={!episodes.length}
                   >
-                    {episodes.map((episode) => (
-                      <option key={episode.id || episode.episodeNumber} value={episode.episodeNumber}>
-                        {String(episode.episodeNumber).padStart(2, "0")} · {episode.name}
-                      </option>
-                    ))}
+                    {episodes.map((episode) => {
+                      const epNum = Number(episode.episodeNumber ?? episode.episode_number ?? 1);
+                      return (
+                        <option key={episode.id || `opt-ep-${epNum}`} value={epNum}>
+                          {String(epNum).padStart(2, "0")} · {episode.name || `Episode ${epNum}`}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
               </div>
@@ -1070,17 +1076,20 @@ function MovieDetails() {
             {/* Episodes List / Cards Grid */}
             <div className="episodes-grid">
               {episodes.map((ep) => {
-                const isCurrent = ep.episodeNumber === selectedEpisode;
+                const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
+                const isCurrent = epNum === Number(selectedEpisode);
+                const stillImg = ep.still || ep.still_path || movie.backdrop || movie.poster;
+
                 return (
                   <div
-                    key={ep.id || ep.episodeNumber}
+                    key={ep.id || `ep-card-${epNum}`}
                     className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
-                    onClick={() => handleStartPlay(selectedSeason, ep.episodeNumber)}
+                    onClick={() => handleStartPlay(selectedSeason, epNum)}
                   >
                     <div className="episode-thumbnail-wrap">
                       <img
-                        src={ep.still || movie.backdrop || movie.poster}
-                        alt={ep.name}
+                        src={stillImg}
+                        alt={ep.name || `Episode ${epNum}`}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = movie.poster;
@@ -1090,14 +1099,14 @@ function MovieDetails() {
                         <Play size={20} fill="#ffffff" />
                       </div>
                       <span className="episode-num-badge">
-                        E{String(ep.episodeNumber).padStart(2, "0")}
+                        E{String(epNum).padStart(2, "0")}
                       </span>
                     </div>
 
                     <div className="episode-details">
                       <div className="episode-title-row">
                         <h4 className="episode-title">
-                          {ep.episodeNumber}. {ep.name}
+                          {epNum}. {ep.name || `Episode ${epNum}`}
                         </h4>
                         {ep.runtime > 0 && (
                           <span className="episode-runtime">
@@ -1122,25 +1131,34 @@ function MovieDetails() {
           <section className="cast-section">
             <h2 className="section-title">Top Cast & Crew</h2>
             <div className="cast-grid">
-              {displayCast.map((actor) => (
-                <div key={actor.id || actor.name} className="actor-card glass-card">
-                  <div className="actor-image-wrap">
-                    <img
-                      src={actor.profile}
-                      alt={actor.name}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
-                      }}
-                    />
+              {displayCast.map((actor) => {
+                const rawPic = actor.profile || actor.profile_path || "";
+                const profileImg = rawPic
+                  ? (String(rawPic).startsWith("http")
+                      ? rawPic
+                      : `https://image.tmdb.org/t/p/w185${rawPic.startsWith("/") ? "" : "/"}${rawPic}`)
+                  : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+
+                return (
+                  <div key={actor.id || actor.name} className="actor-card glass-card">
+                    <div className="actor-image-wrap">
+                      <img
+                        src={profileImg}
+                        alt={actor.name}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+                        }}
+                      />
+                    </div>
+                    <div className="actor-info">
+                      <h4 className="actor-name">{actor.name}</h4>
+                      <p className="actor-role">{actor.character || "Cast"}</p>
+                    </div>
                   </div>
-                  <div className="actor-info">
-                    <h4 className="actor-name">{actor.name}</h4>
-                    <p className="actor-role">{actor.character || "Cast"}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -1150,22 +1168,26 @@ function MovieDetails() {
           <section className="similar-section">
             <h2 className="section-title">More Like This</h2>
             <div className="similar-grid">
-              {displaySimilar.slice(0, 8).map((simMovie) => (
-                <MovieCard
-                  key={simMovie.id || simMovie.tmdbId}
-                  movie={simMovie}
-                  onSelect={() =>
-                    navigate(`/movie/${simMovie.id || simMovie.tmdbId}`, {
-                      state: {
-                        movie: simMovie,
-                        mediaType: simMovie.mediaType || (simMovie.isTV ? "tv" : "movie"),
-                      },
-                    })
-                  }
-                  isSaved={watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(simMovie.id || simMovie.tmdbId))}
-                  onToggleWatchlist={() => toggleWatchlist(simMovie)}
-                />
-              ))}
+              {displaySimilar.slice(0, 8).map((simMovie) => {
+                const isSimTv = Boolean(simMovie.mediaType === "tv" || simMovie.isTV);
+                return (
+                  <MovieCard
+                    key={simMovie.id || simMovie.tmdbId}
+                    movie={simMovie}
+                    onSelect={() =>
+                      navigate(`/movie/${simMovie.id || simMovie.tmdbId}${isSimTv ? "?type=tv" : ""}`, {
+                        state: {
+                          movie: simMovie,
+                          mediaType: isSimTv ? "tv" : "movie",
+                          isTV: isSimTv,
+                        },
+                      })
+                    }
+                    isSaved={watchlist.some((saved) => String(saved.id || saved.tmdbId) === String(simMovie.id || simMovie.tmdbId))}
+                    onToggleWatchlist={() => toggleWatchlist(simMovie)}
+                  />
+                );
+              })}
             </div>
           </section>
         )}

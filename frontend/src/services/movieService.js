@@ -257,14 +257,31 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
     }
   }
 
-  const rawCast = (item.credits?.cast || []).slice(0, 12).map((actor) => ({
-    id: actor.id,
-    name: actor.name,
-    character: actor.character,
-    profile: actor.profile_path
-      ? `${TMDB_IMAGE_BASE}/w185${actor.profile_path}`
-      : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
-  }));
+  const candidateCastList =
+    (item.credits?.cast && item.credits.cast.length > 0)
+      ? item.credits.cast
+      : (item.aggregate_credits?.cast && item.aggregate_credits.cast.length > 0)
+      ? item.aggregate_credits.cast.map((act) => ({
+          ...act,
+          character: act.roles?.[0]?.character || act.character || "Series Cast",
+        }))
+      : [];
+
+  const rawCast = candidateCastList.slice(0, 14).map((actor) => {
+    const rawPath = actor.profile_path || actor.profile || "";
+    const profile = rawPath
+      ? (String(rawPath).startsWith("http")
+          ? rawPath
+          : `${TMDB_IMAGE_BASE}/w185${rawPath.startsWith("/") ? "" : "/"}${rawPath}`)
+      : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+
+    return {
+      id: actor.id || actor.name,
+      name: actor.name,
+      character: actor.character || "Cast",
+      profile,
+    };
+  });
   const cast = rawCast.length > 0 ? rawCast : getFallbackCast(item.title || item.name, idStr);
 
   const trailerVideo =
@@ -279,7 +296,14 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
     : null;
   const trailerKey = trailerVideo?.key || null;
 
-  const rawSimilar = (item.similar?.results || []).slice(0, 12).map((m) => normalizeTMDBMovie(m, isTv));
+  const candidateSimilar =
+    (item.similar?.results && item.similar.results.length > 0)
+      ? item.similar.results
+      : (item.recommendations?.results && item.recommendations.results.length > 0)
+      ? item.recommendations.results
+      : [];
+
+  const rawSimilar = candidateSimilar.slice(0, 12).map((m) => normalizeTMDBMovie(m, isTv));
   const similar = rawSimilar.length > 0 ? rawSimilar : getFallbackSimilar(idStr, genres);
 
   const budget = item.budget
@@ -289,6 +313,17 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
   const revenue = item.revenue
     ? (typeof item.revenue === "number" ? `$${(item.revenue / 1000000).toFixed(1)}M` : String(item.revenue))
     : KNOWN_FINANCIALS[idStr]?.revenue || null;
+
+  const seasons = (item.seasons || []).map((s) => ({
+    ...s,
+    id: s.id || s.season_number,
+    season_number: Number(s.season_number ?? s.seasonNumber ?? 1),
+    seasonNumber: Number(s.season_number ?? s.seasonNumber ?? 1),
+    episode_count: Number(s.episode_count ?? s.episodeCount ?? 10),
+    episodeCount: Number(s.episode_count ?? s.episodeCount ?? 10),
+    name: s.name || `Season ${s.season_number ?? s.seasonNumber ?? 1}`,
+    poster: s.poster_path ? `${TMDB_IMAGE_BASE}/w300${s.poster_path}` : poster,
+  }));
 
   return {
     id: String(item.id),
@@ -311,8 +346,8 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
     similar,
     budget,
     revenue,
-    seasons: item.seasons || [],
-    numberOfSeasons: item.number_of_seasons || (item.seasons?.length || 0),
+    seasons: seasons || [],
+    numberOfSeasons: item.number_of_seasons || (seasons?.length || 0),
     status: item.status || "Released",
     tagline: item.tagline || "",
     voteCount: item.vote_count || 0,
@@ -442,25 +477,51 @@ export async function getMovieById(id, type) {
   } catch (_) {}
 
   // 2. Fallback directly to TMDB API (browser client fetch over HTTPS with credits, videos, and similar)
+  const appendParams = isTv
+    ? "credits,aggregate_credits,videos,similar"
+    : "credits,videos,similar";
+
   try {
-    const tmdbRes = await fetchWithTimeout(
-      `${TMDB_BASE_URL}${primaryPath}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar`,
+    let tmdbRes = await fetchWithTimeout(
+      `${TMDB_BASE_URL}${primaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${appendParams}`,
       {},
-      3800
-    );
-    if (tmdbRes.ok) {
+      3500
+    ).catch(() => null);
+
+    if (!tmdbRes || !tmdbRes.ok) {
+      tmdbRes = await fetchWithTimeout(
+        `${TMDB_FALLBACK_URL}${primaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${appendParams}`,
+        {},
+        3500
+      ).catch(() => null);
+    }
+
+    if (tmdbRes && tmdbRes.ok) {
       const data = await tmdbRes.json();
       return normalizeTMDBMovie(data, isTv);
     }
   } catch (_) {}
 
   try {
-    const fallbackRes = await fetchWithTimeout(
-      `${TMDB_BASE_URL}${secondaryPath}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,similar`,
+    const secondaryAppend = !isTv
+      ? "credits,aggregate_credits,videos,similar"
+      : "credits,videos,similar";
+
+    let fallbackRes = await fetchWithTimeout(
+      `${TMDB_BASE_URL}${secondaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${secondaryAppend}`,
       {},
-      3800
-    );
-    if (fallbackRes.ok) {
+      3500
+    ).catch(() => null);
+
+    if (!fallbackRes || !fallbackRes.ok) {
+      fallbackRes = await fetchWithTimeout(
+        `${TMDB_FALLBACK_URL}${secondaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${secondaryAppend}`,
+        {},
+        3500
+      ).catch(() => null);
+    }
+
+    if (fallbackRes && fallbackRes.ok) {
       const data = await fallbackRes.json();
       return normalizeTMDBMovie(data, !isTv);
     }
@@ -519,13 +580,26 @@ export async function getMovieById(id, type) {
 }
 
 export async function getTVShowById(id) {
+  const idStr = String(id);
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`,
+      {},
+      2500
     );
     if (response.ok) {
       const result = await response.json();
-      if (result.data) return result.data;
+      if (result.data) {
+        const d = result.data;
+        const genres = d.genres || (d.genre ? [d.genre] : ["TV Series"]);
+        return {
+          ...d,
+          isTV: true,
+          mediaType: "tv",
+          cast: Array.isArray(d.cast) && d.cast.length > 0 ? d.cast : getFallbackCast(d.title || d.name, idStr),
+          similar: Array.isArray(d.similar) && d.similar.length > 0 ? d.similar : getFallbackSimilar(idStr, genres),
+        };
+      }
     }
   } catch (_) {}
 
@@ -533,35 +607,94 @@ export async function getTVShowById(id) {
 }
 
 export async function getTVSeasonEpisodes(id, seasonNumber) {
+  const sNum = Number(seasonNumber) || 1;
+
+  // 1. Try backend API with timeout
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/movies/${encodeURIComponent(id)}/seasons/${encodeURIComponent(seasonNumber)}`
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/movies/${encodeURIComponent(id)}/seasons/${encodeURIComponent(sNum)}`,
+      {},
+      2500
     );
     if (response.ok) {
       const result = await response.json();
-      return result.data || [];
+      if (Array.isArray(result.data) && result.data.length > 0) {
+        return result.data.map((ep) => {
+          const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
+          return {
+            id: ep.id || `s${sNum}e${epNum}`,
+            name: ep.name || `Episode ${epNum}`,
+            episodeNumber: epNum,
+            episode_number: epNum,
+            seasonNumber: sNum,
+            season_number: sNum,
+            overview: ep.overview || `Episode ${epNum} of Season ${sNum}.`,
+            still: ep.still || (ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : ""),
+            still_path: ep.still_path || ep.still || "",
+            rating: ep.vote_average ? Number(ep.vote_average).toFixed(1) : (ep.rating || "8.0"),
+            runtime: ep.runtime || 45,
+            airDate: ep.air_date || ep.airDate || "",
+          };
+        });
+      }
     }
   } catch (_) {}
 
-  // Fallback to TMDB directly
+  // 2. Direct TMDB endpoints (try primary api.tmdb.org then fallback api.themoviedb.org)
   try {
-    const res = await fetch(
-      `${TMDB_BASE_URL}/tv/${id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`
-    );
-    if (res.ok) {
+    let res = await fetchWithTimeout(
+      `${TMDB_BASE_URL}/tv/${id}/season/${sNum}?api_key=${TMDB_API_KEY}`,
+      {},
+      3500
+    ).catch(() => null);
+
+    if (!res || !res.ok) {
+      res = await fetchWithTimeout(
+        `${TMDB_FALLBACK_URL}/tv/${id}/season/${sNum}?api_key=${TMDB_API_KEY}`,
+        {},
+        3500
+      ).catch(() => null);
+    }
+
+    if (res && res.ok) {
       const data = await res.json();
-      return (data.episodes || []).map((ep) => ({
-        id: ep.id,
-        episode_number: ep.episode_number,
-        name: ep.name,
-        overview: ep.overview,
-        still_path: ep.still_path ? `${TMDB_IMAGE_BASE}/w300${ep.still_path}` : null,
-        runtime: ep.runtime,
-      }));
+      if (Array.isArray(data.episodes) && data.episodes.length > 0) {
+        return data.episodes.map((ep) => {
+          const epNum = Number(ep.episode_number ?? ep.episodeNumber ?? 1);
+          return {
+            id: ep.id || `s${sNum}e${epNum}`,
+            name: ep.name || `Episode ${epNum}`,
+            episodeNumber: epNum,
+            episode_number: epNum,
+            seasonNumber: Number(ep.season_number ?? sNum),
+            season_number: Number(ep.season_number ?? sNum),
+            overview: ep.overview || `Episode ${epNum} of Season ${sNum}.`,
+            still: ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : "",
+            still_path: ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : "",
+            rating: ep.vote_average ? Number(ep.vote_average).toFixed(1) : "8.0",
+            runtime: ep.runtime || 45,
+            airDate: ep.air_date || "",
+          };
+        });
+      }
     }
   } catch (_) {}
 
-  return [];
+  // 3. Fallback dummy episodes so player never breaks
+  return Array.from({ length: 12 }, (_, i) => ({
+    id: `s${sNum}e${i + 1}`,
+    name: `Episode ${i + 1}`,
+    episodeNumber: i + 1,
+    episode_number: i + 1,
+    seasonNumber: sNum,
+    season_number: sNum,
+    overview: `Episode ${i + 1} of Season ${sNum}.`,
+    still: "",
+    still_path: "",
+    rating: "8.0",
+    runtime: 45,
+    airDate: "",
+  }));
 }
 
 export async function searchMovies(query) {

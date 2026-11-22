@@ -416,19 +416,24 @@ async function getTVShowDetails(id) {
 
 async function getTVSeasonEpisodes(showId, seasonNumber) {
   const season = await tmdbRequest(`/tv/${showId}/season/${seasonNumber}`);
-  return (season.episodes || []).map((episode) => ({
-    id: episode.id,
-    name: episode.name || `Episode ${episode.episode_number}`,
-    episodeNumber: episode.episode_number,
-    seasonNumber: episode.season_number,
-    overview: episode.overview || "",
-    still: episode.still_path
-      ? `${IMAGE_BASE_URL}/w500${episode.still_path}`
-      : "",
-    airDate: episode.air_date || "",
-    rating: episode.vote_average || 0,
-    runtime: episode.runtime || 0,
-  }));
+  return (season.episodes || []).map((episode) => {
+    const epNum = Number(episode.episode_number || 1);
+    const still = episode.still_path ? `${IMAGE_BASE_URL}/w500${episode.still_path}` : "";
+    return {
+      id: episode.id || `s${seasonNumber}e${epNum}`,
+      name: episode.name || `Episode ${epNum}`,
+      episodeNumber: epNum,
+      episode_number: epNum,
+      seasonNumber: Number(episode.season_number ?? seasonNumber),
+      season_number: Number(episode.season_number ?? seasonNumber),
+      overview: episode.overview || "",
+      still,
+      still_path: still,
+      airDate: episode.air_date || "",
+      rating: episode.vote_average || 0,
+      runtime: episode.runtime || 0,
+    };
+  });
 }
 
 // Dedicated fetchers for Movies

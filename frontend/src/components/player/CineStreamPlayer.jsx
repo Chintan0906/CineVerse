@@ -1382,16 +1382,33 @@ function CineStreamPlayer({
   };
 
   const handlePrevEpisode = () => {
-    if (currEpisode <= 1) return;
-    handleEpisodeSelect(currEpisode - 1);
+    if (currEpisode > 1) {
+      handleEpisodeSelect(currEpisode - 1);
+    } else if (currSeason > 1) {
+      const prevSeasonNum = currSeason - 1;
+      const prevSeasonObj = seasonList.find((s) => Number(s.season_number) === prevSeasonNum);
+      const epCount = Number(prevSeasonObj?.episode_count) || 10;
+      handleSeasonSelect(prevSeasonNum);
+      handleEpisodeSelect(epCount);
+    }
   };
 
   const handleNextEpisode = () => {
-    const maxEp = episodeList.length
-      ? Math.max(...episodeList.map((e) => e.episodeNumber))
-      : currEpisode + 1;
-    if (currEpisode >= maxEp) return;
-    handleEpisodeSelect(currEpisode + 1);
+    const epNums = episodeList
+      .map((e) => Number(e.episodeNumber ?? e.episode_number ?? 0))
+      .filter((n) => n > 0);
+    const maxEp = epNums.length ? Math.max(...epNums) : (Number(currentSeasonObj?.episode_count) || 10);
+
+    if (currEpisode < maxEp) {
+      handleEpisodeSelect(currEpisode + 1);
+    } else {
+      const nextSeasonNum = currSeason + 1;
+      const nextSeasonExists = seasonList.some((s) => Number(s.season_number) === nextSeasonNum);
+      if (nextSeasonExists) {
+        handleSeasonSelect(nextSeasonNum);
+        handleEpisodeSelect(1);
+      }
+    }
   };
 
   if (!tmdbId || !/^\d+$/.test(tmdbId)) {
@@ -1829,6 +1846,29 @@ function CineStreamPlayer({
                 : "Subtitles"}
             </span>
           </button>
+          {isTv && (
+            <>
+              <button
+                type="button"
+                className="cine-server-action-btn"
+                onClick={handlePrevEpisode}
+                title={`Previous Episode (S${currSeason}:E${Math.max(1, currEpisode - 1)})`}
+                disabled={currEpisode <= 1 && currSeason <= 1}
+              >
+                <ChevronLeft size={13} />
+                <span>Prev Ep</span>
+              </button>
+              <button
+                type="button"
+                className="cine-server-action-btn"
+                onClick={handleNextEpisode}
+                title={`Next Episode (S${currSeason}:E${currEpisode + 1})`}
+              >
+                <span>Next Ep</span>
+                <ChevronRight size={13} />
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="cine-server-action-btn"
@@ -1939,20 +1979,21 @@ function CineStreamPlayer({
           {/* EPISODE CARDS GRID */}
           <div className="cine-episodes-cards-grid">
             {episodeList.map((ep) => {
-              const isCurrent = Number(ep.episodeNumber) === Number(currEpisode);
-              const stillUrl = ep.still || media?.backdrop || media?.poster;
+              const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
+              const isCurrent = epNum === Number(currEpisode);
+              const stillUrl = ep.still || ep.still_path || media?.backdrop || media?.poster;
               return (
                 <article
-                  key={ep.id || ep.episodeNumber}
+                  key={ep.id || `ep-player-${epNum}`}
                   className={`cine-player-episode-card ${isCurrent ? "active-episode" : ""}`}
-                  onClick={() => handleEpisodeSelect(ep.episodeNumber)}
+                  onClick={() => handleEpisodeSelect(epNum)}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Play Episode ${ep.episodeNumber}: ${ep.name || `Episode ${ep.episodeNumber}`}`}
+                  aria-label={`Play Episode ${epNum}: ${ep.name || `Episode ${epNum}`}`}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      handleEpisodeSelect(ep.episodeNumber);
+                      handleEpisodeSelect(epNum);
                     }
                   }}
                 >
@@ -1960,7 +2001,7 @@ function CineStreamPlayer({
                     {stillUrl ? (
                       <img
                         src={stillUrl}
-                        alt={ep.name || `Episode ${ep.episodeNumber}`}
+                        alt={ep.name || `Episode ${epNum}`}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = media?.poster || "";
@@ -1975,7 +2016,7 @@ function CineStreamPlayer({
                       <Play size={22} fill="#ffffff" />
                     </div>
                     <span className="cine-ep-num-badge">
-                      EP {String(ep.episodeNumber).padStart(2, "0")}
+                      EP {String(epNum).padStart(2, "0")}
                     </span>
                     {isCurrent && (
                       <span className="cine-ep-now-playing-badge">NOW PLAYING</span>
@@ -1985,7 +2026,7 @@ function CineStreamPlayer({
                   <div className="cine-ep-details">
                     <div className="cine-ep-title-row">
                       <h4 className="cine-ep-title">
-                        {ep.episodeNumber}. {ep.name || `Episode ${ep.episodeNumber}`}
+                        {epNum}. {ep.name || `Episode ${epNum}`}
                       </h4>
                       {ep.runtime > 0 && (
                         <span className="cine-ep-runtime">
