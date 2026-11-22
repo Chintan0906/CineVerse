@@ -114,6 +114,17 @@ function MovieDetails() {
 
   const isStreamingQuery = searchParams.get("play") === "true";
   const [movie, setMovie] = useState(() => {
+    // 0. Instant full details cache for this specific title
+    try {
+      const cachedDetails = sessionStorage.getItem(`cineverse_details_${id}`);
+      if (cachedDetails) {
+        const parsed = JSON.parse(cachedDetails);
+        if (parsed && String(parsed.id || parsed.tmdbId) === String(id)) {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+
     // 1. Instant state from navigation
     if (location.state?.movie && String(location.state.movie.id) === String(id)) {
       return location.state.movie;
@@ -134,6 +145,18 @@ function MovieDetails() {
     } catch (_) {}
     return null;
   });
+
+  const [isDetailsLoaded, setIsDetailsLoaded] = useState(() => {
+    try {
+      const cachedDetails = sessionStorage.getItem(`cineverse_details_${id}`);
+      if (cachedDetails) {
+        const parsed = JSON.parse(cachedDetails);
+        if (parsed && Array.isArray(parsed.cast) && parsed.cast.length > 0) return true;
+      }
+    } catch (_) {}
+    return false;
+  });
+
   const [loading, setLoading] = useState(() => !movie);
   const [error, setError] = useState("");
   const [showPlayer, setShowPlayer] = useState(() => isStreamingQuery);
@@ -282,7 +305,17 @@ function MovieDetails() {
   });
   const [selectedSeason, setSelectedSeason] = useState(() => Number(searchParams.get("season") || 1));
   const [selectedEpisode, setSelectedEpisode] = useState(() => Number(searchParams.get("episode") || 1));
-  const [episodes, setEpisodes] = useState([]);
+  const [episodes, setEpisodes] = useState(() => {
+    try {
+      const s = Number(searchParams.get("season") || 1);
+      const cachedEp = sessionStorage.getItem(`cineverse_episodes_${id}_s${s}`);
+      if (cachedEp) {
+        const parsed = JSON.parse(cachedEp);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return [];
+  });
 
   // Detect whether this is a TV series from navigation or query parameter
   const queryType = searchParams.get("type");
@@ -364,7 +397,11 @@ function MovieDetails() {
         };
 
         setMovie(normalizedData);
+        setIsDetailsLoaded(true);
         setError("");
+        try {
+          sessionStorage.setItem(`cineverse_details_${id}`, JSON.stringify(normalizedData));
+        } catch (_) {}
 
         if (isTv) {
           const validSeasons = (normalizedData.seasons || [])
@@ -509,6 +546,9 @@ function MovieDetails() {
         if (!active) return;
         if (data && data.length > 0) {
           setEpisodes(data);
+          try {
+            sessionStorage.setItem(`cineverse_episodes_${id}_s${selectedSeason}`, JSON.stringify(data));
+          } catch (_) {}
           const urlEp = Number(searchParams.get("episode"));
           setSelectedEpisode((current) => {
             const candidate = current || urlEp || 1;
@@ -557,7 +597,12 @@ function MovieDetails() {
     movie?.isTV ||
     (movie?.seasons && movie.seasons.length > 0) ||
     requestedType === "tv" ||
-    searchParams.get("type") === "tv"
+    searchParams.get("type") === "tv" ||
+    Boolean(searchParams.get("season") || searchParams.get("episode")) ||
+    location.state?.mediaType === "tv" ||
+    location.state?.isTV ||
+    location.state?.movie?.mediaType === "tv" ||
+    location.state?.movie?.isTV
   );
 
   const rawSeasons = ((movie?.seasons) || [])
@@ -1043,13 +1088,15 @@ function MovieDetails() {
         </div>
 
         {/* WEBSERIES EPISODES & SEASONS GRID */}
-        {isTvShow && availableSeasons.length > 0 && (
+        {isTvShow && (
           <section className="tv-episodes-section">
             <div className="tv-episodes-header">
               <div className="tv-episodes-heading-left">
                 <h2 className="section-title">Episodes</h2>
                 <span className="episodes-count-tag">
-                  {episodes.length} {episodes.length === 1 ? "Episode" : "Episodes"}
+                  {episodes.length > 0
+                    ? `${episodes.length} ${episodes.length === 1 ? "Episode" : "Episodes"}`
+                    : "Loading episodes..."}
                 </span>
               </div>
 
@@ -1075,90 +1122,112 @@ function MovieDetails() {
 
             {/* Episodes List / Cards Grid */}
             <div className="episodes-grid">
-              {episodes.map((ep) => {
-                const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
-                const isCurrent = epNum === Number(selectedEpisode);
-                const stillImg = ep.still || ep.still_path || movie.backdrop || movie.poster;
+              {episodes.length > 0 ? (
+                episodes.map((ep) => {
+                  const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
+                  const isCurrent = epNum === Number(selectedEpisode);
+                  const stillImg = ep.still || ep.still_path || movie?.backdrop || movie?.poster;
 
-                return (
-                  <div
-                    key={ep.id || `ep-card-${epNum}`}
-                    className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
-                    onClick={() => handleStartPlay(selectedSeason, epNum)}
-                  >
-                    <div className="episode-thumbnail-wrap">
-                      <img
-                        src={stillImg}
-                        alt={ep.name || `Episode ${epNum}`}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = movie.poster;
-                        }}
-                      />
-                      <div className="episode-play-overlay">
-                        <Play size={20} fill="#ffffff" />
+                  return (
+                    <div
+                      key={ep.id || `ep-card-${epNum}`}
+                      className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
+                      onClick={() => handleStartPlay(selectedSeason, epNum)}
+                    >
+                      <div className="episode-thumbnail-wrap">
+                        <img
+                          src={stillImg}
+                          alt={ep.name || `Episode ${epNum}`}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = movie?.poster || "";
+                          }}
+                        />
+                        <div className="episode-play-overlay">
+                          <Play size={20} fill="#ffffff" />
+                        </div>
+                        <span className="episode-num-badge">
+                          E{String(epNum).padStart(2, "0")}
+                        </span>
                       </div>
-                      <span className="episode-num-badge">
-                        E{String(epNum).padStart(2, "0")}
-                      </span>
+
+                      <div className="episode-details">
+                        <div className="episode-title-row">
+                          <h4 className="episode-title">
+                            {epNum}. {ep.name || `Episode ${epNum}`}
+                          </h4>
+                          {ep.runtime > 0 && (
+                            <span className="episode-runtime">
+                              <Clock size={12} />
+                              {ep.runtime}m
+                            </span>
+                          )}
+                        </div>
+                        <p className="episode-overview">
+                          {ep.overview || "No episode summary available."}
+                        </p>
+                      </div>
                     </div>
-
-                    <div className="episode-details">
-                      <div className="episode-title-row">
-                        <h4 className="episode-title">
-                          {epNum}. {ep.name || `Episode ${epNum}`}
-                        </h4>
-                        {ep.runtime > 0 && (
-                          <span className="episode-runtime">
-                            <Clock size={12} />
-                            {ep.runtime}m
-                          </span>
-                        )}
-                      </div>
-                      <p className="episode-overview">
-                        {ep.overview || "No episode summary available."}
-                      </p>
+                  );
+                })
+              ) : (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`skel-ep-${i}`} className="episode-card glass-card skeleton-episode-card">
+                    <div className="skeleton-shimmer skeleton-episode-thumb" />
+                    <div className="skeleton-episode-info">
+                      <div className="skeleton-shimmer skeleton-desc-line" />
+                      <div className="skeleton-shimmer skeleton-desc-line short" />
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </section>
         )}
 
         {/* TOP CAST & CREW */}
-        {displayCast && displayCast.length > 0 && (
+        {((displayCast && displayCast.length > 0) || !isDetailsLoaded) && (
           <section className="cast-section">
             <h2 className="section-title">Top Cast & Crew</h2>
             <div className="cast-grid">
-              {displayCast.map((actor) => {
-                const rawPic = actor.profile || actor.profile_path || "";
-                const profileImg = rawPic
-                  ? (String(rawPic).startsWith("http")
-                      ? rawPic
-                      : `https://image.tmdb.org/t/p/w185${rawPic.startsWith("/") ? "" : "/"}${rawPic}`)
-                  : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+              {displayCast && displayCast.length > 0 ? (
+                displayCast.map((actor) => {
+                  const rawPic = actor.profile || actor.profile_path || "";
+                  const profileImg = rawPic
+                    ? (String(rawPic).startsWith("http")
+                        ? rawPic
+                        : `https://image.tmdb.org/t/p/w185${rawPic.startsWith("/") ? "" : "/"}${rawPic}`)
+                    : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
 
-                return (
-                  <div key={actor.id || actor.name} className="actor-card glass-card">
-                    <div className="actor-image-wrap">
-                      <img
-                        src={profileImg}
-                        alt={actor.name}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
-                        }}
-                      />
+                  return (
+                    <div key={actor.id || actor.name} className="actor-card glass-card">
+                      <div className="actor-image-wrap">
+                        <img
+                          src={profileImg}
+                          alt={actor.name}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+                          }}
+                        />
+                      </div>
+                      <div className="actor-info">
+                        <h4 className="actor-name">{actor.name}</h4>
+                        <p className="actor-role">{actor.character || "Cast"}</p>
+                      </div>
                     </div>
-                    <div className="actor-info">
-                      <h4 className="actor-name">{actor.name}</h4>
-                      <p className="actor-role">{actor.character || "Cast"}</p>
-                    </div>
+                  );
+                })
+              ) : (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`skel-cast-${i}`} className="actor-card glass-card skeleton-actor-card">
+                    <div className="skeleton-shimmer skeleton-actor-img" />
+                    <div className="skeleton-shimmer skeleton-actor-name" />
+                    <div className="skeleton-shimmer skeleton-actor-role" />
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </section>
         )}

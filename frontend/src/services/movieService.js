@@ -145,7 +145,7 @@ export function getFallbackCast(title = "", id = "") {
   if (titleLower.includes("interstellar")) return KNOWN_CASTS["157336"];
   if (titleLower.includes("oppenheimer")) return KNOWN_CASTS["872585"];
   if (titleLower.includes("spider-man") && titleLower.includes("spider-verse")) return KNOWN_CASTS["569094"];
-  return DEFAULT_FALLBACK_CAST;
+  return [];
 }
 
 export function getFallbackSimilar(excludeId, genreList = []) {
