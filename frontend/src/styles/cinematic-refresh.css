@@ -2747,35 +2747,7 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   50% { transform: translateY(-8px); }
 }
 
-/* Wyzie subtitle lookup */
-.wyzie-subtitle-search { margin: 0 0 16px; padding: 16px; border: 1px solid rgba(186,255,236,.2); border-radius: 16px; background: linear-gradient(145deg, rgba(20,37,36,.84), rgba(11,17,19,.9)); box-shadow: inset 0 1px rgba(255,255,255,.055); }
-.wyzie-search-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.wyzie-search-heading > div, .wyzie-language-field { display: flex; flex-direction: column; gap: 4px; }
-.wyzie-search-heading strong { color: #f3f8f7; font-size: 14px; font-weight: 800; }
-.wyzie-search-heading > div > span, .wyzie-language-field > span { color: rgba(220,234,231,.65); font-size: 11px; }
-.wyzie-language-field { flex: 0 0 145px; }
-.wyzie-language-field select { height: 36px; padding: 0 10px; border: 1px solid rgba(222,242,237,.18); border-radius: 9px; outline: none; color: #f3f8f7; background: rgba(3,8,9,.72); font: inherit; font-size: 12px; }
-.wyzie-language-field select:focus-visible, .wyzie-search-message button:focus-visible, .wyzie-subtitle-result button:focus-visible { outline: 2px solid #baffec; outline-offset: 2px; }
-.wyzie-search-message { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border: 1px solid rgba(221,239,236,.12); border-radius: 10px; color: rgba(234,244,242,.82); background: rgba(4,8,9,.45); font-size: 12px; }
-.wyzie-search-message.error { border-color: rgba(255,174,174,.24); color: #ffd0d0; }
-.wyzie-search-message button, .wyzie-subtitle-result button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid rgba(186,255,236,.26); border-radius: 999px; color: #e8fff8; background: rgba(73,152,132,.18); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
-.wyzie-search-message button:hover, .wyzie-subtitle-result button:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(186,255,236,.48); background: rgba(73,152,132,.3); }
-.wyzie-subtitle-results { display: grid; max-height: 290px; gap: 7px; margin-top: 10px; overflow-y: auto; overscroll-behavior: contain; }
-.wyzie-subtitle-result { display: flex; min-height: 60px; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px 9px 12px; border: 1px solid rgba(225,239,236,.1); border-radius: 11px; background: rgba(5,9,10,.5); transition: border-color 160ms ease, background-color 160ms ease; }
-.wyzie-subtitle-result.loaded { border-color: rgba(186,255,236,.38); background: rgba(45,105,91,.2); }
-.wyzie-result-info { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.wyzie-result-info strong, .wyzie-result-info span, .wyzie-result-info small { overflow: hidden; color: rgba(239,247,245,.92); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.wyzie-result-info span, .wyzie-result-info small { color: rgba(214,228,225,.62); font-size: 10px; }
-.wyzie-subtitle-result button:disabled { cursor: wait; opacity: .68; }
-.wyzie-active-note { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; color: #baffec; font-size: 11px; font-weight: 700; }
 
-@media (max-width: 560px) {
-  .wyzie-subtitle-search { padding: 12px; }
-  .wyzie-search-heading { align-items: flex-start; flex-direction: column; }
-  .wyzie-language-field { width: 100%; flex-basis: auto; }
-  .wyzie-language-field select { width: 100%; }
-  .wyzie-subtitle-result { padding: 8px; }
-}
 
 /* Cinematic Video Subtitles Overlay - Clean Broadcast/Netflix Style (No background by default) */
 .cine-custom-subtitles-overlay {

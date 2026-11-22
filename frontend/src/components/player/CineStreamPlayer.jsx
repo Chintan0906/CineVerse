@@ -24,10 +24,8 @@ import {
   Search,
   Play,
   Clock,
-  Download,
   Zap,
 } from "lucide-react";
-import { downloadWyzieSubtitle, searchWyzieSubtitles } from "../../services/subtitleService";
 
 // Robust SRT & WebVTT Subtitle Parser
 function parseSubtitles(content) {
@@ -80,7 +78,7 @@ function parseSubtitles(content) {
 
     if (!isNaN(start) && !isNaN(end) && text) {
       // Filter out promotional/credit cues like free tier notices
-      if (!/sub\.wyzie\.io|Unlock every source|You're on the free plan/i.test(text)) {
+      if (!/Unlock every source|You're on the free plan/i.test(text)) {
         cues.push({ start, end, text });
       }
     }
@@ -1054,14 +1052,6 @@ function CineStreamPlayer({
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
   const [subPlaying, setSubPlaying] = useState(true);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const [wyzieLanguage, setWyzieLanguage] = useState("en");
-  const [wyzieTracks, setWyzieTracks] = useState([]);
-  const [wyzieLoading, setWyzieLoading] = useState(false);
-  const [wyzieLoadingTrack, setWyzieLoadingTrack] = useState("");
-  const [wyzieError, setWyzieError] = useState("");
-  const [activeWyzieTrack, setActiveWyzieTrack] = useState(null);
-  const wyzieSearchIdRef = useRef(0);
-
   const iframeRef = useRef(null);
   const screenBoxRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1079,100 +1069,11 @@ function CineStreamPlayer({
   const [currSeason, setCurrSeason] = useState(propSeason);
   const [currEpisode, setCurrEpisode] = useState(propEpisode);
 
-  const searchWyzieTracks = useCallback(async (language = wyzieLanguage) => {
-    if (!tmdbId) {
-      setWyzieError("This title does not have a TMDB ID for subtitle lookup.");
-      setWyzieTracks([]);
-      return [];
-    }
-
-    const requestId = ++wyzieSearchIdRef.current;
-    setWyzieLoading(true);
-    setWyzieError("");
-    setWyzieTracks([]);
-    try {
-      const tracks = await searchWyzieSubtitles({
-        id: tmdbId,
-        season: isTv ? currSeason : undefined,
-        episode: isTv ? currEpisode : undefined,
-        language,
-      });
-      if (requestId !== wyzieSearchIdRef.current) return [];
-      setWyzieTracks(tracks);
-      if (!tracks.length) setWyzieError("No subtitles were found for this title and language.");
-      return tracks;
-    } catch (error) {
-      if (requestId === wyzieSearchIdRef.current) setWyzieError(error.message || "Subtitle search failed. Try again.");
-      return [];
-    } finally {
-      if (requestId === wyzieSearchIdRef.current) setWyzieLoading(false);
-    }
-  }, [currEpisode, currSeason, isTv, tmdbId, wyzieLanguage]);
-
-  const loadWyzieTrack = useCallback(async (track) => {
-    setWyzieLoadingTrack(track.id);
-    setWyzieError("");
-    try {
-      const content = await downloadWyzieSubtitle(track.url);
-      const cues = parseSubtitles(content);
-      if (!cues.length) {
-        setWyzieError("This subtitle file could not be read. Choose another result or upload an SRT/VTT file.");
-        return false;
-      }
-      setCustomCues(cues);
-      setCustomSubName(`${track.display} · ${track.source}`);
-      setSubOffset(0);
-      setSubEnabled(true);
-      setActiveWyzieTrack(track.id);
-      return true;
-    } catch (error) {
-      setWyzieError(error.message || "Could not load this subtitle track.");
-      return false;
-    } finally {
-      setWyzieLoadingTrack("");
-    }
-  }, []);
-
-  // Automatic 1-click English subtitle loader
-  const handleSubtitleButtonClick = useCallback(async () => {
-    // If subtitles are already active, open assistant to customize
-    if (customCues.length > 0 && subEnabled) {
-      setAudioSubTab("subtitles");
-      setShowAudioSubModal(true);
-      return;
-    }
-
-    // If subtitle cues already loaded but user toggled them off, re-enable
-    if (customCues.length > 0 && !subEnabled) {
-      setSubEnabled(true);
-      return;
-    }
-
-    // Auto-fetch and load English subtitles immediately!
+  // Subtitle settings & customization modal launcher
+  const handleSubtitleButtonClick = useCallback(() => {
     setAudioSubTab("subtitles");
     setShowAudioSubModal(true);
-    setWyzieLanguage("en");
-    setWyzieLoading(true);
-    setWyzieError("");
-    try {
-      const tracks = await searchWyzieSubtitles({
-        id: tmdbId,
-        season: isTv ? currSeason : undefined,
-        episode: isTv ? currEpisode : undefined,
-        language: "en",
-      });
-      setWyzieTracks(tracks);
-      if (tracks && tracks.length > 0) {
-        await loadWyzieTrack(tracks[0]);
-      } else {
-        setWyzieError("No English subtitles were found for this title.");
-      }
-    } catch (error) {
-      setWyzieError(error.message || "Could not automatically load English subtitles.");
-    } finally {
-      setWyzieLoading(false);
-    }
-  }, [currEpisode, currSeason, customCues.length, isTv, loadWyzieTrack, subEnabled, tmdbId]);
+  }, []);
 
   useEffect(() => {
     setCurrSeason(propSeason);
@@ -1302,7 +1203,6 @@ function CineStreamPlayer({
     setCustomCues([]);
     setCustomSubName("");
     setSubOffset(0.0);
-    setActiveWyzieTrack(null);
   };
 
   const handleOffsetChange = (delta) => {
@@ -2091,14 +1991,12 @@ function CineStreamPlayer({
             title={
               customCues.length
                 ? "Subtitles are active. Click to customize styles or switch tracks"
-                : "Click to automatically load English subtitles and customize"
+                : "Subtitles & Audio Settings"
             }
           >
             <Captions size={13} />
             <span>
-              {wyzieLoading
-                ? "Loading English…"
-                : customCues.length && subEnabled
+              {customCues.length && subEnabled
                 ? "Subtitles: Active"
                 : customCues.length && !subEnabled
                 ? "Subtitles: Off"
@@ -2346,13 +2244,10 @@ function CineStreamPlayer({
               <button
                 type="button"
                 className={`cine-audiosub-tab-btn ${audioSubTab === "subtitles" ? "active" : ""}`}
-                onClick={() => {
-                  setAudioSubTab("subtitles");
-                  if (!wyzieLoading && !wyzieTracks.length) searchWyzieTracks();
-                }}
+                onClick={() => setAudioSubTab("subtitles")}
               >
                 <Captions size={14} />
-                <span>Find Subtitles</span>
+                <span>Subtitle Settings</span>
               </button>
               <button
                 type="button"
@@ -2759,64 +2654,7 @@ function CineStreamPlayer({
                       </div>
                     </div>
                   </section>
-                  <section className="wyzie-subtitle-search" aria-label="Search Wyzie subtitles">
-                    <div className="wyzie-search-heading">
-                      <div>
-                        <strong>Find subtitles for {media?.title || "this title"}</strong>
-                        <span>{isTv ? `Season ${currSeason} · Episode ${currEpisode}` : "Search subtitle sources"}</span>
-                      </div>
-                      <label className="wyzie-language-field">
-                        <span>Language</span>
-                        <select
-                          value={wyzieLanguage}
-                          onChange={(event) => {
-                            const language = event.target.value;
-                            setWyzieLanguage(language);
-                            searchWyzieTracks(language);
-                          }}
-                        >
-                          <option value="en">English</option>
-                          <option value="hi">Hindi</option>
-                          <option value="es">Spanish</option>
-                          <option value="fr">French</option>
-                          <option value="ja">Japanese</option>
-                          <option value="ko">Korean</option>
-                          <option value="de">German</option>
-                          <option value="it">Italian</option>
-                          <option value="pt">Portuguese</option>
-                          <option value="ru">Russian</option>
-                        </select>
-                      </label>
-                    </div>
 
-                    {wyzieLoading ? (
-                      <div className="wyzie-search-message" role="status">Searching subtitle sources…</div>
-                    ) : wyzieError ? (
-                      <div className="wyzie-search-message error" role="status">
-                        <span>{wyzieError}</span>
-                        <button type="button" onClick={() => searchWyzieTracks()}>Try again</button>
-                      </div>
-                    ) : null}
-
-                    {wyzieTracks.length > 0 && (
-                      <div className="wyzie-subtitle-results" role="list" aria-label={`${wyzieTracks.length} subtitle results`}>
-                        {wyzieTracks.map((track) => (
-                          <article className={`wyzie-subtitle-result ${activeWyzieTrack === track.id ? "loaded" : ""}`} key={track.id} role="listitem">
-                            <div className="wyzie-result-info">
-                              <strong>{track.display}{track.hearingImpaired ? " · SDH" : ""}</strong>
-                              <span>{track.source}{track.format ? ` · ${track.format.toUpperCase()}` : ""}</span>
-                              {track.release && <small>{track.release}</small>}
-                            </div>
-                            <button type="button" onClick={() => loadWyzieTrack(track)} disabled={Boolean(wyzieLoadingTrack)} aria-label={`${activeWyzieTrack === track.id ? "Reload" : "Load"} ${track.display} subtitles`}>
-                              {wyzieLoadingTrack === track.id ? <span>Loading…</span> : activeWyzieTrack === track.id ? <><Check size={14} /> Loaded</> : <><Download size={14} /> Load</>}
-                            </button>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-
-                    {activeWyzieTrack && <p className="wyzie-active-note"><Check size={13} /> Subtitle track is loaded and displaying over the video.</p>}
-                  </section>
 
                   <div className="cine-info-callout">
                     <strong>Why do subtitles appear before the words are said?</strong>
