@@ -175,14 +175,6 @@ function MovieCard({
                   {hasResumePoint && <span>Resume {resumeTimestamp}</span>}
                 </button>
 
-                <button
-                  type="button"
-                  className={`card-add-button ${isSaved ? "active" : ""}`}
-                  onClick={handleWatchlistClick}
-                  aria-label={isSaved ? "Remove from List" : "Add to List"}
-                >
-                  {isSaved ? <Check size={16} /> : <Plus size={16} />}
-                </button>
               </div>
 
               <h3 className="card-overlay-title">{movie.title}</h3>
