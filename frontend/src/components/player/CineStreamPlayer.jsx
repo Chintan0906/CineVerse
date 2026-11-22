@@ -100,23 +100,42 @@ const STREAM_SERVERS = [
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
     badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
+    },
+  },
+  {
+    id: "vidrift",
+    name: "Server VidRift",
+    quality: "1080p / 4K UHD",
+    speed: "Ultra CDN + Direct Download",
+    badge: "VidRift VIP",
+    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
-        autoPlay: "true",
-        fullscreenButton: "true",
-        chromecast: "true",
+        brand: "CineVerse",
+        brandColor: "0ea5e9",
+        download: "1",
+        showTitle: "1",
         sub: "en",
-        theme: "0ea5e9",
+        font: "Inter",
+        exit: "1",
       });
+      const title = media?.title || media?.name;
+      if (title) {
+        params.set("title", title);
+      }
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      if (anilistId) {
+        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
       }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      if (isTv) {
+        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
@@ -125,23 +144,27 @@ const STREAM_SERVERS = [
     quality: "1080p / 4K UHD",
     speed: "Ultra CDN + Auto-Next",
     badge: "PlayTroy Pro",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
-        autoPlay: "true",
-        fullscreenButton: "true",
-        chromecast: "true",
+        brand: "CineVerse",
+        brandColor: "0ea5e9",
+        download: "1",
+        showTitle: "1",
         sub: "en",
-        theme: "0ea5e9",
+        font: "Inter",
       });
+      const title = media?.title || media?.name;
+      if (title) params.set("title", title);
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      if (anilistId) {
+        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
       }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      if (isTv) {
+        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
@@ -558,176 +581,140 @@ const SKYPRO_SUB_SERVERS = [
 const PLAYTROY_SUB_SERVERS = [
   {
     id: "auto",
-    name: "PlayTroy Auto",
+    name: "PlayTroy Auto (VidRift)",
     badge: "Auto Select",
     quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
-        autoPlay: "true",
-        fullscreenButton: "true",
-        chromecast: "true",
+        brand: "CineVerse",
+        brandColor: "0ea5e9",
+        download: "1",
+        showTitle: "1",
         sub: "en",
-        theme: "0ea5e9",
+        font: "Inter",
       });
+      const title = media?.title || media?.name;
+      if (title) params.set("title", title);
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      if (anilistId) {
+        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
       }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      if (isTv) {
+        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
     id: "vrapid",
-    name: "Troy vRapid",
+    name: "Troy vRapid (VidRift Global)",
     badge: "4K UHD",
-    quality: "4K UHD / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+    quality: "4K UHD / Direct Download",
+    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "vrapid",
-        fullscreenButton: "true",
-        chromecast: "true",
+        brand: "CineVerse",
+        brandColor: "0ea5e9",
+        download: "1",
+        showTitle: "1",
         sub: "en",
-        theme: "0ea5e9",
+        font: "Inter",
       });
+      const title = media?.title || media?.name;
+      if (title) params.set("title", title);
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      if (anilistId) {
+        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
       }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      if (isTv) {
+        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
     id: "vblaze",
-    name: "Troy vBlaze",
+    name: "Troy vBlaze (India Fast Route)",
     badge: "4K Fast",
-    quality: "4K Fast / Ultra Stream",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+    quality: "4K Fast / India Direct Route",
+    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "vblaze",
-        fullscreenButton: "true",
-        chromecast: "true",
+        brand: "CineVerse",
+        brandColor: "0ea5e9",
+        download: "1",
+        showTitle: "1",
         sub: "en",
-        theme: "0ea5e9",
+        font: "Inter",
       });
+      const title = media?.title || media?.name;
+      if (title) params.set("title", title);
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      if (anilistId) {
+        return `https://embed.vidrift.in/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
       }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      if (isTv) {
+        return `https://embed.vidrift.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+      }
+      return `https://embed.vidrift.in/embed/movie/${tmdbId}?${params.toString()}`;
     },
   },
   {
     id: "cobra",
-    name: "Troy Cobra",
+    name: "Troy VidFast Direct",
     badge: "Direct HD",
-    quality: "1080p Direct / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
-      const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "cobra",
-        fullscreenButton: "true",
-        chromecast: "true",
-        sub: "en",
-        theme: "0ea5e9",
-      });
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    quality: "1080p Direct VidFast Feed",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
     },
   },
   {
     id: "cine",
-    name: "Troy Cine",
+    name: "Troy CineSrc VIP",
     badge: "Multi-Audio",
-    quality: "1080p Multiple Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
-      const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "cine",
-        fullscreenButton: "true",
-        chromecast: "true",
-        sub: "en",
-        theme: "0ea5e9",
-      });
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    quality: "1080p Multiple Audio & Auto-Skip",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
     },
   },
   {
     id: "bravo",
-    name: "Troy Bravo",
+    name: "Troy FrameX CDN",
     badge: "Fast CDN",
-    quality: "1080p Fast CDN / Original Audio",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
-      const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "bravo",
-        fullscreenButton: "true",
-        chromecast: "true",
-        sub: "en",
-        theme: "0ea5e9",
-      });
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+    quality: "1080p Fast CDN / Multi-Audio",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0`
+        : `https://framextv.xyz/embed/${tmdbId}?autoplay=1&muted=0`;
     },
   },
   {
     id: "horizon",
-    name: "Troy Horizon",
+    name: "Troy VidLink Cloud",
     badge: "Cloud Mirror",
-    quality: "1080p Cloud / Original Audio",
+    quality: "1080p Cloud / Direct Feed",
     getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const path = isTv ? `/tv/${tmdbId}/${season || 1}/${episode || 1}` : `/movie/${tmdbId}`;
       const params = new URLSearchParams({
-        autoPlay: "true",
-        server: "horizon",
-        fullscreenButton: "true",
-        chromecast: "true",
-        sub: "en",
-        theme: "0ea5e9",
+        autoplay: "true",
+        primaryColor: "ffffff",
+        secondaryColor: "202020",
+        iconColor: "ffffff",
+        icons: "default",
+        ds_lang: "en",
       });
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
-      if (isTv) {
-        params.set("nextButton", "true");
-        params.set("autoNext", "true");
-        return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://vidfast.vc/movie/${tmdbId}?${params.toString()}`;
+      return `https://vidlink.pro${path}?${params.toString()}`;
     },
   },
 ];
@@ -1314,6 +1301,52 @@ function CineStreamPlayer({
           setSubPlaying(false);
         }
       }
+
+      // 4. VidRift (embed.vidrift.net & embed.vidrift.in) postMessage API
+      if (
+        event.origin === "https://embed.vidrift.net" ||
+        event.origin === "https://embed.vidrift.in" ||
+        (typeof event.data?.type === "string" && event.data.type.startsWith("vidrift:"))
+      ) {
+        const eventData = event.data;
+        if (!eventData || typeof eventData !== "object") return;
+        const type = eventData.type;
+
+        if (type === "vidrift:progress") {
+          const currentTime = Number(eventData.currentTime || 0);
+          const duration = Number(eventData.duration || 0);
+          if (currentTime > 0) {
+            setCurrentPlayTime(currentTime);
+            setSubPlaying(true);
+            if (Date.now() - lastSavedAt >= 15000) {
+              const currentMedia = mediaRef.current;
+              onProgressRef.current?.(
+                currentMedia,
+                currentTime,
+                duration,
+                { season: currSeason, episode: currEpisode }
+              );
+              lastSavedAt = Date.now();
+            }
+          }
+        } else if (type === "vidrift:unpaused" || type === "vidrift:play") {
+          setSubPlaying(true);
+        } else if (type === "vidrift:paused" || type === "vidrift:pause") {
+          setSubPlaying(false);
+        } else if (type === "vidrift:episode") {
+          const nextEp = Number(eventData.episode);
+          const nextSeason = Number(eventData.season);
+          if (nextSeason && nextSeason !== currSeason) {
+            handleSeasonSelect(nextSeason);
+          }
+          if (nextEp && nextEp !== currEpisode) {
+            setCurrEpisode(nextEp);
+            if (onEpisodeChange) onEpisodeChange(nextEp);
+          }
+        } else if (type === "vidrift:ended") {
+          setSubPlaying(false);
+        }
+      }
     };
 
     window.addEventListener("message", handleMessage);
@@ -1472,7 +1505,7 @@ function CineStreamPlayer({
     : activeServer.id === "skypro"
     ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "playtroy"
-    ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0)
+    ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0, media, anilistId)
     : activeServer.id === "quantum"
     ? quantumSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "wave"
@@ -1486,7 +1519,9 @@ function CineStreamPlayer({
         isTv,
         currSeason,
         currEpisode,
-        media?.currentTime || 0
+        media?.currentTime || 0,
+        media,
+        anilistId
       );
 
   return (
@@ -2579,7 +2614,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["langchan", "skypro", "quantum", "eclipse", "playtroy", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "langchan", "skypro", "quantum", "eclipse", "playtroy", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2592,7 +2627,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "langchan"
+                                  {s.id === "vidrift"
+                                    ? "Ultra-Fast CDN + Direct Download"
+                                    : s.id === "langchan"
                                     ? "MegaCloud & Multi-Stream Subtitles"
                                     : s.id === "skypro"
                                     ? "SkyPro Multi-Resolver HD & 4K"
@@ -2659,7 +2696,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["langchan", "skypro", "quantum", "eclipse", "playtroy", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "langchan", "skypro", "quantum", "eclipse", "playtroy", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2672,7 +2709,9 @@ function CineStreamPlayer({
                               <div className="s-info">
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
-                                  {s.id === "langchan"
+                                  {s.id === "vidrift"
+                                    ? "Multi-Audio / Direct Download"
+                                    : s.id === "langchan"
                                     ? "LangChan Multi-Audio & MegaCloud Feed"
                                     : s.id === "skypro"
                                     ? "SkyPro Multi-Audio & 4K UHD Feed"
