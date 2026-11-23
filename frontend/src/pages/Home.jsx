@@ -1545,18 +1545,20 @@ function getCleanMovieSynopsis(movie, genres = []) {
       {(playerMovie || (isStreamingQuery && !isPlayerClosedByUserRef.current)) && (
         <div className="player-overlay">
           <div className="player-header">
-            <div>
+            <div className="player-header-title-block">
               <span className="section-eyebrow">NOW PLAYING</span>
               <h2>{playerMovie?.title || "Resuming playback..."}</h2>
             </div>
-
-            <button
-              className="icon-button"
-              onClick={handleClosePlayer}
-              aria-label="Close video player"
-            >
-              <X size={24} />
-            </button>
+            <div className="player-header-actions">
+              <div id="player-header-server-slot" />
+              <button
+                className="icon-button"
+                onClick={handleClosePlayer}
+                aria-label="Close video player"
+              >
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="player-content">

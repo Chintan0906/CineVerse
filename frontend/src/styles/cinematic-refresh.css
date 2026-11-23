@@ -4915,4 +4915,182 @@ header.navbar:hover {
   }
 }
 
+/* ==========================================================================
+   MINIMALIST STREAMING SERVER DROPDOWN & MODERN PLAYER HEADER
+   ========================================================================== */
+
+.player-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-height: 64px !important;
+  padding: 10px clamp(16px, 3vw, 36px) !important;
+  background: rgba(7, 10, 13, 0.96) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.player-header-title-block {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.player-header-title-block h2 {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  font-size: clamp(15px, 2vw, 20px) !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
+.player-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+#player-header-server-slot {
+  display: flex;
+  align-items: center;
+}
+
+/* SERVER DROPDOWN COMPONENT */
+.cine-server-dropdown-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cine-server-dropdown-inner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  padding: 0 32px 0 34px;
+  height: 38px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.cine-server-dropdown-inner:hover {
+  background: rgba(24, 34, 54, 0.95);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.cine-server-dropdown-inner:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3), 0 4px 16px rgba(14, 165, 233, 0.25);
+}
+
+.cine-server-dropdown-icon {
+  position: absolute;
+  left: 12px;
+  color: #38bdf8;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.cine-server-dropdown-prefix {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 6px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cine-server-select-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  width: auto;
+  max-width: 250px;
+}
+
+.cine-server-select-input option {
+  background: #0f172a;
+  color: #f1f5f9;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.cine-server-dropdown-chevron {
+  position: absolute;
+  right: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.cine-server-dropdown-inner:hover .cine-server-dropdown-chevron {
+  color: #38bdf8;
+}
+
+/* Fallback toolbar if rendered directly inside player container */
+.cine-player-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+@media (max-width: 768px) {
+  .player-header {
+    padding: 10px 14px !important;
+    min-height: 52px !important;
+  }
+  .cine-server-select-input {
+    max-width: 155px;
+    font-size: 12px;
+  }
+  .cine-server-dropdown-inner {
+    height: 34px;
+    padding: 0 28px 0 30px;
+  }
+  .cine-server-dropdown-prefix {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .player-header-title-block {
+    flex: 1 1 65% !important;
+  }
+  .player-header-actions {
+    flex: 1 1 auto !important;
+    justify-content: flex-end !important;
+  }
+  .cine-server-select-input {
+    max-width: 135px;
+  }
+}
+
 

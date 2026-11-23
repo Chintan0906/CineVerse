@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   RotateCcw,
   Sparkles,
   Wifi,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  Server,
   ShieldCheck,
   Tv,
   Film,
@@ -953,12 +956,6 @@ function CineStreamPlayer({
     setTimeout(() => setIsChanging(false), 300);
   };
 
-  const handleNextServer = () => {
-    const currentIndex = STREAM_SERVERS.findIndex((s) => s.id === activeServer.id);
-    const nextServer = STREAM_SERVERS[(currentIndex + 1) % STREAM_SERVERS.length];
-    handleSelectServer(nextServer);
-  };
-
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -1022,36 +1019,6 @@ function CineStreamPlayer({
     }
   };
 
-  const handlePrevEpisode = () => {
-    if (currEpisode > 1) {
-      handleEpisodeSelect(currEpisode - 1);
-    } else if (currSeason > 1) {
-      const prevSeasonNum = currSeason - 1;
-      const prevSeasonObj = seasonList.find((s) => Number(s.season_number) === prevSeasonNum);
-      const epCount = Number(prevSeasonObj?.episode_count) || 10;
-      handleSeasonSelect(prevSeasonNum);
-      handleEpisodeSelect(epCount);
-    }
-  };
-
-  const handleNextEpisode = () => {
-    const epNums = episodeList
-      .map((e) => Number(e.episodeNumber ?? e.episode_number ?? 0))
-      .filter((n) => n > 0);
-    const maxEp = epNums.length ? Math.max(...epNums) : (Number(currentSeasonObj?.episode_count) || 10);
-
-    if (currEpisode < maxEp) {
-      handleEpisodeSelect(currEpisode + 1);
-    } else {
-      const nextSeasonNum = currSeason + 1;
-      const nextSeasonExists = seasonList.some((s) => Number(s.season_number) === nextSeasonNum);
-      if (nextSeasonExists) {
-        handleSeasonSelect(nextSeasonNum);
-        handleEpisodeSelect(1);
-      }
-    }
-  };
-
   if (!tmdbId || !/^\d+$/.test(tmdbId)) {
     return (
       <div className="cine-stream-empty">
@@ -1079,276 +1046,91 @@ function CineStreamPlayer({
         anilistId
       );
 
+  const [headerSlot, setHeaderSlot] = useState(null);
+
+  useEffect(() => {
+    const slot = document.getElementById("player-header-server-slot");
+    if (slot) {
+      setHeaderSlot(slot);
+    }
+  }, []);
+
+  const dropdownValue =
+    activeServer.id === "animeembed"
+      ? `animeembed-${animeEmbedSubServer.id === "dub" ? "dub" : "sub"}`
+      : activeServer.id;
+
+  const handleDropdownChange = (e) => {
+    const val = e.target.value;
+    if (val === "animeembed-dub") {
+      const animeSrv = STREAM_SERVERS.find((s) => s.id === "animeembed");
+      if (animeSrv) {
+        handleSelectServer(animeSrv);
+        const dubSub = ANIMEEMBED_SUB_SERVERS.find((s) => s.id === "dub") || ANIMEEMBED_SUB_SERVERS[1];
+        if (dubSub) {
+          setAnimeEmbedSubServer(dubSub);
+          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, dubSub.id); } catch {}
+          setReloadKey((prev) => prev + 1);
+        }
+      }
+      return;
+    }
+    if (val === "animeembed-sub") {
+      const animeSrv = STREAM_SERVERS.find((s) => s.id === "animeembed");
+      if (animeSrv) {
+        handleSelectServer(animeSrv);
+        const subSub = ANIMEEMBED_SUB_SERVERS.find((s) => s.id === "sub") || ANIMEEMBED_SUB_SERVERS[0];
+        if (subSub) {
+          setAnimeEmbedSubServer(subSub);
+          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, subSub.id); } catch {}
+          setReloadKey((prev) => prev + 1);
+        }
+      }
+      return;
+    }
+
+    const targetServer = STREAM_SERVERS.find((s) => s.id === val);
+    if (targetServer) {
+      handleSelectServer(targetServer);
+    }
+  };
+
+  const serverDropdownJSX = (
+    <div className="cine-server-dropdown-container">
+      <div className="cine-server-dropdown-inner">
+        <Server size={14} className="cine-server-dropdown-icon" />
+        <span className="cine-server-dropdown-prefix">Server:</span>
+        <select
+          id="cine-server-select"
+          value={dropdownValue}
+          onChange={handleDropdownChange}
+          className="cine-server-select-input"
+          aria-label="Select streaming server"
+        >
+          <option value="vidrift">Server VidRift (Recommended · 1080p/4K UHD)</option>
+          <option value="eclipse">Server Eclipse (Ultra Fast · 1080p Full HD)</option>
+          <option value="animeembed-sub">Server Kage — Sub (1080p Anime)</option>
+          <option value="animeembed-dub">Server Kage — Dub (1080p Anime Dubbed)</option>
+          <option value="quantum">Server Quantum (1080p Ultra HD / Auto-Skip)</option>
+          <option value="framex">Server FrameX (1080p / 4K UHD Multi-CDN)</option>
+          <option value="ronin">Server Ronin (1080p Anime Sub & Dub)</option>
+          <option value="pulse">Server Pulse (1080p Buffer-Free Cloud)</option>
+          <option value="legacy">Server Legacy (1080p Deep Catalog)</option>
+        </select>
+        <ChevronDown size={14} className="cine-server-dropdown-chevron" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="cine-stream-container">
-      {/* SERVER SELECTION BAR */}
-      <div className="cine-server-bar-wrapper">
-        <div className="cine-server-label">
-          <Wifi size={14} className="server-icon-pulse" />
-          <span>Select Streaming Server:</span>
-        </div>
-
-        <div className="cine-server-pills-scroll" role="tablist">
-          {STREAM_SERVERS.map((server) => {
-            const isActive = server.id === activeServer.id;
-            return (
-              <button
-                key={server.id}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => handleSelectServer(server)}
-                className={`cine-server-pill ${isActive ? "active" : ""}`}
-                title={`Switch to ${server.name} (${server.quality})`}
-              >
-                <span className="server-dot" />
-                <span className="server-name">{server.name}</span>
-                <span className="server-badge">{server.quality}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ANIMEEMBED (SERVER KAGE) SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "animeembed" && (
-        <div className="cine-subserver-bar-wrapper animeembed-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>AnimeEmbed Track:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {ANIMEEMBED_SUB_SERVERS.map((sub) => {
-              const isSubActive = animeEmbedSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setAnimeEmbedSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
+      {headerSlot ? (
+        createPortal(serverDropdownJSX, headerSlot)
+      ) : (
+        <div className="cine-player-toolbar">
+          {serverDropdownJSX}
         </div>
       )}
-
-      {/* FRAMEX (FRAMEXTV) EXTRACTION PROVIDERS SWITCHER BAR */}
-      {activeServer.id === "framex" && (
-        <div className="cine-subserver-bar-wrapper framex-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>FrameX Extraction Providers:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {FRAMEX_SUB_SERVERS.map((sub) => {
-              const isSubActive = framexSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setFramexSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.FRAMEX_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* QUANTUM (CINESRC) SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "quantum" && (
-        <div className="cine-subserver-bar-wrapper quantum-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>CineSrc VIP Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {QUANTUM_SUB_SERVERS.map((sub) => {
-              const isSubActive = quantumSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setQuantumSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.QUANTUM_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* LEGACY SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "legacy" && (
-        <div className="cine-subserver-bar-wrapper">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>Legacy Server Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {LEGACY_SUB_SERVERS.map((sub) => {
-              const isSubActive = legacySubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setLegacySubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.LEGACY_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ACTIVE STATUS BANNER */}
-      <div className="cine-server-status-bar">
-        <div className="cine-server-status-left">
-          <span className="cine-status-dot-live" />
-          <span className="cine-status-text">
-            Streaming via <strong>{activeServer.name}</strong>
-            {activeServer.id === "legacy" && (
-              <span className="cine-status-subname"> &bull; {legacySubServer.name}</span>
-            )}
-            {activeServer.id === "quantum" && (
-              <span className="cine-status-subname quantum"> &bull; {quantumSubServer.name}</span>
-            )}
-            {activeServer.id === "animeembed" && (
-              <span className="cine-status-subname animeembed"> &bull; {animeEmbedSubServer.name}</span>
-            )}
-          </span>
-          <span className="cine-status-chip">
-            {activeServer.id === "legacy"
-              ? legacySubServer.quality
-              : activeServer.id === "quantum"
-              ? quantumSubServer.quality
-              : activeServer.id === "animeembed"
-              ? animeEmbedSubServer.quality
-              : activeServer.quality}
-          </span>
-          <span className="cine-status-chip speed-chip">
-            {activeServer.id === "legacy"
-              ? legacySubServer.badge
-              : activeServer.id === "quantum"
-              ? quantumSubServer.badge
-              : activeServer.id === "animeembed"
-              ? animeEmbedSubServer.badge
-              : activeServer.speed}
-          </span>
-          {isTv && (
-            <span className="cine-status-chip tv-chip">
-              <Layers size={12} /> S{currSeason} : E{currEpisode} · {currentEpTitle}
-            </span>
-          )}
-        </div>
-
-        <div className="cine-server-status-actions">
-          <button
-            type="button"
-            className={`cine-server-action-btn ${isFullscreen ? "active-subs" : ""}`}
-            onClick={handleFullscreen}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Player"}
-          >
-            <Maximize2 size={13} />
-            <span>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
-          </button>
-          <button
-            type="button"
-            className={`cine-server-action-btn ${customCues.length && subEnabled ? "active-subs" : ""}`}
-            onClick={handleSubtitleButtonClick}
-            title={
-              customCues.length
-                ? "Subtitles are active. Click to customize styles or switch tracks"
-                : "Subtitles & Audio Settings"
-            }
-          >
-            <Captions size={13} />
-            <span>
-              {customCues.length && subEnabled
-                ? "Subtitles: Active"
-                : customCues.length && !subEnabled
-                ? "Subtitles: Off"
-                : "Subtitles"}
-            </span>
-          </button>
-          {isTv && (
-            <>
-              <button
-                type="button"
-                className="cine-server-action-btn"
-                onClick={handlePrevEpisode}
-                title={`Previous Episode (S${currSeason}:E${Math.max(1, currEpisode - 1)})`}
-                disabled={currEpisode <= 1 && currSeason <= 1}
-              >
-                <ChevronLeft size={13} />
-                <span>Prev Ep</span>
-              </button>
-              <button
-                type="button"
-                className="cine-server-action-btn"
-                onClick={handleNextEpisode}
-                title={`Next Episode (S${currSeason}:E${currEpisode + 1})`}
-              >
-                <span>Next Ep</span>
-                <ChevronRight size={13} />
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            className="cine-server-action-btn"
-            onClick={handleNextServer}
-            title="Switch to next server"
-          >
-            <span>Next Server</span>
-            <ChevronRight size={13} />
-          </button>
-        </div>
-      </div>
 
       {/* 16:9 STREAM SCREEN FRAME (WITH DRAG & DROP & SUBTITLES OVERLAY) */}
       <div
