@@ -3400,31 +3400,12 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   color: #34d399;
 }
 
-.cine-status-subname.playtroy {
-  color: #38bdf8;
-  font-weight: 600;
-}
-
-.cine-status-subname.langchan {
-  color: #fb923c;
-  font-weight: 600;
-}
-
-.cine-status-subname.skypro {
-  color: #38bdf8;
-  font-weight: 600;
-}
-
 .cine-status-subname.animeembed {
   color: #f472b6;
 }
 
 .cine-status-subname.quantum {
   color: #38bdf8;
-}
-
-.cine-status-subname.wave {
-  color: #2dd4bf;
 }
 
 /* FrameX (frameXTV) Sub-Server Switcher Bar */
@@ -3501,40 +3482,6 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   border: 1px solid rgba(56, 189, 248, 0.5);
 }
 
-/* Wave (EmbedWave) Sub-Server Switcher Bar */
-.cine-subserver-bar-wrapper.wave-theme {
-  background: rgba(10, 36, 35, 0.88);
-  border: 1px solid rgba(45, 212, 191, 0.35);
-}
-
-.cine-subserver-bar-wrapper.wave-theme .cine-subserver-label {
-  color: #2dd4bf;
-}
-
-.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill:hover {
-  background: rgba(45, 212, 191, 0.15);
-  border-color: rgba(45, 212, 191, 0.4);
-  color: #ffffff;
-}
-
-.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active {
-  background: linear-gradient(135deg, rgba(45, 212, 191, 0.35), rgba(20, 184, 166, 0.35));
-  border-color: #2dd4bf;
-  color: #ffffff;
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
-}
-
-.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active .subserver-dot {
-  background: #2dd4bf;
-  box-shadow: 0 0 8px #2dd4bf;
-}
-
-.cine-subserver-bar-wrapper.wave-theme .cine-subserver-pill.active .subserver-badge {
-  background: rgba(45, 212, 191, 0.3);
-  color: #ccfbf1;
-  border: 1px solid rgba(45, 212, 191, 0.5);
-}
-
 /* AnimeEmbed Sub-Server Switcher Bar */
 .cine-subserver-bar-wrapper.animeembed-theme {
   background: rgba(28, 14, 38, 0.88);
@@ -3601,111 +3548,6 @@ html body .app-shell > main > .hero-slideshow .hero-slideshow-bg {
   background: rgba(16, 185, 129, 0.3);
   color: #d1fae5;
   border: 1px solid rgba(16, 185, 129, 0.5);
-}
-
-/* PlayTroy Sub-Server Switcher Bar */
-.cine-subserver-bar-wrapper.playtroy-theme {
-  background: rgba(8, 25, 38, 0.88);
-  border: 1px solid rgba(14, 165, 233, 0.35);
-  box-shadow: 0 4px 20px rgba(8, 25, 38, 0.4), inset 0 1px 0 rgba(14, 165, 233, 0.15);
-}
-
-.cine-subserver-bar-wrapper.playtroy-theme .cine-subserver-label {
-  color: #38bdf8;
-}
-
-.cine-subserver-bar-wrapper.playtroy-theme .cine-subserver-pill:hover {
-  background: rgba(14, 165, 233, 0.15);
-  border-color: rgba(14, 165, 233, 0.4);
-  color: #ffffff;
-}
-
-.cine-subserver-bar-wrapper.playtroy-theme .cine-subserver-pill.active {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.35));
-  border-color: #0ea5e9;
-  color: #ffffff;
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
-}
-
-.cine-subserver-bar-wrapper.playtroy-theme .cine-subserver-pill.active .subserver-dot {
-  background: #0ea5e9;
-  box-shadow: 0 0 8px #0ea5e9;
-}
-
-.cine-subserver-bar-wrapper.playtroy-theme .cine-subserver-pill.active .subserver-badge {
-  background: rgba(14, 165, 233, 0.3);
-  color: #e0f2fe;
-  border: 1px solid rgba(14, 165, 233, 0.5);
-}
-
-/* LangChan MegaCloud Sub-Server Switcher Bar */
-.cine-subserver-bar-wrapper.langchan-theme {
-  background: rgba(38, 18, 8, 0.88);
-  border: 1px solid rgba(249, 115, 22, 0.35);
-  box-shadow: 0 4px 20px rgba(38, 18, 8, 0.4), inset 0 1px 0 rgba(249, 115, 22, 0.15);
-}
-
-.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-label {
-  color: #fb923c;
-}
-
-.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill:hover {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: rgba(249, 115, 22, 0.45);
-  color: #ffffff;
-}
-
-.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.35), rgba(194, 65, 12, 0.35));
-  border-color: #fb923c;
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
-}
-
-.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active .subserver-dot {
-  background: #f97316;
-  box-shadow: 0 0 8px #f97316;
-}
-
-.cine-subserver-bar-wrapper.langchan-theme .cine-subserver-pill.active .subserver-badge {
-  background: rgba(249, 115, 22, 0.3);
-  color: #ffedd5;
-  border: 1px solid rgba(249, 115, 22, 0.5);
-}
-
-/* SkyPro Multi-Resolver Sub-Server Switcher Bar */
-.cine-subserver-bar-wrapper.skypro-theme {
-  background: rgba(8, 28, 48, 0.88);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: 0 4px 20px rgba(8, 28, 48, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.15);
-}
-
-.cine-subserver-bar-wrapper.skypro-theme .cine-subserver-label {
-  color: #38bdf8;
-}
-
-.cine-subserver-bar-wrapper.skypro-theme .cine-subserver-pill:hover {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.45);
-  color: #ffffff;
-}
-
-.cine-subserver-bar-wrapper.skypro-theme .cine-subserver-pill.active {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(2, 132, 199, 0.35));
-  border-color: #38bdf8;
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
-}
-
-.cine-subserver-bar-wrapper.skypro-theme .cine-subserver-pill.active .subserver-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
-}
-
-.cine-subserver-bar-wrapper.skypro-theme .cine-subserver-pill.active .subserver-badge {
-  background: rgba(56, 189, 248, 0.3);
-  color: #e0f2fe;
-  border: 1px solid rgba(56, 189, 248, 0.5);
 }
 
 @media (max-width: 768px) {

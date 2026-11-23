@@ -142,62 +142,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "playtroy",
-    name: "Server PlayTroy",
-    quality: "1080p / 4K UHD",
-    speed: "Ultra CDN + Auto-Next",
-    badge: "PlayTroy Pro",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
-      const params = new URLSearchParams({
-        brand: "CineVerse",
-        brandColor: "0ea5e9",
-        download: "1",
-        showTitle: "1",
-        sub: "en",
-        font: "Inter",
-      });
-      const title = media?.title || media?.name;
-      if (title) params.set("title", title);
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (tmdbId) {
-        if (isTv) {
-          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-        }
-        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-      }
-      if (anilistId) {
-        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-    },
-  },
-  {
-    id: "langchan",
-    name: "Server LangChan",
-    quality: "1080p / 4K Auto-Stream",
-    speed: "MegaCloud / MultiStream Core",
-    badge: "MultiStream VIP",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
-    },
-  },
-  {
-    id: "skypro",
-    name: "Server SkyPro",
-    quality: "1080p / 4K UHD Multi-Mirror",
-    speed: "Ultra Fast Zero-Ad CDN",
-    badge: "SkyPro VIP",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://videasy.xyz/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://videasy.xyz/embed/movie/${tmdbId}`;
-    },
-  },
-  {
     id: "animeembed",
     name: "Server Kage",
     quality: "1080p Anime / Auto-Skip",
@@ -245,32 +189,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "nova",
-    name: "Server Nova",
-    quality: "1080p Full HD",
-    speed: "Direct Feed",
-    badge: "Auto Subtitles",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
-      const path = isTv
-        ? `/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `/movie/${tmdbId}`;
-      const params = new URLSearchParams({
-        autoplay: "true",
-        primaryColor: "ffffff",
-        secondaryColor: "202020",
-        iconColor: "ffffff",
-        icons: "default",
-        title: "false",
-        poster: "false",
-        ds_lang: "en",
-      });
-      if (currentTime > 15) {
-        params.set("startAt", String(Math.floor(currentTime)));
-      }
-      return `https://vidlink.pro${path}?${params.toString()}`;
-    },
-  },
-  {
     id: "pulse",
     name: "Server Pulse",
     quality: "1080p Mirror",
@@ -283,18 +201,6 @@ const STREAM_SERVERS = [
     },
   },
   {
-    id: "apex",
-    name: "Server Apex",
-    quality: "1080p HD",
-    speed: "Stable Feed",
-    badge: "Multi-Source",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.pm/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&ds_lang=en`
-        : `https://vidsrc.pm/embed/movie?tmdb=${tmdbId}&ds_lang=en`;
-    },
-  },
-  {
     id: "legacy",
     name: "Server Legacy",
     quality: "1080p Classic",
@@ -304,30 +210,6 @@ const STREAM_SERVERS = [
       return isTv
         ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`
         : `https://www.2embed.cc/embed/${tmdbId}`;
-    },
-  },
-  {
-    id: "wave",
-    name: "Server Wave",
-    quality: "1080p / 4K Ultra",
-    speed: "EmbedWave Multi",
-    badge: "Zero-Ad Pro",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=nxsha&autoplay=1&nobrand=1`
-        : `https://embedwave.cc/embed/movie/${tmdbId}?server=nxsha&autoplay=1&nobrand=1`;
-    },
-  },
-  {
-    id: "rive",
-    name: "Server Rive",
-    quality: "1080p Ultra HD",
-    speed: "Zero-Ad CDN",
-    badge: "RiveStream Pro",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://www.rivestream.app/embed?type=tv&id=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
-        : `https://www.rivestream.app/embed?type=movie&id=${tmdbId}`;
     },
   },
 ];
@@ -421,43 +303,6 @@ const QUANTUM_SUB_SERVERS = [
   },
 ];
 
-// Internal mirror servers available within Server Wave (EmbedWave Cluster)
-const WAVE_SUB_SERVERS = [
-  {
-    id: "nxsha",
-    name: "Wave Multi HD",
-    badge: "Multi HD",
-    quality: "1080p Multi-HD",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=nxsha&autoplay=1&nobrand=1`
-        : `https://embedwave.cc/embed/movie/${tmdbId}?server=nxsha&autoplay=1&nobrand=1`;
-    },
-  },
-  {
-    id: "cinesrc",
-    name: "Wave CineSrc",
-    badge: "CineSrc",
-    quality: "1080p CineSrc Route",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=cinesrc&autoplay=1&nobrand=1`
-        : `https://embedwave.cc/embed/movie/${tmdbId}?server=cinesrc&autoplay=1&nobrand=1`;
-    },
-  },
-  {
-    id: "videasy",
-    name: "Wave 4K Ultra",
-    badge: "4K UHD",
-    quality: "4K UHD Route",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embedwave.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?server=videasy&autoplay=1&nobrand=1`
-        : `https://embedwave.cc/embed/movie/${tmdbId}?server=videasy&autoplay=1&nobrand=1`;
-    },
-  },
-];
-
 // Dedicated anime sub-tracks for AnimeEmbed (Server Kage)
 const ANIMEEMBED_SUB_SERVERS = [
   {
@@ -483,254 +328,6 @@ const ANIMEEMBED_SUB_SERVERS = [
     quality: "1080p Uncut Intro",
     getUrl: (aniId, episode) =>
       `https://www.animeembed.com/embed/ani/${aniId}/${episode || 1}?track=sub&autoSkip=0&accent=ffffff`,
-  },
-];
-
-// Internal mirror providers available within Server LangChan (High-Stability Multi-Source Cluster)
-const LANGCHAN_SUB_SERVERS = [
-  {
-    id: "multiembed",
-    name: "LangChan MultiStream",
-    badge: "Zero-Ad Multi",
-    quality: "1080p Multi-Source Cloud",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`
-        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
-    },
-  },
-  {
-    id: "embedsu",
-    name: "LangChan EmbedSu",
-    badge: "EmbedSu VIP",
-    quality: "1080p Ultra HD / Subtitles",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://embed.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://embed.su/embed/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "vidsrcxyz",
-    name: "LangChan VidSrc Pro",
-    badge: "VidSrc High-Speed",
-    quality: "1080p High Bitrate Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`
-        : `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`;
-    },
-  },
-  {
-    id: "smashy",
-    name: "LangChan Smashy",
-    badge: "Multi-Audio",
-    quality: "1080p Multi-Audio Auto-Failover",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://player.smashystream.vip/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}`
-        : `https://player.smashystream.vip/movie/${tmdbId}`;
-    },
-  },
-];
-
-// Dedicated mirror providers available within Server SkyPro (SkyPro Multi-Resolver Cluster)
-const SKYPRO_SUB_SERVERS = [
-  {
-    id: "videasy",
-    name: "SkyPro Prime (Videasy)",
-    badge: "Zero-Ad Fast",
-    quality: "1080p / 4K UHD Ultra Fast",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://videasy.xyz/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://videasy.xyz/embed/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "vidrock",
-    name: "SkyPro Direct (Vidrock)",
-    badge: "Direct HLS",
-    quality: "1080p Direct HLS Container",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidrock.net/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidrock.net/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "vidsrc-v2",
-    name: "SkyPro Resolver (VidSrc)",
-    badge: "Multi-Mirror",
-    quality: "1080p Multi-Mirror Resolver",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?autoPlay=true`
-        : `https://vidsrc.cc/v2/embed/movie/${tmdbId}?autoPlay=true`;
-    },
-  },
-  {
-    id: "moviesapi",
-    name: "SkyPro Cinema (MoviesAPI)",
-    badge: "Multi-Audio",
-    quality: "1080p Multi-Audio / Subtitles",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://moviesapi.club/tv/${tmdbId}-${season || 1}-${episode || 1}`
-        : `https://moviesapi.club/movie/${tmdbId}`;
-    },
-  },
-];
-
-
-// Internal mirror servers available within Server PlayTroy (Ultra High-Speed Cluster)
-const PLAYTROY_SUB_SERVERS = [
-  {
-    id: "auto",
-    name: "PlayTroy Auto (VidRift)",
-    badge: "Auto Select",
-    quality: "1080p / 4K UHD",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
-      const params = new URLSearchParams({
-        brand: "CineVerse",
-        brandColor: "0ea5e9",
-        download: "1",
-        showTitle: "1",
-        sub: "en",
-        font: "Inter",
-      });
-      const title = media?.title || media?.name;
-      if (title) params.set("title", title);
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (tmdbId) {
-        if (isTv) {
-          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-        }
-        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-      }
-      if (anilistId) {
-        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-    },
-  },
-  {
-    id: "vrapid",
-    name: "Troy vRapid (VidRift Global)",
-    badge: "4K UHD",
-    quality: "4K UHD / Direct Download",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
-      const params = new URLSearchParams({
-        brand: "CineVerse",
-        brandColor: "0ea5e9",
-        download: "1",
-        showTitle: "1",
-        sub: "en",
-        font: "Inter",
-      });
-      const title = media?.title || media?.name;
-      if (title) params.set("title", title);
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (tmdbId) {
-        if (isTv) {
-          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-        }
-        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-      }
-      if (anilistId) {
-        return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
-    },
-  },
-  {
-    id: "vblaze",
-    name: "Troy vBlaze (India Fast Route)",
-    badge: "4K Fast",
-    quality: "4K Fast / India Direct Route",
-    getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
-      const params = new URLSearchParams({
-        brand: "CineVerse",
-        brandColor: "0ea5e9",
-        download: "1",
-        showTitle: "1",
-        sub: "en",
-        font: "Inter",
-      });
-      const title = media?.title || media?.name;
-      if (title) params.set("title", title);
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      if (tmdbId) {
-        if (isTv) {
-          return `https://embed.vidrift.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
-        }
-        return `https://embed.vidrift.in/embed/movie/${tmdbId}?${params.toString()}`;
-      }
-      if (anilistId) {
-        return `https://embed.vidrift.in/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      return `https://embed.vidrift.in/embed/movie/${tmdbId}?${params.toString()}`;
-    },
-  },
-  {
-    id: "cobra",
-    name: "Troy VidFast Direct",
-    badge: "Direct HD",
-    quality: "1080p Direct VidFast Feed",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
-    },
-  },
-  {
-    id: "cine",
-    name: "Troy CineSrc VIP",
-    badge: "Multi-Audio",
-    quality: "1080p Multiple Audio & Auto-Skip",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
-    },
-  },
-  {
-    id: "bravo",
-    name: "Troy FrameX CDN",
-    badge: "Fast CDN",
-    quality: "1080p Fast CDN / Multi-Audio",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0`
-        : `https://framextv.xyz/embed/${tmdbId}?autoplay=1&muted=0`;
-    },
-  },
-  {
-    id: "horizon",
-    name: "Troy VidLink Cloud",
-    badge: "Cloud Mirror",
-    quality: "1080p Cloud / Direct Feed",
-    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
-      const path = isTv ? `/tv/${tmdbId}/${season || 1}/${episode || 1}` : `/movie/${tmdbId}`;
-      const params = new URLSearchParams({
-        autoplay: "true",
-        primaryColor: "ffffff",
-        secondaryColor: "202020",
-        iconColor: "ffffff",
-        icons: "default",
-        ds_lang: "en",
-      });
-      if (currentTime && Number(currentTime) >= 15) {
-        params.set("startAt", String(Math.floor(Number(currentTime))));
-      }
-      return `https://vidlink.pro${path}?${params.toString()}`;
-    },
   },
 ];
 
@@ -784,12 +381,8 @@ const LEGACY_SUB_SERVERS = [
 
 const STORAGE_KEYS = {
   ACTIVE_SERVER: "cineverse_active_server_v5",
-  LANGCHAN_SUB: "cineverse_langchan_sub_id",
-  SKYPRO_SUB: "cineverse_skypro_sub_id",
   FRAMEX_SUB: "cineverse_framex_sub_id",
-  PLAYTROY_SUB: "cineverse_playtroy_sub_id",
   QUANTUM_SUB: "cineverse_quantum_sub_id",
-  WAVE_SUB: "cineverse_wave_sub_id",
   ANIME_SUB: "cineverse_anime_sub_id",
   LEGACY_SUB: "cineverse_legacy_sub_id",
 };
@@ -804,7 +397,7 @@ function CineStreamPlayer({
 }) {
   const [activeServer, setActiveServer] = useState(() => {
     if (media?.resumePlayback && Number(media.currentTime) >= 15) {
-      const resumeServer = STREAM_SERVERS.find((server) => server.id === "nova");
+      const resumeServer = STREAM_SERVERS.find((server) => server.id === "vidrift");
       if (resumeServer) return resumeServer;
     }
 
@@ -823,40 +416,6 @@ function CineStreamPlayer({
       // ignore
     }
     return STREAM_SERVERS[0];
-  });
-
-
-  const [playtroySubServer, setPlaytroySubServer] = useState(() => {
-    try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.PLAYTROY_SUB);
-      if (savedId) {
-        const found = PLAYTROY_SUB_SERVERS.find((s) => s.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return PLAYTROY_SUB_SERVERS[0];
-  });
-
-  const [langchanSubServer, setLangchanSubServer] = useState(() => {
-    try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.LANGCHAN_SUB);
-      if (savedId) {
-        const found = LANGCHAN_SUB_SERVERS.find((s) => s.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return LANGCHAN_SUB_SERVERS[0];
-  });
-
-  const [skyproSubServer, setSkyproSubServer] = useState(() => {
-    try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.SKYPRO_SUB);
-      if (savedId) {
-        const found = SKYPRO_SUB_SERVERS.find((s) => s.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return SKYPRO_SUB_SERVERS[0];
   });
 
   const [framexSubServer, setFramexSubServer] = useState(() => {
@@ -879,17 +438,6 @@ function CineStreamPlayer({
       }
     } catch {}
     return QUANTUM_SUB_SERVERS[0];
-  });
-
-  const [waveSubServer, setWaveSubServer] = useState(() => {
-    try {
-      const savedId = localStorage.getItem(STORAGE_KEYS.WAVE_SUB);
-      if (savedId) {
-        const found = WAVE_SUB_SERVERS.find((s) => s.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return WAVE_SUB_SERVERS[0];
   });
 
   const [animeEmbedSubServer, setAnimeEmbedSubServer] = useState(() => {
@@ -1370,7 +918,7 @@ function CineStreamPlayer({
 
   // Fallback timer for custom subtitles on servers without postMessage
   useEffect(() => {
-    if (!customCues.length || !subPlaying || activeServer.id === "nova" || activeServer.id === "quantum") return undefined;
+    if (!customCues.length || !subPlaying || activeServer.id === "vidrift" || activeServer.id === "quantum") return undefined;
     const timer = setInterval(() => {
       setCurrentPlayTime((prev) => prev + 1);
     }, 1000);
@@ -1515,16 +1063,8 @@ function CineStreamPlayer({
 
   const embedUrl = activeServer.id === "legacy"
     ? legacySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
-    : activeServer.id === "langchan"
-    ? langchanSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
-    : activeServer.id === "skypro"
-    ? skyproSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
-    : activeServer.id === "playtroy"
-    ? playtroySubServer.getUrl(tmdbId, isTv, currSeason, currEpisode, media?.currentTime || 0, media, anilistId)
     : activeServer.id === "quantum"
     ? quantumSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
-    : activeServer.id === "wave"
-    ? waveSubServer.getUrl(tmdbId, isTv, currSeason, currEpisode)
     : activeServer.id === "animeembed"
     ? animeEmbedSubServer.getUrl(anilistId || "21701", currEpisode)
     : activeServer.id === "framex"
@@ -1568,109 +1108,6 @@ function CineStreamPlayer({
           })}
         </div>
       </div>
-
-
-      {/* PLAYTROY SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "playtroy" && (
-        <div className="cine-subserver-bar-wrapper playtroy-theme">
-          <div className="cine-subserver-label">
-            <Zap size={13} className="subserver-icon" />
-            <span>PlayTroy Fast Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {PLAYTROY_SUB_SERVERS.map((sub) => {
-              const isSubActive = playtroySubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setPlaytroySubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.PLAYTROY_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* LANGCHAN SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "langchan" && (
-        <div className="cine-subserver-bar-wrapper langchan-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>LangChan MegaCloud Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {LANGCHAN_SUB_SERVERS.map((sub) => {
-              const isSubActive = langchanSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setLangchanSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.LANGCHAN_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* SKYPRO SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "skypro" && (
-        <div className="cine-subserver-bar-wrapper skypro-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>SkyPro Resolver Mirrors:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {SKYPRO_SUB_SERVERS.map((sub) => {
-              const isSubActive = skyproSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setSkyproSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.SKYPRO_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* ANIMEEMBED (SERVER KAGE) SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "animeembed" && (
@@ -1774,40 +1211,6 @@ function CineStreamPlayer({
         </div>
       )}
 
-      {/* WAVE (EMBEDWAVE) SUB-SERVER SWITCHER BAR */}
-      {activeServer.id === "wave" && (
-        <div className="cine-subserver-bar-wrapper wave-theme">
-          <div className="cine-subserver-label">
-            <Layers size={13} className="subserver-icon" />
-            <span>EmbedWave Routes:</span>
-          </div>
-          <div className="cine-subserver-pills" role="tablist">
-            {WAVE_SUB_SERVERS.map((sub) => {
-              const isSubActive = waveSubServer.id === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSubActive}
-                  onClick={() => {
-                    setWaveSubServer(sub);
-                    try { localStorage.setItem(STORAGE_KEYS.WAVE_SUB, sub.id); } catch {}
-                    setReloadKey((prev) => prev + 1);
-                  }}
-                  className={`cine-subserver-pill ${isSubActive ? "active" : ""}`}
-                  title={`Switch to ${sub.name} (${sub.quality})`}
-                >
-                  <span className="subserver-dot" />
-                  <span className="subserver-name">{sub.name}</span>
-                  <span className="subserver-badge">{sub.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* LEGACY SUB-SERVER SWITCHER BAR */}
       {activeServer.id === "legacy" && (
         <div className="cine-subserver-bar-wrapper">
@@ -1851,20 +1254,8 @@ function CineStreamPlayer({
             {activeServer.id === "legacy" && (
               <span className="cine-status-subname"> &bull; {legacySubServer.name}</span>
             )}
-            {activeServer.id === "langchan" && (
-              <span className="cine-status-subname langchan"> &bull; {langchanSubServer.name}</span>
-            )}
-            {activeServer.id === "skypro" && (
-              <span className="cine-status-subname skypro"> &bull; {skyproSubServer.name}</span>
-            )}
-            {activeServer.id === "playtroy" && (
-              <span className="cine-status-subname playtroy"> &bull; {playtroySubServer.name}</span>
-            )}
             {activeServer.id === "quantum" && (
               <span className="cine-status-subname quantum"> &bull; {quantumSubServer.name}</span>
-            )}
-            {activeServer.id === "wave" && (
-              <span className="cine-status-subname wave"> &bull; {waveSubServer.name}</span>
             )}
             {activeServer.id === "animeembed" && (
               <span className="cine-status-subname animeembed"> &bull; {animeEmbedSubServer.name}</span>
@@ -1873,16 +1264,8 @@ function CineStreamPlayer({
           <span className="cine-status-chip">
             {activeServer.id === "legacy"
               ? legacySubServer.quality
-              : activeServer.id === "langchan"
-              ? langchanSubServer.quality
-              : activeServer.id === "skypro"
-              ? skyproSubServer.quality
-              : activeServer.id === "playtroy"
-              ? playtroySubServer.quality
               : activeServer.id === "quantum"
               ? quantumSubServer.quality
-              : activeServer.id === "wave"
-              ? waveSubServer.quality
               : activeServer.id === "animeembed"
               ? animeEmbedSubServer.quality
               : activeServer.quality}
@@ -1890,16 +1273,8 @@ function CineStreamPlayer({
           <span className="cine-status-chip speed-chip">
             {activeServer.id === "legacy"
               ? legacySubServer.badge
-              : activeServer.id === "langchan"
-              ? langchanSubServer.badge
-              : activeServer.id === "skypro"
-              ? skyproSubServer.badge
-              : activeServer.id === "playtroy"
-              ? playtroySubServer.badge
               : activeServer.id === "quantum"
               ? quantumSubServer.badge
-              : activeServer.id === "wave"
-              ? waveSubServer.badge
               : activeServer.id === "animeembed"
               ? animeEmbedSubServer.badge
               : activeServer.speed}
@@ -2023,11 +1398,11 @@ function CineStreamPlayer({
         )}
 
         <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "langchan" ? langchanSubServer.id : activeServer.id === "skypro" ? skyproSubServer.id : activeServer.id === "playtroy" ? playtroySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "wave" ? waveSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
           ref={iframeRef}
           className="cine-stream-iframe"
           src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "langchan" ? ` (${langchanSubServer.name})` : activeServer.id === "skypro" ? ` (${skyproSubServer.name})` : activeServer.id === "playtroy" ? ` (${playtroySubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "wave" ? ` (${waveSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
+          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
           allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
           allowFullScreen={true}
           webkitallowfullscreen="true"
@@ -2416,18 +1791,18 @@ function CineStreamPlayer({
                         </div>
                       </div>
 
-                      {activeServer.id !== "nova" && (
+                      {activeServer.id !== "vidrift" && (
                         <div className="cine-info-callout">
-                          <strong>Want fully automatic video time synchronization?</strong>
+                          <strong>Want ultra-fast playback with direct download support?</strong>
                           <p>
-                            Server Nova directly syncs with CineVerse to align custom subtitles frame-by-frame with zero manual adjustments.
+                            Server VidRift provides high-speed multi-quality streams with zero buffering and integrated downloading.
                           </p>
                           <button
                             type="button"
                             className="cine-sub-btn-pill"
                             style={{ marginTop: "8px" }}
                             onClick={() => {
-                              const s = STREAM_SERVERS.find((srv) => srv.id === "nova");
+                              const s = STREAM_SERVERS.find((srv) => srv.id === "vidrift");
                               if (s) {
                                 handleSelectServer(s);
                                 setShowAudioSubModal(false);
@@ -2435,7 +1810,7 @@ function CineStreamPlayer({
                             }}
                           >
                             <Sparkles size={12} />
-                            <span>Switch to Server Nova (Auto-Synced)</span>
+                            <span>Switch to Server VidRift (#1 Fast Stream)</span>
                           </button>
                         </div>
                       )}
@@ -2629,7 +2004,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "playtroy", "langchan", "skypro", "quantum", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "quantum", "animeembed", "framex", "ronin", "pulse", "legacy"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2644,30 +2019,18 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "vidrift"
                                     ? "Ultra-Fast CDN + Direct Download"
-                                    : s.id === "langchan"
-                                    ? "MegaCloud & Multi-Stream Subtitles"
-                                    : s.id === "skypro"
-                                    ? "SkyPro Multi-Resolver HD & 4K"
                                     : s.id === "framex"
                                     ? "FrameX Multi-Subtitles HLS"
                                     : s.id === "ronin"
                                     ? "Anime & Asian Soft Subtitles"
-                                    : s.id === "nova"
-                                    ? "Direct Subtitle Stream"
                                     : s.id === "pulse"
                                     ? "Cloud Mirror Sync"
                                     : s.id === "quantum"
                                     ? "Auto-Skip / Subtitles"
                                     : s.id === "eclipse"
                                     ? "Ultra-Fast CDN Stream"
-                                    : s.id === "playtroy"
-                                    ? "PlayTroy Ultra CDN + Auto-Next"
                                     : s.id === "animeembed"
                                     ? "Anime Sub / Dub Stream"
-                                    : s.id === "wave"
-                                    ? "Multi-Route Subtitles"
-                                    : s.id === "rive"
-                                    ? "Fast CDN Subtitles"
                                     : "Deep Catalog Subtitles"}
                                 </span>
                               </div>
@@ -2711,7 +2074,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "playtroy", "langchan", "skypro", "quantum", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "quantum", "framex", "ronin", "pulse", "legacy", "animeembed"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2726,28 +2089,18 @@ function CineStreamPlayer({
                                 <span className="s-badge">
                                   {s.id === "vidrift"
                                     ? "Multi-Audio / Direct Download"
-                                    : s.id === "langchan"
-                                    ? "LangChan Multi-Audio & MegaCloud Feed"
-                                    : s.id === "skypro"
-                                    ? "SkyPro Multi-Audio & 4K UHD Feed"
                                     : s.id === "framex"
                                     ? "FrameX Archer Multi-Audio & 4K UHD"
                                     : s.id === "ronin"
                                     ? "Anime Japanese Audio & Dubs"
-                                    : s.id === "nova"
-                                    ? "Direct Audio Master"
-                                    : s.id === "apex"
-                                    ? "Multi-Source Audio"
+                                    : s.id === "pulse"
+                                    ? "Cloud Stream Sync"
                                     : s.id === "quantum"
                                     ? "Multi-Audio / Auto-Skip"
                                     : s.id === "eclipse"
                                     ? "Ultra-Fast Full HD"
-                                    : s.id === "playtroy"
-                                    ? "PlayTroy 4K / Auto-Next"
-                                    : s.id === "wave"
-                                    ? "Multi-Audio / 4K UHD Feed"
-                                    : s.id === "rive"
-                                    ? "Fast CDN Multi-Audio"
+                                    : s.id === "animeembed"
+                                    ? "Anime Japanese & English Dub"
                                     : "Classic Stereo Master"}
                                 </span>
                               </div>
