@@ -4916,180 +4916,365 @@ header.navbar:hover {
 }
 
 /* ==========================================================================
-   MINIMALIST STREAMING SERVER DROPDOWN & MODERN PLAYER HEADER
+   CINEMATIC STREAMING LAYOUT WITH DEDICATED RIGHT-SIDE SERVER BOX
+   (UI/UX Promax & Tasteskill Standard: Clean Grid, Zero Slop, Balanced Edges)
    ========================================================================== */
 
-.player-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  min-height: 64px !important;
-  padding: 10px clamp(16px, 3vw, 36px) !important;
-  background: rgba(7, 10, 13, 0.96) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+.cine-stream-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
-.player-header-title-block {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
+.cine-stream-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.player-header-title-block h2 {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  margin: 0 !important;
-  font-size: clamp(15px, 2vw, 20px) !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
+.cine-stream-screen-col {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.player-header-actions {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  flex-shrink: 0 !important;
+.cine-screen-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 
-#player-header-server-slot {
+/* RIGHT-SIDE SERVER BOX */
+.cine-server-sidebox {
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 14, 22, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+
+.cine-sidebox-header {
   display: flex;
   align-items: center;
-}
-
-/* SERVER DROPDOWN COMPONENT */
-.cine-server-dropdown-container {
-  display: inline-flex;
-  align-items: center;
-}
-
-.cine-server-dropdown-inner {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 9999px;
-  padding: 0 32px 0 34px;
-  height: 38px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-}
-
-.cine-server-dropdown-inner:hover {
-  background: rgba(24, 34, 54, 0.95);
-  border-color: rgba(56, 189, 248, 0.5);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.cine-server-dropdown-inner:focus-within {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3), 0 4px 16px rgba(14, 165, 233, 0.25);
-}
-
-.cine-server-dropdown-icon {
-  position: absolute;
-  left: 12px;
-  color: #38bdf8;
-  pointer-events: none;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.45);
   flex-shrink: 0;
 }
 
-.cine-server-dropdown-prefix {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  margin-right: 6px;
-  pointer-events: none;
-  user-select: none;
+.cine-sidebox-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.cine-server-select-input {
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  border: none;
-  color: #f8fafc;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 0;
-  margin: 0;
-  outline: none;
-  width: auto;
-  max-width: 250px;
-}
-
-.cine-server-select-input option {
-  background: #0f172a;
-  color: #f1f5f9;
-  padding: 10px 14px;
-  font-size: 13px;
-}
-
-.cine-server-dropdown-chevron {
-  position: absolute;
-  right: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  pointer-events: none;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.cine-server-dropdown-inner:hover .cine-server-dropdown-chevron {
+.cine-sidebox-icon {
   color: #38bdf8;
 }
 
-/* Fallback toolbar if rendered directly inside player container */
-.cine-player-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 0 4px;
+.cine-sidebox-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-@media (max-width: 768px) {
-  .player-header {
-    padding: 10px 14px !important;
-    min-height: 52px !important;
+.cine-sidebox-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.cine-sidebox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.cine-sidebox-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cine-sidebox-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cine-sidebox-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.cine-sidebox-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* SERVER CARD */
+.cine-server-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.cine-server-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.cine-server-card.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 0.7));
+  border-color: #0ea5e9;
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.cine-server-card-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.cine-server-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cine-server-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.cine-server-card.active .cine-server-num {
+  color: #38bdf8;
+}
+
+.cine-server-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cine-server-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.cine-server-card.active .cine-server-name {
+  color: #ffffff;
+}
+
+.cine-server-quality {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cine-server-card-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.cine-server-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.cine-server-card:hover .cine-server-badge {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cine-server-active-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.cine-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: cineDotPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes cineDotPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
   }
-  .cine-server-select-input {
-    max-width: 155px;
-    font-size: 12px;
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
   }
-  .cine-server-dropdown-inner {
-    height: 34px;
-    padding: 0 28px 0 30px;
+}
+
+.cine-active-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #38bdf8;
+}
+
+/* SUBTRACKS (ANIME SUB / DUB) */
+.cine-server-subtracks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 2px;
+}
+
+.cine-subtrack-chip {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.cine-subtrack-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.cine-subtrack-chip.active {
+  background: #0ea5e9;
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+}
+
+.cine-sidebox-footer {
+  padding: 10px 14px;
+  background: rgba(10, 14, 22, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.cine-sidebox-hint {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+/* RESPONSIVENESS (LAPTOP, TABLET, MOBILE) */
+@media (max-width: 1100px) {
+  .cine-stream-layout {
+    grid-template-columns: 1fr 240px;
+    gap: 12px;
   }
-  .cine-server-dropdown-prefix {
+}
+
+@media (max-width: 960px) {
+  .cine-stream-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .cine-server-sidebox {
+    height: auto;
+    max-height: none;
+  }
+
+  .cine-sidebox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .cine-server-card {
+    padding: 8px 10px;
+  }
+
+  .cine-server-num {
     display: none;
   }
 }
 
 @media (max-width: 480px) {
-  .player-header {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
+  .cine-sidebox-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 8px;
   }
-  .player-header-title-block {
-    flex: 1 1 65% !important;
+
+  .cine-server-card-info .cine-server-quality {
+    display: none;
   }
-  .player-header-actions {
-    flex: 1 1 auto !important;
-    justify-content: flex-end !important;
-  }
-  .cine-server-select-input {
-    max-width: 135px;
+
+  .cine-server-name {
+    font-size: 12px;
   }
 }
 

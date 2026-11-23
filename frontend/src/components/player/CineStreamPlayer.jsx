@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import {
   RotateCcw,
   Sparkles,
@@ -95,11 +94,11 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Server VidRift is #1 default, Server Eclipse is 2nd)
+// High-performance streaming servers (Numbered Server 1 through 8)
 const STREAM_SERVERS = [
   {
     id: "vidrift",
-    name: "Server VidRift",
+    name: "Server 1",
     quality: "1080p / 4K UHD",
     speed: "Ultra CDN + Direct Download",
     badge: "Recommended",
@@ -134,7 +133,7 @@ const STREAM_SERVERS = [
   },
   {
     id: "eclipse",
-    name: "Server Eclipse",
+    name: "Server 2",
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
     badge: "Fast Mirror",
@@ -146,10 +145,10 @@ const STREAM_SERVERS = [
   },
   {
     id: "animeembed",
-    name: "Server Kage",
+    name: "Server 3",
     quality: "1080p Anime / Auto-Skip",
     speed: "Zero-Ad Feed",
-    badge: "AnimeEmbed Pro",
+    badge: "Anime Mirror",
     getUrl: (tmdbId, isTv, season, episode, currentTime, anilistId) => {
       const id = anilistId || "21701";
       return `https://www.animeembed.com/embed/ani/${id}/${episode || 1}?track=sub&autoSkip=1&accent=ffffff`;
@@ -157,10 +156,10 @@ const STREAM_SERVERS = [
   },
   {
     id: "quantum",
-    name: "Server Quantum",
+    name: "Server 4",
     quality: "1080p Ultra HD / Auto-Skip",
-    speed: "CineSrc VIP",
-    badge: "VIP Mirror",
+    speed: "VIP Mirror",
+    badge: "VIP Stream",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
@@ -169,10 +168,10 @@ const STREAM_SERVERS = [
   },
   {
     id: "framex",
-    name: "Server FrameX",
+    name: "Server 5",
     quality: "1080p / 4K Ultra HD",
-    speed: "FrameX Multi-CDN",
-    badge: "FrameX VIP",
+    speed: "Multi-CDN HLS",
+    badge: "Multi-CDN",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0`
@@ -181,10 +180,10 @@ const STREAM_SERVERS = [
   },
   {
     id: "ronin",
-    name: "Server Ronin",
+    name: "Server 6",
     quality: "1080p Anime / Sub & Dub",
-    speed: "Ultra High-Speed",
-    badge: "Anime God Tier",
+    speed: "High-Speed",
+    badge: "HD Mirror",
     getUrl: (tmdbId, isTv, season, episode) => {
       return isTv
         ? `https://nontongo.win/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`
@@ -193,7 +192,7 @@ const STREAM_SERVERS = [
   },
   {
     id: "pulse",
-    name: "Server Pulse",
+    name: "Server 7",
     quality: "1080p Mirror",
     speed: "Buffer-Free",
     badge: "Cloud Feed",
@@ -205,7 +204,7 @@ const STREAM_SERVERS = [
   },
   {
     id: "legacy",
-    name: "Server Legacy",
+    name: "Server 8",
     quality: "1080p Classic",
     speed: "Multi-Mirror Network",
     badge: "Deep Catalog",
@@ -1046,151 +1045,165 @@ function CineStreamPlayer({
         anilistId
       );
 
-  const [headerSlot, setHeaderSlot] = useState(null);
-
-  useEffect(() => {
-    const slot = document.getElementById("player-header-server-slot");
-    if (slot) {
-      setHeaderSlot(slot);
-    }
-  }, []);
-
-  const dropdownValue =
-    activeServer.id === "animeembed"
-      ? `animeembed-${animeEmbedSubServer.id === "dub" ? "dub" : "sub"}`
-      : activeServer.id;
-
-  const handleDropdownChange = (e) => {
-    const val = e.target.value;
-    if (val === "animeembed-dub") {
-      const animeSrv = STREAM_SERVERS.find((s) => s.id === "animeembed");
-      if (animeSrv) {
-        handleSelectServer(animeSrv);
-        const dubSub = ANIMEEMBED_SUB_SERVERS.find((s) => s.id === "dub") || ANIMEEMBED_SUB_SERVERS[1];
-        if (dubSub) {
-          setAnimeEmbedSubServer(dubSub);
-          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, dubSub.id); } catch {}
-          setReloadKey((prev) => prev + 1);
-        }
-      }
-      return;
-    }
-    if (val === "animeembed-sub") {
-      const animeSrv = STREAM_SERVERS.find((s) => s.id === "animeembed");
-      if (animeSrv) {
-        handleSelectServer(animeSrv);
-        const subSub = ANIMEEMBED_SUB_SERVERS.find((s) => s.id === "sub") || ANIMEEMBED_SUB_SERVERS[0];
-        if (subSub) {
-          setAnimeEmbedSubServer(subSub);
-          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, subSub.id); } catch {}
-          setReloadKey((prev) => prev + 1);
-        }
-      }
-      return;
-    }
-
-    const targetServer = STREAM_SERVERS.find((s) => s.id === val);
-    if (targetServer) {
-      handleSelectServer(targetServer);
-    }
-  };
-
-  const serverDropdownJSX = (
-    <div className="cine-server-dropdown-container">
-      <div className="cine-server-dropdown-inner">
-        <Server size={14} className="cine-server-dropdown-icon" />
-        <span className="cine-server-dropdown-prefix">Server:</span>
-        <select
-          id="cine-server-select"
-          value={dropdownValue}
-          onChange={handleDropdownChange}
-          className="cine-server-select-input"
-          aria-label="Select streaming server"
-        >
-          <option value="vidrift">Server VidRift (Recommended · 1080p/4K UHD)</option>
-          <option value="eclipse">Server Eclipse (Ultra Fast · 1080p Full HD)</option>
-          <option value="animeembed-sub">Server Kage — Sub (1080p Anime)</option>
-          <option value="animeembed-dub">Server Kage — Dub (1080p Anime Dubbed)</option>
-          <option value="quantum">Server Quantum (1080p Ultra HD / Auto-Skip)</option>
-          <option value="framex">Server FrameX (1080p / 4K UHD Multi-CDN)</option>
-          <option value="ronin">Server Ronin (1080p Anime Sub & Dub)</option>
-          <option value="pulse">Server Pulse (1080p Buffer-Free Cloud)</option>
-          <option value="legacy">Server Legacy (1080p Deep Catalog)</option>
-        </select>
-        <ChevronDown size={14} className="cine-server-dropdown-chevron" />
-      </div>
-    </div>
-  );
-
   return (
     <div className="cine-stream-container">
-      {headerSlot ? (
-        createPortal(serverDropdownJSX, headerSlot)
-      ) : (
-        <div className="cine-player-toolbar">
-          {serverDropdownJSX}
+      <div className="cine-stream-layout">
+        {/* VIDEO PLAYER SCREEN */}
+        <div className="cine-stream-screen-col">
+          <div
+            ref={screenBoxRef}
+            className={`cine-screen-box ${isChanging ? "switching" : ""} ${isFullscreen ? "is-fullscreen" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingFile(true);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setIsDraggingFile(false);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingFile(false);
+              if (e.dataTransfer?.files?.[0]) {
+                handleSubtitleFile(e.dataTransfer.files[0]);
+              }
+            }}
+          >
+            {/* DRAG & DROP HUD INDICATOR */}
+            {isDraggingFile && (
+              <div className="cine-drag-drop-hud">
+                <Upload size={44} className="drag-icon-pulse" />
+                <h4>Drop Subtitle File (.srt / .vtt) Here</h4>
+                <p>Will load and synchronize over your stream immediately</p>
+              </div>
+            )}
+
+            {/* CINEMATIC SUBTITLE TEXT OVERLAY (NO BACKGROUND BY DEFAULT) */}
+            {subEnabled && activeSubtitleText && (
+              <div className={`cine-custom-subtitles-overlay size-${subSize} pos-${subPosition}`}>
+                <div className={`cine-sub-pill bg-${subBg}`}>
+                  {activeSubtitleText.split("\n").map((line, idx) => (
+                    <span
+                      key={idx}
+                      className="cine-sub-line"
+                      style={{ color: subColor }}
+                    >
+                      {line}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <iframe
+              key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
+              ref={iframeRef}
+              className="cine-stream-iframe"
+              src={embedUrl}
+              title={`Cinema Stream - ${activeServer.name} (${media?.title || "Movie"})`}
+              allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
+              allowFullScreen={true}
+              webkitallowfullscreen="true"
+              mozallowfullscreen="true"
+              referrerPolicy="origin-when-cross-origin"
+            />
+          </div>
         </div>
-      )}
 
-      {/* 16:9 STREAM SCREEN FRAME (WITH DRAG & DROP & SUBTITLES OVERLAY) */}
-      <div
-        ref={screenBoxRef}
-        className={`cine-screen-box ${isChanging ? "switching" : ""} ${isFullscreen ? "is-fullscreen" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDraggingFile(true);
-        }}
-        onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) {
-            setIsDraggingFile(false);
-          }
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDraggingFile(false);
-          if (e.dataTransfer?.files?.[0]) {
-            handleSubtitleFile(e.dataTransfer.files[0]);
-          }
-        }}
-      >
-        {/* DRAG & DROP HUD INDICATOR */}
-        {isDraggingFile && (
-          <div className="cine-drag-drop-hud">
-            <Upload size={44} className="drag-icon-pulse" />
-            <h4>Drop Subtitle File (.srt / .vtt) Here</h4>
-            <p>Will load and synchronize over your stream immediately</p>
-          </div>
-        )}
-
-        {/* CINEMATIC SUBTITLE TEXT OVERLAY (NO BACKGROUND BY DEFAULT) */}
-        {subEnabled && activeSubtitleText && (
-          <div className={`cine-custom-subtitles-overlay size-${subSize} pos-${subPosition}`}>
-            <div className={`cine-sub-pill bg-${subBg}`}>
-              {activeSubtitleText.split("\n").map((line, idx) => (
-                <span
-                  key={idx}
-                  className="cine-sub-line"
-                  style={{ color: subColor }}
-                >
-                  {line}
-                </span>
-              ))}
+        {/* RIGHT-SIDE SERVER BOX */}
+        <aside className="cine-server-sidebox" aria-label="Available Streaming Servers">
+          <div className="cine-sidebox-header">
+            <div className="cine-sidebox-title-wrap">
+              <Server size={14} className="cine-sidebox-icon" />
+              <span className="cine-sidebox-title">Servers</span>
             </div>
+            <span className="cine-sidebox-count">{STREAM_SERVERS.length} Online</span>
           </div>
-        )}
 
-        <iframe
-          key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
-          ref={iframeRef}
-          className="cine-stream-iframe"
-          src={embedUrl}
-          title={`Cinema Stream - ${activeServer.name}${activeServer.id === "legacy" ? ` (${legacySubServer.name})` : activeServer.id === "quantum" ? ` (${quantumSubServer.name})` : activeServer.id === "animeembed" ? ` (${animeEmbedSubServer.name})` : ""} (${media?.title || "Movie"})`}
-          allow="autoplay *; encrypted-media *; picture-in-picture *; fullscreen *; display-capture *; accelerometer *; gyroscope *"
-          allowFullScreen={true}
-          webkitallowfullscreen="true"
-          mozallowfullscreen="true"
-          referrerPolicy="origin-when-cross-origin"
-        />
+          <div className="cine-sidebox-list" role="tablist">
+            {STREAM_SERVERS.map((server, index) => {
+              const isActive = server.id === activeServer.id;
+              const serverNum = String(index + 1).padStart(2, "0");
+              return (
+                <div
+                  key={server.id}
+                  className={`cine-server-card ${isActive ? "active" : ""}`}
+                  onClick={() => handleSelectServer(server)}
+                  role="tab"
+                  aria-selected={isActive}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleSelectServer(server);
+                    }
+                  }}
+                >
+                  <div className="cine-server-card-main">
+                    <div className="cine-server-card-left">
+                      <span className="cine-server-num">{serverNum}</span>
+                      <div className="cine-server-card-info">
+                        <span className="cine-server-name">Server {index + 1}</span>
+                        <span className="cine-server-quality">{server.quality}</span>
+                      </div>
+                    </div>
+
+                    <div className="cine-server-card-right">
+                      {isActive ? (
+                        <div className="cine-server-active-indicator">
+                          <span className="cine-pulse-dot" />
+                          <span className="cine-active-label">Active</span>
+                        </div>
+                      ) : (
+                        <span className="cine-server-badge">{server.badge || "Mirror"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* If AnimeEmbed Server (Server 3), provide quick Sub / Dub switches */}
+                  {server.id === "animeembed" && isActive && (
+                    <div
+                      className="cine-server-subtracks"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className={`cine-subtrack-chip ${animeEmbedSubServer.id === "sub" ? "active" : ""}`}
+                        onClick={() => {
+                          const subSub = ANIMEEMBED_SUB_SERVERS[0];
+                          setAnimeEmbedSubServer(subSub);
+                          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, subSub.id); } catch {}
+                          setReloadKey((prev) => prev + 1);
+                        }}
+                      >
+                        Sub
+                      </button>
+                      <button
+                        type="button"
+                        className={`cine-subtrack-chip ${animeEmbedSubServer.id === "dub" ? "active" : ""}`}
+                        onClick={() => {
+                          const dubSub = ANIMEEMBED_SUB_SERVERS[1];
+                          setAnimeEmbedSubServer(dubSub);
+                          try { localStorage.setItem(STORAGE_KEYS.ANIME_SUB, dubSub.id); } catch {}
+                          setReloadKey((prev) => prev + 1);
+                        }}
+                      >
+                        Dub
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="cine-sidebox-footer">
+            <span className="cine-sidebox-hint">
+              Experiencing buffer? Click any server to switch
+            </span>
+          </div>
+        </aside>
       </div>
 
       {/* SERIES EPISODES & SEASONS NAVIGATION CONTAINER (BEFORE MORE LIKE THIS) */}
@@ -1577,7 +1590,7 @@ function CineStreamPlayer({
                         <div className="cine-info-callout">
                           <strong>Want ultra-fast playback with direct download support?</strong>
                           <p>
-                            Server VidRift provides high-speed multi-quality streams with zero buffering and integrated downloading.
+                            Server 1 provides high-speed multi-quality streams with zero buffering and integrated downloading.
                           </p>
                           <button
                             type="button"
@@ -1592,7 +1605,7 @@ function CineStreamPlayer({
                             }}
                           >
                             <Sparkles size={12} />
-                            <span>Switch to Server VidRift (#1 Fast Stream)</span>
+                            <span>Switch to Server 1 (#1 Fast Stream)</span>
                           </button>
                         </div>
                       )}
@@ -1800,9 +1813,9 @@ function CineStreamPlayer({
                                 <span className="s-name">{s.name}</span>
                                 <span className="s-badge">
                                   {s.id === "vidrift"
-                                    ? "Ultra-Fast CDN + Direct Download"
+                                    ? "Fast CDN + Direct Download"
                                     : s.id === "framex"
-                                    ? "FrameX Multi-Subtitles HLS"
+                                    ? "Multi-Subtitles HLS"
                                     : s.id === "ronin"
                                     ? "Anime & Asian Soft Subtitles"
                                     : s.id === "pulse"
@@ -1872,7 +1885,7 @@ function CineStreamPlayer({
                                   {s.id === "vidrift"
                                     ? "Multi-Audio / Direct Download"
                                     : s.id === "framex"
-                                    ? "FrameX Archer Multi-Audio & 4K UHD"
+                                    ? "Archer Multi-Audio & 4K UHD"
                                     : s.id === "ronin"
                                     ? "Anime Japanese Audio & Dubs"
                                     : s.id === "pulse"

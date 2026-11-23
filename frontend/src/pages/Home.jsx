@@ -1550,7 +1550,6 @@ function getCleanMovieSynopsis(movie, genres = []) {
               <h2>{playerMovie?.title || "Resuming playback..."}</h2>
             </div>
             <div className="player-header-actions">
-              <div id="player-header-server-slot" />
               <button
                 className="icon-button"
                 onClick={handleClosePlayer}

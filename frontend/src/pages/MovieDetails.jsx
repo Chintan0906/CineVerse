@@ -714,7 +714,6 @@ function MovieDetails() {
                 <h2>{streamMedia.title || "Now Playing"}</h2>
               </div>
               <div className="player-header-actions">
-                <div id="player-header-server-slot" />
                 <button
                   className="icon-button"
                   onClick={handleClosePlayer}
@@ -1274,7 +1273,6 @@ function MovieDetails() {
               <h2>{streamMedia.title}</h2>
             </div>
             <div className="player-header-actions">
-              <div id="player-header-server-slot" />
               <button
                 className="icon-button"
                 onClick={handleClosePlayer}
