@@ -92,26 +92,14 @@ function formatSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Disguised high-performance streaming servers (Server Eclipse is primary default)
+// Disguised high-performance streaming servers (Server VidRift is #1 default, Server Eclipse is 2nd)
 const STREAM_SERVERS = [
-  {
-    id: "eclipse",
-    name: "Server Eclipse",
-    quality: "1080p Full HD",
-    speed: "Ultra Fast CDN",
-    badge: "Recommended",
-    getUrl: (tmdbId, isTv, season, episode) => {
-      return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
-    },
-  },
   {
     id: "vidrift",
     name: "Server VidRift",
     quality: "1080p / 4K UHD",
     speed: "Ultra CDN + Direct Download",
-    badge: "VidRift VIP",
+    badge: "Recommended",
     getUrl: (tmdbId, isTv, season, episode, currentTime, media, anilistId) => {
       const params = new URLSearchParams({
         brand: "CineVerse",
@@ -136,6 +124,18 @@ const STREAM_SERVERS = [
         return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
+    },
+  },
+  {
+    id: "eclipse",
+    name: "Server Eclipse",
+    quality: "1080p Full HD",
+    speed: "Ultra Fast CDN",
+    badge: "Fast Mirror",
+    getUrl: (tmdbId, isTv, season, episode) => {
+      return isTv
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
+        : `https://vidfast.vc/movie/${tmdbId}`;
     },
   },
   {
@@ -2614,7 +2614,7 @@ function CineStreamPlayer({
                           Different servers scrape independent subtitle databases (SubDL &amp; OpenSubtitles) with pre-calibrated timings. Click to switch instantly:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["vidrift", "langchan", "skypro", "quantum", "eclipse", "playtroy", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "playtroy", "langchan", "skypro", "quantum", "animeembed", "framex", "ronin", "nova", "pulse", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
@@ -2696,7 +2696,7 @@ function CineStreamPlayer({
                           These servers specifically index and stream multi-language master feeds with dual-audio and international dubs:
                         </p>
                         <div className="cine-quick-servers">
-                          {STREAM_SERVERS.filter((s) => ["vidrift", "langchan", "skypro", "quantum", "eclipse", "playtroy", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
+                          {STREAM_SERVERS.filter((s) => ["vidrift", "eclipse", "playtroy", "langchan", "skypro", "quantum", "framex", "ronin", "nova", "apex", "legacy", "wave", "rive"].includes(s.id)).map((s) => (
                             <button
                               key={s.id}
                               type="button"
