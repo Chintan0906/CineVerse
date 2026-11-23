@@ -117,11 +117,14 @@ const STREAM_SERVERS = [
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
+      if (tmdbId) {
+        if (isTv) {
+          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+        }
+        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
+      }
       if (anilistId) {
         return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      if (isTv) {
-        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
@@ -158,11 +161,14 @@ const STREAM_SERVERS = [
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
+      if (tmdbId) {
+        if (isTv) {
+          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+        }
+        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
+      }
       if (anilistId) {
         return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      if (isTv) {
-        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
@@ -598,11 +604,14 @@ const PLAYTROY_SUB_SERVERS = [
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
+      if (tmdbId) {
+        if (isTv) {
+          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+        }
+        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
+      }
       if (anilistId) {
         return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      if (isTv) {
-        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
@@ -626,11 +635,14 @@ const PLAYTROY_SUB_SERVERS = [
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
+      if (tmdbId) {
+        if (isTv) {
+          return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+        }
+        return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
+      }
       if (anilistId) {
         return `https://embed.vidrift.net/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      if (isTv) {
-        return `https://embed.vidrift.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.net/embed/movie/${tmdbId}?${params.toString()}`;
     },
@@ -654,11 +666,14 @@ const PLAYTROY_SUB_SERVERS = [
       if (currentTime && Number(currentTime) >= 15) {
         params.set("startAt", String(Math.floor(Number(currentTime))));
       }
+      if (tmdbId) {
+        if (isTv) {
+          return `https://embed.vidrift.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
+        }
+        return `https://embed.vidrift.in/embed/movie/${tmdbId}?${params.toString()}`;
+      }
       if (anilistId) {
         return `https://embed.vidrift.in/embed/anilist/${anilistId}/${episode || 1}?${params.toString()}`;
-      }
-      if (isTv) {
-        return `https://embed.vidrift.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params.toString()}`;
       }
       return `https://embed.vidrift.in/embed/movie/${tmdbId}?${params.toString()}`;
     },
