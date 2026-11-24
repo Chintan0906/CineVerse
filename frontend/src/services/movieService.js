@@ -9,11 +9,12 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (isLocalhost ? "http://localhost:3000/api" : "/api");
 
-const TMDB_API_KEY = "c38f3318c1885596d981f6ffc938dfaf";
-const TMDB_BASE_URL = "https://api.tmdb.org/3";
-const TMDB_FALLBACK_URL = "https://api.themoviedb.org/3";
+// Secure server-side proxy route — API keys are protected on the server and never exposed to the client
+const TMDB_PROXY_URL = `${API_BASE_URL}/tmdb`;
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
-const OMDB_API_KEY = "780269f3";
+
+export const DEFAULT_AVATAR =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='185' height='278' viewBox='0 0 185 278'><rect width='100%25' height='100%25' fill='%2318181b'/><circle cx='92.5' cy='95' r='38' fill='%233f3f46'/><path d='M25 240 c0-40 32-65 67.5-65 s67.5 25 67.5 65' fill='%233f3f46'/></svg>";
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
   const controller = new AbortController();
@@ -273,7 +274,7 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
       ? (String(rawPath).startsWith("http")
           ? rawPath
           : `${TMDB_IMAGE_BASE}/w185${rawPath.startsWith("/") ? "" : "/"}${rawPath}`)
-      : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+      : DEFAULT_AVATAR;
 
     return {
       id: actor.id || actor.name,
@@ -476,25 +477,17 @@ export async function getMovieById(id, type) {
     }
   } catch (_) {}
 
-  // 2. Fallback directly to TMDB API (browser client fetch over HTTPS with credits, videos, and similar)
+  // 2. Fallback via secure server TMDB proxy (server injects API key; client never sees it)
   const appendParams = isTv
     ? "credits,aggregate_credits,videos,similar"
     : "credits,videos,similar";
 
   try {
-    let tmdbRes = await fetchWithTimeout(
-      `${TMDB_BASE_URL}${primaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${appendParams}`,
+    const tmdbRes = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}${primaryPath}?append_to_response=${appendParams}`,
       {},
-      3500
+      4000
     ).catch(() => null);
-
-    if (!tmdbRes || !tmdbRes.ok) {
-      tmdbRes = await fetchWithTimeout(
-        `${TMDB_FALLBACK_URL}${primaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${appendParams}`,
-        {},
-        3500
-      ).catch(() => null);
-    }
 
     if (tmdbRes && tmdbRes.ok) {
       const data = await tmdbRes.json();
@@ -507,19 +500,11 @@ export async function getMovieById(id, type) {
       ? "credits,aggregate_credits,videos,similar"
       : "credits,videos,similar";
 
-    let fallbackRes = await fetchWithTimeout(
-      `${TMDB_BASE_URL}${secondaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${secondaryAppend}`,
+    const fallbackRes = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}${secondaryPath}?append_to_response=${secondaryAppend}`,
       {},
-      3500
+      4000
     ).catch(() => null);
-
-    if (!fallbackRes || !fallbackRes.ok) {
-      fallbackRes = await fetchWithTimeout(
-        `${TMDB_FALLBACK_URL}${secondaryPath}?api_key=${TMDB_API_KEY}&append_to_response=${secondaryAppend}`,
-        {},
-        3500
-      ).catch(() => null);
-    }
 
     if (fallbackRes && fallbackRes.ok) {
       const data = await fallbackRes.json();
@@ -640,21 +625,13 @@ export async function getTVSeasonEpisodes(id, seasonNumber) {
     }
   } catch (_) {}
 
-  // 2. Direct TMDB endpoints (try primary api.tmdb.org then fallback api.themoviedb.org)
+  // 2. Fetch from secure server TMDB proxy (server attaches API key; client never sees it)
   try {
-    let res = await fetchWithTimeout(
-      `${TMDB_BASE_URL}/tv/${id}/season/${sNum}?api_key=${TMDB_API_KEY}`,
+    const res = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}/tv/${id}/season/${sNum}`,
       {},
-      3500
+      4000
     ).catch(() => null);
-
-    if (!res || !res.ok) {
-      res = await fetchWithTimeout(
-        `${TMDB_FALLBACK_URL}/tv/${id}/season/${sNum}?api_key=${TMDB_API_KEY}`,
-        {},
-        3500
-      ).catch(() => null);
-    }
 
     if (res && res.ok) {
       const data = await res.json();
@@ -716,10 +693,10 @@ export async function searchMovies(query) {
     }
   } catch (_) {}
 
-  // 2. Direct TMDB multi-search with unblocked api.tmdb.org edge
+  // 2. Multi-search via secure server TMDB proxy (server attaches API key)
   try {
-    const url = `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanQuery)}&include_adult=false`;
-    const res = await fetchWithTimeout(url, {}, 3500);
+    const url = `${TMDB_PROXY_URL}/search/multi?query=${encodeURIComponent(cleanQuery)}&include_adult=false`;
+    const res = await fetchWithTimeout(url, {}, 4000);
     if (res.ok) {
       const data = await res.json();
       const results = [];
@@ -746,48 +723,6 @@ export async function searchMovies(query) {
       }
 
       if (results.length > 0) return results;
-    }
-  } catch (_) {}
-
-  // 3. Direct OMDB worldwide search fallback
-  try {
-    const omdbUrl = `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(cleanQuery)}`;
-    const omdbRes = await fetchWithTimeout(omdbUrl, {}, 3500);
-    if (omdbRes.ok) {
-      const omdbData = await omdbRes.json();
-      if (omdbData.Response === "True" && Array.isArray(omdbData.Search)) {
-        const omdbResults = omdbData.Search
-          .filter((item) => item.Type === "movie" || item.Type === "series")
-          .map((item) => {
-            const isTv = item.Type === "series";
-            const year = (item.Year || "").slice(0, 4) || "2024";
-            const poster = item.Poster && item.Poster !== "N/A"
-              ? item.Poster
-              : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80";
-            return {
-              id: item.imdbID,
-              tmdbId: item.imdbID,
-              imdbId: item.imdbID,
-              title: item.Title,
-              year,
-              rating: "7.8",
-              genre: isTv ? "TV Series" : "Cinema",
-              genres: [isTv ? "TV Series" : "Cinema"],
-              duration: isTv ? "TV Series" : "2h 10m",
-              description: `${item.Title} is an acclaimed ${isTv ? "series" : "movie"} released in ${year}.`,
-              overview: `${item.Title} is an acclaimed ${isTv ? "series" : "movie"} released in ${year}.`,
-              poster,
-              backdrop: poster,
-              mediaType: isTv ? "tv" : "movie",
-              isTV: isTv,
-              status: "Released",
-              voteCount: 1000,
-              tags: ["cinema", isTv ? "series" : "movie"],
-            };
-          });
-
-        if (omdbResults.length > 0) return omdbResults;
-      }
     }
   } catch (_) {}
 
@@ -867,11 +802,11 @@ export async function getRecommendedDiscoveries({ seed, count = 28, genre } = {}
   const page = Math.floor(Math.random() * 4) + 1;
   const normalizedResults = [];
 
-  // 1. Try to fetch fresh trending or genre discoveries from TMDB edge
+  // 1. Try to fetch fresh trending or genre discoveries from secure server TMDB proxy
   try {
     const endpoint = genre && genre !== "All" && genre !== "Trending"
-      ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&page=${page}&with_genres=${encodeURIComponent(genre)}`
-      : `${TMDB_BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&page=${page}`;
+      ? `${TMDB_PROXY_URL}/discover/movie?sort_by=popularity.desc&page=${page}&with_genres=${encodeURIComponent(genre)}`
+      : `${TMDB_PROXY_URL}/trending/all/day?page=${page}`;
 
     const res = await fetchWithTimeout(endpoint, {}, 3200);
     if (res.ok) {

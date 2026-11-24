@@ -6,6 +6,7 @@ require("./dnsConfig");
 const connectDB = require("./db");
 
 const movieRoutes = require("./routes/movieRoutes");
+const tmdbRoutes = require("./routes/tmdbRoutes");
 const subtitleRoutes = require("./routes/subtitleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const recommendationRoutes = require("./routes/recommendationRoutes");
@@ -35,6 +36,7 @@ app.use(cookieParser());
 
 // API Routes
 app.use("/api/movies", movieRoutes);
+app.use("/api/tmdb", tmdbRoutes);
 app.use("/api/subtitles", subtitleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/recommendations", recommendationRoutes);
@@ -78,7 +80,11 @@ app.get("/api/tmdb-test", async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`CineVerse API running at http://localhost:${PORT}`);
-});
+// Start server if run directly (not imported as a module or in serverless)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`CineVerse API running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

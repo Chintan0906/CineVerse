@@ -28,6 +28,7 @@ import {
   getFallbackCast,
   getFallbackSimilar,
   KNOWN_FINANCIALS,
+  DEFAULT_AVATAR,
 } from "../services/movieService";
 import { movies as fallbackMovies } from "../data/movies";
 import MovieCard from "../components/movie/MovieCard";
@@ -1199,7 +1200,7 @@ function MovieDetails() {
                     ? (String(rawPic).startsWith("http")
                         ? rawPic
                         : `https://image.tmdb.org/t/p/w185${rawPic.startsWith("/") ? "" : "/"}${rawPic}`)
-                    : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+                    : DEFAULT_AVATAR;
 
                   return (
                     <div key={actor.id || actor.name} className="actor-card glass-card">
@@ -1209,8 +1210,7 @@ function MovieDetails() {
                           alt={actor.name}
                           loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80";
+                            e.currentTarget.src = DEFAULT_AVATAR;
                           }}
                         />
                       </div>

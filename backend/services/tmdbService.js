@@ -82,7 +82,10 @@ const reelsVideoCache = new Map();
 const reelsVideoInFlight = new Map();
 
 async function tmdbRequest(endpoint, params = {}) {
-  const apiKey = process.env.TMDB_API_KEY || "c38f3318c1885596d981f6ffc938dfaf";
+  const apiKey = process.env.TMDB_API_KEY;
+  if (!apiKey) {
+    throw new Error("TMDB_API_KEY is not defined in environment variables");
+  }
 
   const tryFetch = async (baseUrl) => {
     const url = new URL(`${baseUrl}${endpoint}`);
@@ -316,8 +319,9 @@ async function searchMultimedia(query) {
 
   // 2. Try OMDB API fallback
   try {
-    const omdbKey = process.env.OMDB_API_KEY || "780269f3";
-    const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${omdbKey}&s=${encodeURIComponent(cleanQuery)}`);
+    const omdbKey = process.env.OMDB_API_KEY;
+    if (omdbKey) {
+      const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${omdbKey}&s=${encodeURIComponent(cleanQuery)}`);
     if (omdbRes.ok) {
       const omdbData = await omdbRes.json();
       if (omdbData.Response === "True" && Array.isArray(omdbData.Search)) {
@@ -354,6 +358,7 @@ async function searchMultimedia(query) {
           });
       }
     }
+  }
   } catch (_) {}
 
   return [];
