@@ -419,9 +419,18 @@ async function getTVShowDetails(id) {
   }
 }
 
+const seasonCache = new Map();
+const SEASON_CACHE_TTL = 30 * 60 * 1000;
+
 async function getTVSeasonEpisodes(showId, seasonNumber) {
+  const key = `${showId}_s${seasonNumber}`;
+  const cached = seasonCache.get(key);
+  if (cached && Date.now() - cached.timestamp < SEASON_CACHE_TTL) {
+    return cached.episodes;
+  }
+
   const season = await tmdbRequest(`/tv/${showId}/season/${seasonNumber}`);
-  return (season.episodes || []).map((episode) => {
+  const episodes = (season.episodes || []).map((episode) => {
     const epNum = Number(episode.episode_number || 1);
     const still = episode.still_path ? `${IMAGE_BASE_URL}/w500${episode.still_path}` : "";
     return {
@@ -439,6 +448,11 @@ async function getTVSeasonEpisodes(showId, seasonNumber) {
       runtime: episode.runtime || 0,
     };
   });
+
+  if (episodes.length > 0) {
+    seasonCache.set(key, { episodes, timestamp: Date.now() });
+  }
+  return episodes;
 }
 
 // Dedicated fetchers for Movies

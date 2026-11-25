@@ -528,15 +528,16 @@ function MovieDetails() {
     }
   }, [loading, movie, searchParams, requestedType, selectedSeason, selectedEpisode, recordPlay]);
 
-  // Fetch episodes when selectedSeason changes for a TV show
+  const isTvDetected = Boolean(
+    movie?.mediaType === "tv" ||
+    movie?.isTV ||
+    (movie?.seasons && movie.seasons.length > 0) ||
+    requestedType === "tv"
+  );
+
+  // Fetch episodes only when show id, TV status, or selectedSeason changes
   useEffect(() => {
-    const isTv = Boolean(
-      movie?.mediaType === "tv" ||
-      movie?.isTV ||
-      (movie?.seasons && movie.seasons.length > 0) ||
-      requestedType === "tv"
-    );
-    if (!id || !isTv) {
+    if (!id || !isTvDetected) {
       setEpisodes([]);
       return undefined;
     }
@@ -546,10 +547,19 @@ function MovieDetails() {
       .then((data) => {
         if (!active) return;
         if (data && data.length > 0) {
-          setEpisodes(data);
-          try {
-            sessionStorage.setItem(`cineverse_episodes_${id}_s${selectedSeason}`, JSON.stringify(data));
-          } catch (_) {}
+          const nextIsFallback = data.every((ep) => ep.isFallback);
+          setEpisodes((prev) => {
+            const prevHasReal = Array.isArray(prev) && prev.length > 0 && prev.some((ep) => !ep.isFallback);
+            if (prevHasReal && nextIsFallback) {
+              return prev;
+            }
+            return data;
+          });
+          if (!nextIsFallback) {
+            try {
+              sessionStorage.setItem(`cineverse_episodes_${id}_s${selectedSeason}`, JSON.stringify(data));
+            } catch (_) {}
+          }
           const urlEp = Number(searchParams.get("episode"));
           setSelectedEpisode((current) => {
             const candidate = current || urlEp || 1;
@@ -561,28 +571,33 @@ function MovieDetails() {
       })
       .catch(() => {
         if (!active) return;
-        const currentSeasonObj = (movie?.seasons || []).find((s) => Number(s.season_number ?? s.seasonNumber) === Number(selectedSeason));
         const urlEp = Number(searchParams.get("episode"));
-        const epCount = Math.max(Number(currentSeasonObj?.episode_count ?? currentSeasonObj?.episodeCount) || 12, urlEp || 12);
-        const fallbackList = Array.from({ length: epCount }, (_, i) => ({
-          id: `s${selectedSeason}e${i + 1}`,
-          name: `Episode ${i + 1}`,
-          episodeNumber: i + 1,
-          episode_number: i + 1,
-          seasonNumber: selectedSeason,
-          season_number: selectedSeason,
-          overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
-          still: movie?.backdrop || movie?.poster,
-          still_path: movie?.backdrop || movie?.poster,
-          rating: movie?.rating || 8.0,
-          runtime: 45,
-        }));
-        setEpisodes(fallbackList);
+        setEpisodes((prev) => {
+          if (Array.isArray(prev) && prev.length > 0 && prev.some((ep) => !ep.isFallback)) {
+            return prev;
+          }
+          const currentSeasonObj = (movie?.seasons || []).find((s) => Number(s.season_number ?? s.seasonNumber) === Number(selectedSeason));
+          const epCount = Math.max(Number(currentSeasonObj?.episode_count ?? currentSeasonObj?.episodeCount) || 12, urlEp || 12);
+          return Array.from({ length: epCount }, (_, i) => ({
+            id: `s${selectedSeason}e${i + 1}`,
+            name: `Episode ${i + 1}`,
+            episodeNumber: i + 1,
+            episode_number: i + 1,
+            seasonNumber: selectedSeason,
+            season_number: selectedSeason,
+            overview: `Episode ${i + 1} of Season ${selectedSeason}.`,
+            still: movie?.backdrop || movie?.poster,
+            still_path: movie?.backdrop || movie?.poster,
+            rating: movie?.rating || 8.0,
+            runtime: 45,
+            isFallback: true,
+          }));
+        });
         setSelectedEpisode((current) => (urlEp > 0 ? urlEp : current || 1));
       });
 
     return () => { active = false; };
-  }, [id, movie?.seasons, movie?.backdrop, movie?.poster, movie?.rating, requestedType, selectedSeason, searchParams]);
+  }, [id, isTvDetected, selectedSeason]);
 
   const toggleWatchlist = (media) => updateWatchlist(media);
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {

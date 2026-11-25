@@ -459,7 +459,7 @@ export async function getMovieById(id, type) {
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/movies/${encodeURIComponent(id)}${query}`,
       {},
-      2500
+      8000
     );
     if (response.ok) {
       const result = await response.json();
@@ -570,7 +570,7 @@ export async function getTVShowById(id) {
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`,
       {},
-      2500
+      8000
     );
     if (response.ok) {
       const result = await response.json();
@@ -591,21 +591,40 @@ export async function getTVShowById(id) {
   return getMovieById(id, "tv");
 }
 
+const seasonEpisodesCache = new Map();
+
 export async function getTVSeasonEpisodes(id, seasonNumber) {
   const sNum = Number(seasonNumber) || 1;
+  const cacheKey = `${String(id)}_s${sNum}`;
 
-  // 1. Try backend API with timeout
+  if (seasonEpisodesCache.has(cacheKey)) {
+    return seasonEpisodesCache.get(cacheKey);
+  }
+
+  try {
+    const cachedRaw = sessionStorage.getItem(`cineverse_episodes_${cacheKey}`);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (Array.isArray(parsed) && parsed.length > 0 && !parsed.every((ep) => ep.isFallback)) {
+        seasonEpisodesCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch (_) {}
+
+  // 1. Try backend API with generous timeout
   try {
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/movies/${encodeURIComponent(id)}/seasons/${encodeURIComponent(sNum)}`,
       {},
-      2500
+      8000
     );
     if (response.ok) {
       const result = await response.json();
       if (Array.isArray(result.data) && result.data.length > 0) {
-        return result.data.map((ep) => {
+        const mapped = result.data.map((ep) => {
           const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
+          const stillUrl = ep.still || (ep.still_path ? (String(ep.still_path).startsWith("http") ? ep.still_path : `${TMDB_IMAGE_BASE}/w500${ep.still_path}`) : "");
           return {
             id: ep.id || `s${sNum}e${epNum}`,
             name: ep.name || `Episode ${epNum}`,
@@ -614,13 +633,16 @@ export async function getTVSeasonEpisodes(id, seasonNumber) {
             seasonNumber: sNum,
             season_number: sNum,
             overview: ep.overview || `Episode ${epNum} of Season ${sNum}.`,
-            still: ep.still || (ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : ""),
-            still_path: ep.still_path || ep.still || "",
+            still: stillUrl,
+            still_path: stillUrl,
             rating: ep.vote_average ? Number(ep.vote_average).toFixed(1) : (ep.rating || "8.0"),
             runtime: ep.runtime || 45,
             airDate: ep.air_date || ep.airDate || "",
           };
         });
+        seasonEpisodesCache.set(cacheKey, mapped);
+        try { sessionStorage.setItem(`cineverse_episodes_${cacheKey}`, JSON.stringify(mapped)); } catch (_) {}
+        return mapped;
       }
     }
   } catch (_) {}
@@ -630,14 +652,15 @@ export async function getTVSeasonEpisodes(id, seasonNumber) {
     const res = await fetchWithTimeout(
       `${TMDB_PROXY_URL}/tv/${id}/season/${sNum}`,
       {},
-      4000
+      8000
     ).catch(() => null);
 
     if (res && res.ok) {
       const data = await res.json();
       if (Array.isArray(data.episodes) && data.episodes.length > 0) {
-        return data.episodes.map((ep) => {
+        const mapped = data.episodes.map((ep) => {
           const epNum = Number(ep.episode_number ?? ep.episodeNumber ?? 1);
+          const stillUrl = ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : "";
           return {
             id: ep.id || `s${sNum}e${epNum}`,
             name: ep.name || `Episode ${epNum}`,
@@ -646,18 +669,21 @@ export async function getTVSeasonEpisodes(id, seasonNumber) {
             seasonNumber: Number(ep.season_number ?? sNum),
             season_number: Number(ep.season_number ?? sNum),
             overview: ep.overview || `Episode ${epNum} of Season ${sNum}.`,
-            still: ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : "",
-            still_path: ep.still_path ? `${TMDB_IMAGE_BASE}/w500${ep.still_path}` : "",
+            still: stillUrl,
+            still_path: stillUrl,
             rating: ep.vote_average ? Number(ep.vote_average).toFixed(1) : "8.0",
             runtime: ep.runtime || 45,
             airDate: ep.air_date || "",
           };
         });
+        seasonEpisodesCache.set(cacheKey, mapped);
+        try { sessionStorage.setItem(`cineverse_episodes_${cacheKey}`, JSON.stringify(mapped)); } catch (_) {}
+        return mapped;
       }
     }
   } catch (_) {}
 
-  // 3. Fallback dummy episodes so player never breaks
+  // 3. Fallback dummy episodes so player never breaks (marked isFallback so they never overwrite real data)
   return Array.from({ length: 12 }, (_, i) => ({
     id: `s${sNum}e${i + 1}`,
     name: `Episode ${i + 1}`,
@@ -671,6 +697,7 @@ export async function getTVSeasonEpisodes(id, seasonNumber) {
     rating: "8.0",
     runtime: 45,
     airDate: "",
+    isFallback: true,
   }));
 }
 
