@@ -104,12 +104,8 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
           if (!isMutedRef.current) {
             sendYouTubeCommand("unMute");
             sendYouTubeCommand("setVolume", [100]);
-            if (revealTimerRef.current) {
-              clearTimeout(revealTimerRef.current);
-              revealTimerRef.current = null;
-            }
-            setIsTrailerVisible(true);
-          } else if (!revealTimerRef.current) {
+          }
+          if (!revealTimerRef.current) {
             // Keep the poster over the player through YouTube's longer startup bezel animation.
             revealTimerRef.current = setTimeout(() => {
               revealTimerRef.current = null;
@@ -156,13 +152,6 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       sendYouTubeCommand("unMute");
       sendYouTubeCommand("setVolume", [100]);
       sendYouTubeCommand("playVideo");
-      if (isTrailerPlayingRef.current) {
-        if (revealTimerRef.current) {
-          clearTimeout(revealTimerRef.current);
-          revealTimerRef.current = null;
-        }
-        setIsTrailerVisible(true);
-      }
     } else {
       sendYouTubeCommand("mute");
     }

@@ -166,7 +166,8 @@ function MovieDetails() {
   const [isTrailerVisible, setIsTrailerVisible] = useState(false);
   const [isTrailerMuted, setIsTrailerMuted] = useState(true);
   const isTrailerMutedRef = useRef(true);
-  const isTrailerPlayingRef = useRef(false);
+  const isTrailerVisibleRef = useRef(false);
+  const isTrailerLoopingRef = useRef(false);
   const trailerTimerRef = useRef(null);
   const revealTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
@@ -186,9 +187,10 @@ function MovieDetails() {
   useEffect(() => {
     setIsTrailerMounted(false);
     setIsTrailerVisible(false);
+    isTrailerVisibleRef.current = false;
     setIsTrailerMuted(true);
     isTrailerMutedRef.current = true;
-    isTrailerPlayingRef.current = false;
+    isTrailerLoopingRef.current = false;
     if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     revealTimerRef.current = null;
@@ -206,39 +208,57 @@ function MovieDetails() {
     };
   }, [movie?.id, trailerKey, showPlayer]);
 
-  // Listen for video start and loop seamlessly without playlist UI
+  // Listen for video start and loop seamlessly without center Play/Pause bezel ever appearing
   useEffect(() => {
     const handleMessage = (e) => {
       try {
         if (e.source !== trailerIframeRef.current?.contentWindow) return;
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        // YouTube sends info: 1 (PLAYING)
-        if (
-          (data?.event === "onStateChange" && Number(data?.info) === 1) ||
-          Number(data?.info?.playerState) === 1
-        ) {
-          isTrailerPlayingRef.current = true;
+        const stateCode =
+          data?.event === "onStateChange"
+            ? Number(data?.info)
+            : data?.info?.playerState !== undefined
+            ? Number(data?.info?.playerState)
+            : null;
+
+        // YouTube sends 1 (PLAYING)
+        if (stateCode === 1) {
           if (!isTrailerMutedRef.current) {
             sendYouTubeCommand("unMute");
             sendYouTubeCommand("setVolume", [100]);
-            if (revealTimerRef.current) {
-              clearTimeout(revealTimerRef.current);
-              revealTimerRef.current = null;
-            }
-            setIsTrailerVisible(true);
-          } else if (!revealTimerRef.current && !isTrailerVisible) {
-            // Keep the backdrop over the player through YouTube's longer startup bezel animation.
+          }
+          if (!revealTimerRef.current && !isTrailerVisibleRef.current) {
+            // Keep the backdrop over the player through YouTube's startup/resume Play/Pause bezel animation.
+            const delay = isTrailerLoopingRef.current ? 1800 : 7500;
             revealTimerRef.current = setTimeout(() => {
               revealTimerRef.current = null;
+              isTrailerLoopingRef.current = false;
+              isTrailerVisibleRef.current = true;
               setIsTrailerVisible(true);
-            }, 7500);
+            }, delay);
           }
         }
-        // YouTube sends info: 0 (ENDED) -> loop
-        if (
-          (data?.event === "onStateChange" && Number(data?.info) === 0) ||
-          Number(data?.info?.playerState) === 0
-        ) {
+
+        // YouTube sends 2 (PAUSED) -> hide trailer immediately so center || button never appears
+        if (stateCode === 2) {
+          if (revealTimerRef.current) {
+            clearTimeout(revealTimerRef.current);
+            revealTimerRef.current = null;
+          }
+          isTrailerLoopingRef.current = true;
+          isTrailerVisibleRef.current = false;
+          setIsTrailerVisible(false);
+        }
+
+        // YouTube sends 0 (ENDED) -> hide briefly during seek so center replay/pause bezel never flashes
+        if (stateCode === 0) {
+          if (revealTimerRef.current) {
+            clearTimeout(revealTimerRef.current);
+            revealTimerRef.current = null;
+          }
+          isTrailerLoopingRef.current = true;
+          isTrailerVisibleRef.current = false;
+          setIsTrailerVisible(false);
           sendYouTubeCommand("seekTo", [0, true]);
           sendYouTubeCommand("playVideo");
         }
@@ -272,24 +292,24 @@ function MovieDetails() {
       sendYouTubeCommand("unMute");
       sendYouTubeCommand("setVolume", [100]);
       sendYouTubeCommand("playVideo");
-      if (isTrailerPlayingRef.current) {
-        if (revealTimerRef.current) {
-          clearTimeout(revealTimerRef.current);
-          revealTimerRef.current = null;
-        }
-        setIsTrailerVisible(true);
-      }
     } else {
       sendYouTubeCommand("mute");
     }
   };
 
-  // When trailer modal opens, pause background trailer; resume when closed
+  // When trailer modal opens, pause background trailer & hide it; resume when closed
   useEffect(() => {
     if (prevShowTrailerRef.current === showTrailer) return;
     prevShowTrailerRef.current = showTrailer;
 
     if (showTrailer && isTrailerMounted) {
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+      isTrailerLoopingRef.current = true;
+      isTrailerVisibleRef.current = false;
+      setIsTrailerVisible(false);
       sendYouTubeCommand("pauseVideo");
     } else if (!showTrailer && isTrailerMounted) {
       sendYouTubeCommand("playVideo");
