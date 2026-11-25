@@ -169,6 +169,7 @@ function MovieDetails() {
   const revealTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
   const prevShowTrailerRef = useRef(showTrailer);
+  const detailsPageRef = useRef(null);
 
   const trailerKey =
     movie?.trailerKey ||
@@ -599,6 +600,71 @@ function MovieDetails() {
     return () => { active = false; };
   }, [id, isTvDetected, selectedSeason]);
 
+  // Progressive backdrop blur, subtle zoom, and hero parallax on scroll
+  useEffect(() => {
+    const el = detailsPageRef.current;
+    if (!el || showPlayer) return undefined;
+
+    let rafId = 0;
+    const updateScrollVars = () => {
+      rafId = 0;
+      const y = window.scrollY || 0;
+      const vh = window.innerHeight || 900;
+      const progress = Math.min(Math.max(y / (vh * 0.65), 0), 1);
+
+      el.style.setProperty("--scroll-blur", `${(progress * 24).toFixed(2)}px`);
+      el.style.setProperty("--scroll-brightness", `${(1 - progress * 0.56).toFixed(3)}`);
+      el.style.setProperty("--scroll-scale", `${(1 + progress * 0.065).toFixed(4)}`);
+      el.style.setProperty("--scroll-veil", `${(progress * 0.56).toFixed(3)}`);
+      el.style.setProperty("--hero-shift", `${(-progress * 30).toFixed(1)}px`);
+      el.style.setProperty("--hero-fade", `${(1 - progress * 0.72).toFixed(3)}`);
+    };
+
+    const onScroll = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(updateScrollVars);
+      }
+    };
+
+    updateScrollVars();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [movie?.id, showPlayer]);
+
+  // Smooth IntersectionObserver scroll-reveal for Storyline, Episodes, Cast & Similar sections
+  useEffect(() => {
+    const root = detailsPageRef.current;
+    if (!root || showPlayer) return undefined;
+
+    const targets = root.querySelectorAll("[data-reveal]");
+    if (!targets.length) return undefined;
+
+    if (typeof IntersectionObserver === "undefined") {
+      targets.forEach((node) => node.classList.add("is-revealed"));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -50px 0px", threshold: 0.06 }
+    );
+
+    targets.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [movie?.id, episodes.length, displayCast.length, showPlayer]);
+
   const toggleWatchlist = (media) => updateWatchlist(media);
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {
     saveProgress(media, currentTime, duration, episode);
@@ -848,22 +914,9 @@ function MovieDetails() {
   }
 
   return (
-    <div className="movie-details-page">
-      {/* Compact home control over the movie backdrop */}
-      <header className="details-header">
-        <button
-          className="btn-secondary back-btn details-home-back-btn"
-          onClick={() => navigate("/")}
-          aria-label="Back to home"
-          title="Back to home"
-        >
-          <ArrowLeft size={20} aria-hidden="true" />
-        </button>
-      </header>
-
-      {/* GIANT BACKDROP BILLBOARD */}
-      <section className="details-hero">
-        {/* Background Backdrop Image */}
+    <div className="movie-details-page" ref={detailsPageRef}>
+      {/* FIXED FULL-SCREEN BACKDROP CANVAS (stretches to bottom of screen & blurs on scroll) */}
+      <div className="details-fixed-backdrop" aria-hidden="true">
         <div
           className={`details-hero-bg ${isTrailerVisible && trailerKey ? "has-trailer" : ""}`}
           style={{
@@ -907,12 +960,29 @@ function MovieDetails() {
           </div>
         )}
 
-        {/* Gradient Overlays */}
+        {/* Gradient Overlays & Dynamic Scroll Veil */}
         <div className="details-hero-gradient-left" />
         <div className="details-hero-gradient-bottom" />
         <div className="details-hero-vignette" />
+        <div className="details-scroll-veil" />
+      </div>
+
+      {/* Compact home control over the movie backdrop */}
+      <header className="details-header">
+        <button
+          className="btn-secondary back-btn details-home-back-btn"
+          onClick={() => navigate("/")}
+          aria-label="Back to home"
+          title="Back to home"
+        >
+          <ArrowLeft size={20} aria-hidden="true" />
+        </button>
+      </header>
+
+      {/* GIANT FULL-VIEWPORT HERO BILLBOARD */}
+      <section className="details-hero">
         <div className="details-hero-container">
-          <div className="details-hero-info">
+          <div className="details-hero-info" data-enter="hero">
             <div className="badge-row">
               <span className="section-eyebrow">
                 <Sparkles size={13} />
@@ -1066,7 +1136,7 @@ function MovieDetails() {
       {/* MAIN CONTENT SECTION */}
       <div className="details-body-container">
         {/* STORYLINE & FINANCIAL STATS */}
-        <div className="details-grid">
+        <div className="details-grid" data-reveal="section">
           <div className="details-overview-col">
             <h2 className="section-title">Storyline</h2>
             <p className="details-overview-text">
@@ -1107,7 +1177,7 @@ function MovieDetails() {
 
         {/* WEBSERIES EPISODES & SEASONS GRID */}
         {isTvShow && (
-          <section className="tv-episodes-section">
+          <section className="tv-episodes-section" data-reveal="section">
             <div className="tv-episodes-header">
               <div className="tv-episodes-heading-left">
                 <h2 className="section-title">Episodes</h2>
@@ -1141,7 +1211,7 @@ function MovieDetails() {
             {/* Episodes List / Cards Grid */}
             <div className="episodes-grid">
               {episodes.length > 0 ? (
-                episodes.map((ep) => {
+                episodes.map((ep, epIndex) => {
                   const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
                   const isCurrent = epNum === Number(selectedEpisode);
                   const stillImg = ep.still || ep.still_path || movie?.backdrop || movie?.poster;
@@ -1150,6 +1220,7 @@ function MovieDetails() {
                     <div
                       key={ep.id || `ep-card-${epNum}`}
                       className={`episode-card glass-card ${isCurrent ? "active-episode" : ""}`}
+                      style={{ "--stagger-idx": Math.min(epIndex, 11) }}
                       onClick={() => handleStartPlay(selectedSeason, epNum)}
                     >
                       <div className="episode-thumbnail-wrap">
@@ -1205,11 +1276,11 @@ function MovieDetails() {
 
         {/* TOP CAST & CREW */}
         {((displayCast && displayCast.length > 0) || !isDetailsLoaded) && (
-          <section className="cast-section">
+          <section className="cast-section" data-reveal="section">
             <h2 className="section-title">Top Cast & Crew</h2>
             <div className="cast-grid">
               {displayCast && displayCast.length > 0 ? (
-                displayCast.map((actor) => {
+                displayCast.map((actor, actorIndex) => {
                   const rawPic = actor.profile || actor.profile_path || "";
                   const profileImg = rawPic
                     ? (String(rawPic).startsWith("http")
@@ -1218,7 +1289,11 @@ function MovieDetails() {
                     : DEFAULT_AVATAR;
 
                   return (
-                    <div key={actor.id || actor.name} className="actor-card glass-card">
+                    <div
+                      key={actor.id || actor.name}
+                      className="actor-card glass-card"
+                      style={{ "--stagger-idx": Math.min(actorIndex, 11) }}
+                    >
                       <div className="actor-image-wrap">
                         <img
                           src={profileImg}
@@ -1251,7 +1326,7 @@ function MovieDetails() {
 
         {/* SIMILAR MOVIES / RECOMMENDATIONS */}
         {displaySimilar && displaySimilar.length > 0 && (
-          <section className="similar-section">
+          <section className="similar-section" data-reveal="section">
             <h2 className="section-title">More Like This</h2>
             <div className="similar-grid">
               {displaySimilar.slice(0, 8).map((simMovie) => {

@@ -5279,3 +5279,227 @@ header.navbar:hover {
 }
 
 
+
+/* ==========================================================================
+   MOVIE DETAILS: FULL-SCREEN BACKDROP + SCROLL BLUR + TASTESKILL REVEAL
+   ========================================================================== */
+
+.movie-details-page {
+  --scroll-blur: 0px;
+  --scroll-brightness: 1;
+  --scroll-scale: 1;
+  --scroll-veil: 0;
+  --hero-shift: 0px;
+  --hero-fade: 1;
+  position: relative !important;
+  min-height: 100dvh !important;
+  background: #070a0d !important;
+  overflow-x: clip !important;
+}
+
+.details-fixed-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: #070a0d !important;
+}
+
+.details-fixed-backdrop .details-hero-bg {
+  position: absolute !important;
+  inset: -24px !important;
+  background-size: cover !important;
+  background-position: center 22% !important;
+  background-repeat: no-repeat !important;
+  filter: blur(var(--scroll-blur, 0px)) brightness(var(--scroll-brightness, 1)) !important;
+  transform: scale(var(--scroll-scale, 1)) !important;
+  transform-origin: center center !important;
+  will-change: transform, filter !important;
+  transition: opacity 0.8s ease-in-out !important;
+}
+
+.details-fixed-backdrop .details-hero-trailer-wrap {
+  position: absolute !important;
+  inset: -24px !important;
+  filter: blur(var(--scroll-blur, 0px)) brightness(var(--scroll-brightness, 1)) !important;
+  transform: scale(var(--scroll-scale, 1)) !important;
+  transform-origin: center center !important;
+  will-change: transform, filter !important;
+}
+
+.details-scroll-veil {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  opacity: var(--scroll-veil, 0) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 10, 13, 0.42) 0%,
+    rgba(7, 10, 13, 0.72) 48%,
+    rgba(7, 10, 13, 0.92) 100%
+  ) !important;
+}
+
+.movie-details-page > .details-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 20 !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+}
+
+.movie-details-page > .details-header > * {
+  pointer-events: auto !important;
+}
+
+.movie-details-page .details-hero {
+  position: relative !important;
+  z-index: 2 !important;
+  min-height: 100dvh !important;
+  background: transparent !important;
+  padding-top: 96px !important;
+  padding-bottom: clamp(54px, 8vh, 92px) !important;
+  display: flex !important;
+  align-items: flex-end !important;
+}
+
+@keyframes detailsHeroEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.details-hero-info[data-enter="hero"] {
+  animation: detailsHeroEnter 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.details-hero-container {
+  transform: translate3d(0, var(--hero-shift, 0px), 0);
+  opacity: var(--hero-fade, 1);
+  will-change: transform, opacity;
+}
+
+.movie-details-page > .details-body-container {
+  position: relative !important;
+  z-index: 3 !important;
+  margin-top: 0 !important;
+  padding-top: clamp(24px, 3.5vh, 44px) !important;
+  padding-bottom: clamp(64px, 9vh, 110px) !important;
+}
+
+/* Tactile glass cards over the blurred movie backdrop */
+.movie-details-page .details-facts-card,
+.movie-details-page .episode-card,
+.movie-details-page .actor-card {
+  background: linear-gradient(155deg, rgba(18, 24, 30, 0.76), rgba(10, 14, 18, 0.84)) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.36) !important;
+}
+
+/* TasteSkill scroll-reveal section transitions */
+.movie-details-page [data-reveal="section"] {
+  opacity: 0;
+  transform: translateY(38px) scale(0.988);
+  will-change: opacity, transform;
+  transition:
+    opacity 0.74s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.78s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.movie-details-page [data-reveal="section"].is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Staggered glide-up for Episodes & Cast cards */
+.movie-details-page .tv-episodes-section:not(.is-revealed) .episode-card,
+.movie-details-page .cast-section:not(.is-revealed) .actor-card {
+  opacity: 0;
+  transform: translateY(28px) scale(0.97);
+}
+
+.movie-details-page .tv-episodes-section.is-revealed .episode-card,
+.movie-details-page .cast-section.is-revealed .actor-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--stagger-idx, 0) * 48ms),
+    transform 0.68s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--stagger-idx, 0) * 48ms),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Hover micro-interactions (TasteSkill House Rule 5: 2px-3px lift + 1.03 inner image zoom + button step/press) */
+.movie-details-page .episode-card:hover,
+.movie-details-page .actor-card:hover {
+  transform: translateY(-3px) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5) !important;
+  transition-delay: 0ms !important;
+}
+
+.movie-details-page .episode-thumbnail-wrap,
+.movie-details-page .actor-image-wrap {
+  overflow: hidden !important;
+}
+
+.movie-details-page .episode-thumbnail-wrap img,
+.movie-details-page .actor-image-wrap img {
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.movie-details-page .episode-card:hover .episode-thumbnail-wrap img,
+.movie-details-page .actor-card:hover .actor-image-wrap img {
+  transform: scale(1.035) !important;
+}
+
+.movie-details-page .details-actions button {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease !important;
+}
+
+.movie-details-page .details-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.movie-details-page .details-actions button:active {
+  transform: translateY(0) scale(0.97);
+}
+
+@media (max-width: 768px) {
+  .movie-details-page .details-hero {
+    min-height: 100dvh !important;
+    padding-bottom: 42px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .details-hero-info[data-enter="hero"],
+  .movie-details-page [data-reveal="section"],
+  .movie-details-page .episode-card,
+  .movie-details-page .actor-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
