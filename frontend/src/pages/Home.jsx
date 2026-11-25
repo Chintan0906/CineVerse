@@ -915,6 +915,8 @@ function getCleanMovieSynopsis(movie, genres = []) {
     }
   }, [loading, movies, searchParams]);
 
+  const homeShellRef = useRef(null);
+
   // Handle Escape key
   function handleModalKeyDown(event) {
     if (event.key === "Escape") {
@@ -979,9 +981,77 @@ function getCleanMovieSynopsis(movie, genres = []) {
     window.setTimeout(() => setShareFeedback(""), 2400);
   };
 
+  const hasHeroBackdrop = Boolean(!searchQuery && activeTab === "Home" && !hasBrowseFilters && featuredList.length > 0);
+
+  // Progressive hero backdrop blur, scale, and veil on scroll (matching MovieDetails)
+  useEffect(() => {
+    const el = homeShellRef.current;
+    if (!el || !hasHeroBackdrop) return undefined;
+
+    let rafId = 0;
+    const updateScrollVars = () => {
+      rafId = 0;
+      const y = window.scrollY || 0;
+      const vh = window.innerHeight || 900;
+      const progress = Math.min(Math.max(y / (vh * 0.65), 0), 1);
+
+      el.style.setProperty("--scroll-blur", `${(progress * 24).toFixed(2)}px`);
+      el.style.setProperty("--scroll-brightness", `${(1 - progress * 0.58).toFixed(3)}`);
+      el.style.setProperty("--scroll-scale", `${(1 + progress * 0.065).toFixed(4)}`);
+      el.style.setProperty("--scroll-veil", `${(progress * 0.62).toFixed(3)}`);
+      el.style.setProperty("--hero-shift", `${(-progress * 28).toFixed(1)}px`);
+      el.style.setProperty("--hero-fade", `${(1 - progress * 0.72).toFixed(3)}`);
+    };
+
+    const onScroll = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(updateScrollVars);
+      }
+    };
+
+    updateScrollVars();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [hasHeroBackdrop]);
+
+  // Smooth IntersectionObserver scroll-reveal for rows & discovery bar over blurred hero
+  useEffect(() => {
+    const root = homeShellRef.current;
+    if (!root || !hasHeroBackdrop) return undefined;
+
+    const targets = root.querySelectorAll(".discovery-bar, .movie-row");
+    if (!targets.length) return undefined;
+
+    if (typeof IntersectionObserver === "undefined") {
+      targets.forEach((node) => node.classList.add("is-revealed"));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -40px 0px", threshold: 0.05 }
+    );
+
+    targets.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [hasHeroBackdrop, loading, featuredList.length]);
+
   return (
     <div
-      className="app-shell"
+      ref={homeShellRef}
+      className={`app-shell ${hasHeroBackdrop ? "has-hero-backdrop" : ""}`}
       onKeyDown={handleModalKeyDown}
       tabIndex={-1}
     >

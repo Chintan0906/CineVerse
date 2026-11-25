@@ -5504,3 +5504,148 @@ header.navbar:hover {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   HOME PAGE: FULL-SCREEN HERO BACKDROP + SCROLL BLUR + REVEAL
+   ========================================================================== */
+
+.app-shell.has-hero-backdrop {
+  --scroll-blur: 0px;
+  --scroll-brightness: 1;
+  --scroll-scale: 1;
+  --scroll-veil: 0;
+  --hero-shift: 0px;
+  --hero-fade: 1;
+  position: relative !important;
+  background: #070a0d !important;
+  overflow-x: clip !important;
+}
+
+.app-shell.has-hero-backdrop > main {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.hero-fixed-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: #070a0d !important;
+}
+
+.hero-slide-bg-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.65s !important;
+  z-index: 1 !important;
+}
+
+.hero-slide-bg-layer.active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2 !important;
+}
+
+.hero-fixed-backdrop .hero-slideshow-bg {
+  position: absolute !important;
+  inset: -24px !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  filter: blur(var(--scroll-blur, 0px)) brightness(var(--scroll-brightness, 1)) !important;
+  transform: scale(var(--scroll-scale, 1)) !important;
+  transform-origin: center center !important;
+  will-change: transform, filter !important;
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.hero-fixed-backdrop .hero-trailer-wrap {
+  position: absolute !important;
+  inset: -24px !important;
+  filter: blur(var(--scroll-blur, 0px)) brightness(var(--scroll-brightness, 1)) !important;
+  transform: scale(var(--scroll-scale, 1)) !important;
+  transform-origin: center center !important;
+  will-change: transform, filter !important;
+}
+
+.hero-fixed-backdrop .hero-slideshow-gradient-left,
+.hero-fixed-backdrop .hero-slideshow-gradient-bottom,
+.hero-fixed-backdrop .hero-slideshow-vignette {
+  z-index: 3 !important;
+}
+
+.hero-scroll-veil {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 4 !important;
+  pointer-events: none !important;
+  opacity: var(--scroll-veil, 0) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 10, 13, 0.44) 0%,
+    rgba(7, 10, 13, 0.74) 48%,
+    rgba(7, 10, 13, 0.94) 100%
+  ) !important;
+}
+
+.app-shell.has-hero-backdrop .hero-slideshow {
+  position: relative !important;
+  z-index: 2 !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  background: transparent !important;
+}
+
+.app-shell.has-hero-backdrop .hero-slideshow-content {
+  transform: translate3d(0, var(--hero-shift, 0px), 0);
+  opacity: var(--hero-fade, 1);
+  will-change: transform, opacity;
+}
+
+.app-shell.has-hero-backdrop .discovery-bar,
+.app-shell.has-hero-backdrop .movie-row,
+.app-shell.has-hero-backdrop .catalog-grid,
+.app-shell.has-hero-backdrop .footer {
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+/* Smooth glide-up reveal for Discovery Bar & Movie Rows over blurred hero */
+.app-shell.has-hero-backdrop .discovery-bar,
+.app-shell.has-hero-backdrop .movie-row {
+  opacity: 0;
+  transform: translateY(34px) scale(0.99);
+  will-change: opacity, transform;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.74s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-shell.has-hero-backdrop .discovery-bar.is-revealed,
+.app-shell.has-hero-backdrop .movie-row.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (max-width: 768px) {
+  .app-shell.has-hero-backdrop .hero-slideshow {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell.has-hero-backdrop .discovery-bar,
+  .app-shell.has-hero-backdrop .movie-row {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

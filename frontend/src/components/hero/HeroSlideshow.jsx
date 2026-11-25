@@ -199,23 +199,11 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
   if (!featuredMovies || featuredMovies.length === 0) return null;
 
   return (
-    <section
-      className={`hero-slideshow notranslate ${isTrailerVisible && activeTrailerKey ? "trailer-playing" : ""}`}
-      translate="no"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      aria-label="Featured Showcase"
-    >
-      {/* Individual Self-Contained Slides (Guarantees titles never stack) */}
-      <div className="hero-slideshow-track">
+    <>
+      {/* FIXED FULL-VIEWPORT HERO BACKDROP CANVAS (stretches to bottom & blurs on scroll) */}
+      <div className="hero-fixed-backdrop" aria-hidden="true">
         {featuredMovies.map((movie, index) => {
           const isActive = index === currentIndex;
-          const isSaved = watchlist.some(
-            (saved) => (typeof saved === "object" ? saved.id : saved) === movie?.id
-          );
           const slideTrailerKey =
             movie.trailerKey ||
             trailerKeys[movie.id] ||
@@ -227,11 +215,9 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
 
           return (
             <div
-              key={movie.id}
-              className={`hero-slide-item ${isActive ? "active" : ""}`}
-              aria-hidden={!isActive}
+              key={`bg-${movie.id}`}
+              className={`hero-slide-bg-layer ${isActive ? "active" : ""}`}
             >
-              {/* Slide Background Image */}
               <div
                 className={`hero-slideshow-bg ${isActive ? "active" : ""} ${isActive && isTrailerVisible && slideTrailerKey ? "has-trailer" : ""}`}
                 style={{
@@ -250,7 +236,6 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                 )}
               </div>
 
-              {/* Active Slide Background Trailer Video */}
               {isActive && isTrailerMounted && slideTrailerKey && (
                 <div className={`hero-trailer-wrap ${isTrailerVisible ? "visible" : ""}`}>
                   <iframe
@@ -266,14 +251,14 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                           JSON.stringify({ event: "listening", id: "hero-trailer" }),
                           "*"
                         );
-                      e.target?.contentWindow?.postMessage(
-                        JSON.stringify({
-                          event: "command",
-                          func: "addEventListener",
-                          args: ["onStateChange"],
-                        }),
-                        "*"
-                      );
+                        e.target?.contentWindow?.postMessage(
+                          JSON.stringify({
+                            event: "command",
+                            func: "addEventListener",
+                            args: ["onStateChange"],
+                          }),
+                          "*"
+                        );
                       } catch (_) {}
                       if (!isMutedRef.current) {
                         sendYouTubeCommand("unMute");
@@ -281,18 +266,46 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                       }
                     }}
                   />
-                  {/* Transparent mouse shield that stops all mouse hovering/clicking from reaching YouTube */}
                   <div className="hero-trailer-shield" />
                 </div>
               )}
+            </div>
+          );
+        })}
 
-              {/* Gradient Overlays */}
-              <div className="hero-slideshow-gradient-left" />
-              <div className="hero-slideshow-gradient-bottom" />
-              <div className="hero-slideshow-vignette" />
+        {/* Gradient Overlays & Dynamic Scroll Veil */}
+        <div className="hero-slideshow-gradient-left" />
+        <div className="hero-slideshow-gradient-bottom" />
+        <div className="hero-slideshow-vignette" />
+        <div className="hero-scroll-veil" />
+      </div>
 
-              {/* Content Container (Layered per slide) */}
-              <div className="hero-slideshow-content">
+      <section
+        className={`hero-slideshow notranslate ${isTrailerVisible && activeTrailerKey ? "trailer-playing" : ""}`}
+        translate="no"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        aria-label="Featured Showcase"
+      >
+        {/* Individual Self-Contained Slide Content */}
+        <div className="hero-slideshow-track">
+          {featuredMovies.map((movie, index) => {
+            const isActive = index === currentIndex;
+            const isSaved = watchlist.some(
+              (saved) => (typeof saved === "object" ? saved.id : saved) === movie?.id
+            );
+
+            return (
+              <div
+                key={movie.id}
+                className={`hero-slide-item ${isActive ? "active" : ""}`}
+                aria-hidden={!isActive}
+              >
+                {/* Content Container (Layered per slide) */}
+                <div className="hero-slideshow-content">
                 {/* Top Badge */}
                 <div className="hero-slideshow-badge">
                   <CineVerseEmblem size={15} />
@@ -430,6 +443,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
       )}
 
     </section>
+    </>
   );
 }
 
