@@ -890,3 +890,142 @@ export async function getRecommendedDiscoveries({ seed, count = 28, genre } = {}
   return shuffled.slice(0, count);
 }
 
+
+const FALLBACK_ANIME = [
+  {
+    id: "1429",
+    tmdbId: 1429,
+    title: "Attack on Titan",
+    year: "2013",
+    rating: "8.7",
+    genre: "Action & Adventure",
+    genres: ["Animation", "Action & Adventure", "Sci-Fi & Fantasy"],
+    duration: "TV Series",
+    description: "After his hometown is destroyed and his mother is killed, young Eren Jaeger vows to cleanse the earth of the giant humanoid Titans that have brought humanity to the brink of extinction.",
+    poster: "https://image.tmdb.org/t/p/w500/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg",
+    mediaType: "tv",
+    isTV: true,
+  },
+  {
+    id: "85937",
+    tmdbId: 85937,
+    title: "Demon Slayer: Kimetsu no Yaiba",
+    year: "2019",
+    rating: "8.7",
+    genre: "Animation",
+    genres: ["Animation", "Action & Adventure", "Sci-Fi & Fantasy"],
+    duration: "TV Series",
+    description: "After a demon attack leaves his family slain and his sister cursed, Tanjiro embarks upon a perilous journey to find a cure and avenge those he's lost.",
+    poster: "https://image.tmdb.org/t/p/w500/xUfRZu2mi8jH6SzQEJGP6tjBuYj.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/nTvM4mhqNlHIvUkI1gVnW6XP7GG.jpg",
+    mediaType: "tv",
+    isTV: true,
+  },
+  {
+    id: "95479",
+    tmdbId: 95479,
+    title: "Jujutsu Kaisen",
+    year: "2020",
+    rating: "8.6",
+    genre: "Animation",
+    genres: ["Animation", "Action & Adventure", "Sci-Fi & Fantasy"],
+    duration: "TV Series",
+    description: "With his days numbered, high schooler Yuji decides to hunt down and consume the remaining 19 fingers of a deadly curse so it can be destroyed.",
+    poster: "https://image.tmdb.org/t/p/w500/hFWP5HkbVEe40hrXgtCeQxoccHE.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/gmECX1DvFgdUPJTio2zaL8BPYPu.jpg",
+    mediaType: "tv",
+    isTV: true,
+  },
+  {
+    id: "37854",
+    tmdbId: 37854,
+    title: "One Piece",
+    year: "1999",
+    rating: "8.7",
+    genre: "Action & Adventure",
+    genres: ["Animation", "Action & Adventure", "Comedy"],
+    duration: "TV Series",
+    description: "Monkey D. Luffy sails with his crew of Straw Hat Pirates through the Grand Line to find the legendary treasure One Piece and become the Pirate King.",
+    poster: "https://image.tmdb.org/t/p/w500/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/2rmK7mnchw9Xr3XdiTFSxTTLXqv.jpg",
+    mediaType: "tv",
+    isTV: true,
+  },
+  {
+    id: "13916",
+    tmdbId: 13916,
+    title: "Death Note",
+    year: "2006",
+    rating: "8.6",
+    genre: "Mystery",
+    genres: ["Animation", "Mystery", "Sci-Fi & Fantasy"],
+    duration: "TV Series",
+    description: "An intelligent high school student goes on a secret crusade to eliminate criminals from the world after discovering a notebook capable of killing anyone whose name is written into it.",
+    poster: "https://image.tmdb.org/t/p/w500/tCZFfYTIwrR7n94J6G14Y4hAFU6.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/mOl2t2l5bY82X6K7gE3D3Z4k2bY.jpg",
+    mediaType: "tv",
+    isTV: true,
+  },
+];
+
+export async function getAnimeCatalog() {
+  const CACHE_KEY = "cineverse_anime_catalog_v1";
+  try {
+    const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (parsed && Array.isArray(parsed.featured) && parsed.featured.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (_) {}
+
+  const fetchAnimeList = async (path, isTv = true) => {
+    try {
+      const res = await fetchWithTimeout(`${TMDB_PROXY_URL}${path}`, {}, 8000);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.results || [])
+        .map((item) => normalizeTMDBMovie({ ...item, media_type: isTv ? "tv" : "movie" }, isTv))
+        .filter((m) => m && m.poster && !m.poster.includes("unsplash"));
+    } catch (_) {
+      return [];
+    }
+  };
+
+  const [popular, topRated, action, fantasy, movies] = await Promise.all([
+    fetchAnimeList("/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=1", true),
+    fetchAnimeList("/discover/tv?with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=400&page=1", true),
+    fetchAnimeList("/discover/tv?with_genres=16,10759&with_original_language=ja&sort_by=popularity.desc&page=1", true),
+    fetchAnimeList("/discover/tv?with_genres=16,10765&with_original_language=ja&sort_by=popularity.desc&page=1", true),
+    fetchAnimeList("/discover/movie?with_genres=16&with_original_language=ja&sort_by=popularity.desc&page=1", false),
+  ]);
+
+  const seenFeatured = new Set();
+  const featured = [...popular, ...topRated, ...FALLBACK_ANIME]
+    .filter((item) => {
+      const id = String(item.id);
+      if (seenFeatured.has(id) || !item.backdrop || item.backdrop === item.poster) return false;
+      seenFeatured.add(id);
+      return true;
+    })
+    .slice(0, 7);
+
+  const catalog = {
+    featured: featured.length > 0 ? featured : FALLBACK_ANIME,
+    popular: popular.length > 0 ? popular : FALLBACK_ANIME,
+    topRated: topRated.length > 0 ? topRated : FALLBACK_ANIME,
+    action: action.length > 0 ? action : FALLBACK_ANIME,
+    fantasy: fantasy.length > 0 ? fantasy : FALLBACK_ANIME,
+    movies: movies.length > 0 ? movies : [],
+  };
+
+  if (popular.length > 0) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(catalog));
+    } catch (_) {}
+  }
+
+  return catalog;
+}

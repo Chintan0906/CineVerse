@@ -14,6 +14,7 @@ import {
   User,
   Clapperboard,
   Film,
+  Tv,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./Navbar.css";
@@ -23,8 +24,15 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
   const location = useLocation();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState("Home");
+  const [activeLink, setActiveLink] = useState(() =>
+    location.pathname === "/anime" ? "Anime" : "Home"
+  );
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (location.pathname === "/anime") setActiveLink("Anime");
+    else if (location.pathname === "/") setActiveLink((prev) => (prev === "Anime" ? "Home" : prev));
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,14 +74,25 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
       href: "/movie-reels",
       icon: Film,
     },
+    {
+      name: "Anime",
+      href: "/anime",
+      icon: Tv,
+    },
   ];
 
   function handleNavigation(name, href) {
     setActiveLink(name);
     setMenuOpen(false);
 
+    if (name === "Anime") {
+      navigate("/anime");
+      return;
+    }
+
     if (name === "Home") {
-      onHome?.();
+      if (onHome) onHome();
+      else navigate("/");
       return;
     }
 

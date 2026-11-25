@@ -7,6 +7,7 @@ import SearchPage from "./pages/SearchPage";
 import AuthPage from "./pages/AuthPage";
 import ReelsPage from "./pages/ReelsPage";
 import MovieReelsPage from "./pages/MovieReelsPage";
+import AnimePage from "./pages/AnimePage";
 import { AuthProvider } from "./context/AuthContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/global.css";
@@ -37,6 +38,7 @@ function AppRoutes() {
             <Route path="/movie/:id" element={<MovieDetails />} />
             <Route path="/reels" element={<ReelsPage />} />
             <Route path="/movie-reels" element={<MovieReelsPage />} />
+            <Route path="/anime" element={<AnimePage />} />
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/register" element={<AuthPage mode="register" />} />
 
