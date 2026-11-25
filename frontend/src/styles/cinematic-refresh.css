@@ -5346,9 +5346,10 @@ header.navbar:hover {
 
 .movie-details-page > .details-header {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+  top: 22px !important;
+  left: clamp(24px, 4.5vw, 64px) !important;
+  right: auto !important;
+  width: auto !important;
   z-index: 20 !important;
   background: transparent !important;
   border-bottom: none !important;

@@ -17,6 +17,8 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
   const revealTimerRef = useRef(null);
   const advanceTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
+  const isMutedRef = useRef(true);
+  const isTrailerPlayingRef = useRef(false);
 
   const currentMovie = featuredMovies[currentIndex];
   const activeTrailerKey =
@@ -54,6 +56,8 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     setIsTrailerMounted(false);
     setIsTrailerVisible(false);
     setIsMuted(true);
+    isMutedRef.current = true;
+    isTrailerPlayingRef.current = false;
     if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     revealTimerRef.current = null;
@@ -96,8 +100,17 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
           (data?.event === "onStateChange" && Number(data?.info) === 1) ||
           Number(data?.info?.playerState) === 1
         ) {
-          // Keep the poster over the player through YouTube's longer startup bezel animation.
-          if (!revealTimerRef.current) {
+          isTrailerPlayingRef.current = true;
+          if (!isMutedRef.current) {
+            sendYouTubeCommand("unMute");
+            sendYouTubeCommand("setVolume", [100]);
+            if (revealTimerRef.current) {
+              clearTimeout(revealTimerRef.current);
+              revealTimerRef.current = null;
+            }
+            setIsTrailerVisible(true);
+          } else if (!revealTimerRef.current) {
+            // Keep the poster over the player through YouTube's longer startup bezel animation.
             revealTimerRef.current = setTimeout(() => {
               revealTimerRef.current = null;
               setIsTrailerVisible(true);
@@ -133,23 +146,25 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
     e?.stopPropagation?.();
     if (!activeTrailerKey) return;
 
-    if (!isTrailerVisible) {
+    const nextMuted = !isMutedRef.current;
+    isMutedRef.current = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (!nextMuted) {
       if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-      revealTimerRef.current = null;
       setIsTrailerMounted(true);
-      setIsMuted(false);
       sendYouTubeCommand("unMute");
       sendYouTubeCommand("setVolume", [100]);
       sendYouTubeCommand("playVideo");
-      return;
-    }
-
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    sendYouTubeCommand(nextMuted ? "mute" : "unMute");
-    if (!nextMuted) {
-      sendYouTubeCommand("setVolume", [100]);
+      if (isTrailerPlayingRef.current) {
+        if (revealTimerRef.current) {
+          clearTimeout(revealTimerRef.current);
+          revealTimerRef.current = null;
+        }
+        setIsTrailerVisible(true);
+      }
+    } else {
+      sendYouTubeCommand("mute");
     }
   };
 
@@ -271,7 +286,7 @@ function HeroSlideshow({ featuredMovies = [], watchlist = [], onToggleWatchlist,
                         "*"
                       );
                       } catch (_) {}
-                      if (!isMuted) {
+                      if (!isMutedRef.current) {
                         sendYouTubeCommand("unMute");
                         sendYouTubeCommand("setVolume", [100]);
                       }
