@@ -5610,16 +5610,16 @@ header.navbar:hover {
 }
 
 .app-shell.has-hero-backdrop .discovery-bar,
-.app-shell.has-hero-backdrop .movie-row,
+.app-shell.has-hero-backdrop .movie-section,
 .app-shell.has-hero-backdrop .catalog-grid,
 .app-shell.has-hero-backdrop .footer {
   position: relative !important;
   z-index: 3 !important;
 }
 
-/* Smooth glide-up reveal for Discovery Bar & Movie Rows over blurred hero */
+/* Smooth glide-up reveal for Discovery Bar & Movie Sections over blurred hero */
 .app-shell.has-hero-backdrop .discovery-bar,
-.app-shell.has-hero-backdrop .movie-row {
+.app-shell.has-hero-backdrop .movie-section {
   opacity: 0;
   transform: translateY(34px) scale(0.99);
   will-change: opacity, transform;
@@ -5629,7 +5629,7 @@ header.navbar:hover {
 }
 
 .app-shell.has-hero-backdrop .discovery-bar.is-revealed,
-.app-shell.has-hero-backdrop .movie-row.is-revealed {
+.app-shell.has-hero-backdrop .movie-section.is-revealed {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
@@ -5643,7 +5643,7 @@ header.navbar:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .app-shell.has-hero-backdrop .discovery-bar,
-  .app-shell.has-hero-backdrop .movie-row {
+  .app-shell.has-hero-backdrop .movie-section {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;

@@ -1019,33 +1019,56 @@ function getCleanMovieSynopsis(movie, genres = []) {
     };
   }, [hasHeroBackdrop]);
 
-  // Smooth IntersectionObserver scroll-reveal for rows & discovery bar over blurred hero
+  // Smooth IntersectionObserver + MutationObserver scroll-reveal for rows & discovery bar over blurred hero
   useEffect(() => {
     const root = homeShellRef.current;
     if (!root || !hasHeroBackdrop) return undefined;
 
-    const targets = root.querySelectorAll(".discovery-bar, .movie-row");
-    if (!targets.length) return undefined;
+    const mainEl = root.querySelector("main") || root;
 
     if (typeof IntersectionObserver === "undefined") {
-      targets.forEach((node) => node.classList.add("is-revealed"));
+      mainEl.querySelectorAll(".discovery-bar, .movie-section").forEach((node) => node.classList.add("is-revealed"));
       return undefined;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting || entry.boundingClientRect.top < window.innerHeight) {
             entry.target.classList.add("is-revealed");
             observer.unobserve(entry.target);
           }
         });
       },
-      { rootMargin: "0px 0px -40px 0px", threshold: 0.05 }
+      { rootMargin: "0px 0px 80px 0px", threshold: 0.01 }
     );
 
-    targets.forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
+    const observeTargets = () => {
+      const targets = mainEl.querySelectorAll(".discovery-bar:not(.is-revealed), .movie-section:not(.is-revealed)");
+      targets.forEach((node) => {
+        const rect = node.getBoundingClientRect();
+        if (rect.top < window.innerHeight + 60) {
+          node.classList.add("is-revealed");
+        } else {
+          observer.observe(node);
+        }
+      });
+    };
+
+    observeTargets();
+
+    let mutationObserver;
+    if (typeof MutationObserver !== "undefined") {
+      mutationObserver = new MutationObserver(() => {
+        observeTargets();
+      });
+      mutationObserver.observe(mainEl, { childList: true, subtree: true });
+    }
+
+    return () => {
+      observer.disconnect();
+      if (mutationObserver) mutationObserver.disconnect();
+    };
   }, [hasHeroBackdrop, loading, featuredList.length]);
 
   return (
