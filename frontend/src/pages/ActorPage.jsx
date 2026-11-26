@@ -1,0 +1,349 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Calendar, Film, MapPin, Sparkles, Tv, User } from "lucide-react";
+
+import MovieCard from "../components/movie/MovieCard";
+import Footer from "../components/layout/Footer";
+import { DEFAULT_AVATAR, getActorById } from "../services/movieService";
+import { useLibrary } from "../hooks/useLibrary";
+import { useToast } from "../context/ToastContext";
+
+function calculateAge(birthday, deathday) {
+  if (!birthday) return null;
+  const birth = new Date(birthday);
+  if (Number.isNaN(birth.getTime())) return null;
+  const end = deathday ? new Date(deathday) : new Date();
+  let age = end.getFullYear() - birth.getFullYear();
+  const m = end.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && end.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
+
+function ActorPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pageRef = useRef(null);
+
+  const { watchlist, toggleWatchlist } = useLibrary();
+  const { showToast } = useToast();
+
+  const preloaded = location.state?.actor || null;
+  const [actor, setActor] = useState(preloaded ? {
+    id: preloaded.id || id,
+    name: preloaded.name || "",
+    profile: preloaded.profile || DEFAULT_AVATAR,
+    knownForDepartment: preloaded.department || "Acting",
+    biography: "",
+    credits: [],
+  } : null);
+  const [loading, setLoading] = useState(true);
+  const [creditFilter, setCreditFilter] = useState("all");
+  const [bioExpanded, setBioExpanded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    setBioExpanded(false);
+    setCreditFilter("all");
+    setLoading(true);
+
+    getActorById(id)
+      .then((data) => {
+        if (!active) return;
+        if (data) {
+          setActor(data);
+          document.title = `${data.name} | CineVerse`;
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+      document.title = "CineVerse | Beyond Entertainment";
+    };
+  }, [id]);
+
+  // Progressive scroll blur for actor backdrop
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return undefined;
+
+    let rafId = 0;
+    const updateScrollVars = () => {
+      rafId = 0;
+      const y = window.scrollY || 0;
+      const vh = window.innerHeight || 900;
+      const progress = Math.min(Math.max(y / (vh * 0.55), 0), 1);
+
+      el.style.setProperty("--scroll-blur", `${(progress * 24).toFixed(2)}px`);
+      el.style.setProperty("--scroll-brightness", `${(1 - progress * 0.52).toFixed(3)}`);
+      el.style.setProperty("--scroll-scale", `${(1 + progress * 0.06).toFixed(4)}`);
+      el.style.setProperty("--scroll-veil", `${(0.35 + progress * 0.55).toFixed(3)}`);
+    };
+
+    const onScroll = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(updateScrollVars);
+    };
+
+    updateScrollVars();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [actor?.id]);
+
+  const handleGoBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const credits = actor?.credits || [];
+  const movieCount = useMemo(
+    () => credits.filter((c) => !(c.mediaType === "tv" || c.isTV)).length,
+    [credits]
+  );
+  const tvCount = useMemo(
+    () => credits.filter((c) => Boolean(c.mediaType === "tv" || c.isTV)).length,
+    [credits]
+  );
+
+  const filteredCredits = useMemo(() => {
+    if (creditFilter === "movie") {
+      return credits.filter((c) => !(c.mediaType === "tv" || c.isTV));
+    }
+    if (creditFilter === "tv") {
+      return credits.filter((c) => Boolean(c.mediaType === "tv" || c.isTV));
+    }
+    return credits;
+  }, [credits, creditFilter]);
+
+  const handleSelectMovie = (movie) => {
+    const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+    navigate(`/movie/${movie.id}${isTv ? "?type=tv" : ""}`, {
+      state: {
+        movie,
+        mediaType: isTv ? "tv" : "movie",
+        isTV: isTv,
+        from: `/actor/${id}`,
+      },
+    });
+  };
+
+  const handlePlayMovie = (movie) => {
+    const isTv = Boolean(movie.mediaType === "tv" || movie.isTV);
+    navigate(
+      `/movie/${movie.id}?play=true${isTv ? "&type=tv&season=1&episode=1" : ""}`,
+      {
+        state: {
+          movie,
+          mediaType: isTv ? "tv" : "movie",
+          isTV: isTv,
+          from: `/actor/${id}`,
+        },
+      }
+    );
+  };
+
+  const handleToggleWatchlist = (movie) => {
+    const alreadySaved = watchlist.some((s) => String(s.id || s.tmdbId) === String(movie.id));
+    toggleWatchlist(movie);
+    showToast(
+      alreadySaved ? `Removed "${movie.title}" from My List` : `Added "${movie.title}" to My List`,
+      { type: alreadySaved ? "info" : "success", onUndo: () => toggleWatchlist(movie) }
+    );
+  };
+
+  const age = calculateAge(actor?.birthday, actor?.deathday);
+  const bioText = actor?.biography?.trim() || "";
+  const isLongBio = bioText.length > 380;
+  const displayedBio = bioExpanded || !isLongBio ? bioText : `${bioText.slice(0, 380).trim()}...`;
+
+  return (
+    <div className="actor-page movie-details-page" ref={pageRef}>
+      {/* Fixed Backdrop Canvas */}
+      <div className="details-fixed-backdrop" aria-hidden="true">
+        <div
+          className="details-hero-bg"
+          style={{
+            backgroundImage: actor?.backdrop
+              ? `url("${actor.backdrop}")`
+              : actor?.profile && actor.profile !== DEFAULT_AVATAR
+              ? `url("${actor.profile}")`
+              : "none",
+          }}
+        />
+        <div className="details-hero-gradient-left" />
+        <div className="details-hero-gradient-bottom" />
+        <div className="details-hero-vignette" />
+        <div className="details-scroll-veil" />
+      </div>
+
+      {/* Top Back Button */}
+      <header className="details-header">
+        <button
+          type="button"
+          className="btn-secondary back-btn details-home-back-btn"
+          onClick={handleGoBack}
+          aria-label="Go back"
+          title="Go back"
+        >
+          <ArrowLeft size={20} aria-hidden="true" />
+        </button>
+      </header>
+
+      <main className="actor-page-main">
+        {/* ACTOR HERO HEADER */}
+        <section className="actor-hero-section">
+          <div className="actor-portrait-frame glass-card">
+            <img
+              src={actor?.profile || DEFAULT_AVATAR}
+              alt={actor?.name || "Actor"}
+              onError={(e) => {
+                e.currentTarget.src = DEFAULT_AVATAR;
+              }}
+            />
+          </div>
+
+          <div className="actor-hero-info">
+            <div className="badge-row">
+              <span className="section-eyebrow">
+                <Sparkles size={13} />
+                {actor?.knownForDepartment ? `${actor.knownForDepartment.toUpperCase()} PROFILE` : "ACTOR PROFILE"}
+              </span>
+            </div>
+
+            <h1 className="details-title actor-page-title">
+              {actor?.name || (loading ? "Loading..." : "Actor Not Found")}
+            </h1>
+
+            <div className="details-meta-bar">
+              {actor?.knownForDepartment && (
+                <span className="meta-item">
+                  <User size={14} />
+                  {actor.knownForDepartment}
+                </span>
+              )}
+              {actor?.birthday && (
+                <span className="meta-item">
+                  <Calendar size={14} />
+                  {actor.birthday}
+                  {age !== null && ` (${actor.deathday ? `Died age ${age}` : `Age ${age}`})`}
+                </span>
+              )}
+              {actor?.placeOfBirth && (
+                <span className="meta-item">
+                  <MapPin size={14} />
+                  {actor.placeOfBirth}
+                </span>
+              )}
+            </div>
+
+            {bioText ? (
+              <div className="actor-bio-block">
+                <p className="actor-bio-text">{displayedBio}</p>
+                {isLongBio && (
+                  <button
+                    type="button"
+                    className="btn-secondary actor-bio-toggle"
+                    onClick={() => setBioExpanded((prev) => !prev)}
+                  >
+                    {bioExpanded ? "Show Less" : "Read More"}
+                  </button>
+                )}
+              </div>
+            ) : !loading ? (
+              <p className="actor-bio-text muted">
+                No biography is available for {actor?.name || "this actor"} yet. Explore their filmography below.
+              </p>
+            ) : null}
+          </div>
+        </section>
+
+        {/* FILMOGRAPHY SECTION */}
+        <section className="actor-credits-section">
+          <div className="actor-credits-header">
+            <div className="tv-episodes-heading-left">
+              <h2 className="section-title">Movies &amp; TV Shows</h2>
+              <span className="episodes-count-tag">
+                {loading && credits.length === 0
+                  ? "Loading filmography..."
+                  : `${filteredCredits.length} ${filteredCredits.length === 1 ? "Title" : "Titles"}`}
+              </span>
+            </div>
+
+            {credits.length > 0 && (
+              <div className="actor-credit-filters" role="tablist" aria-label="Filter credits">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={creditFilter === "all"}
+                  className={`cv-ep-range-pill ${creditFilter === "all" ? "active" : ""}`}
+                  onClick={() => setCreditFilter("all")}
+                >
+                  All ({credits.length})
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={creditFilter === "movie"}
+                  className={`cv-ep-range-pill ${creditFilter === "movie" ? "active" : ""}`}
+                  onClick={() => setCreditFilter("movie")}
+                >
+                  <Film size={12} /> Movies ({movieCount})
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={creditFilter === "tv"}
+                  className={`cv-ep-range-pill ${creditFilter === "tv" ? "active" : ""}`}
+                  onClick={() => setCreditFilter("tv")}
+                >
+                  <Tv size={12} /> TV Shows ({tvCount})
+                </button>
+              </div>
+            )}
+          </div>
+
+          {loading && credits.length === 0 ? (
+            <div className="actor-credits-grid">
+              {Array.from({ length: 10 }).map((_, idx) => (
+                <div key={`actor-skel-${idx}`} className="cv-skeleton-card skeleton-shimmer" />
+              ))}
+            </div>
+          ) : filteredCredits.length > 0 ? (
+            <div className="actor-credits-grid">
+              {filteredCredits.map((item) => (
+                <MovieCard
+                  key={`${item.mediaType || "m"}-${item.id}`}
+                  movie={item}
+                  onSelect={handleSelectMovie}
+                  onPlay={handlePlayMovie}
+                  isSaved={watchlist.some((s) => String(s.id || s.tmdbId) === String(item.id))}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="actor-bio-text muted">No titles found in this category.</p>
+          )}
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+export default ActorPage;

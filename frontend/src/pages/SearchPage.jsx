@@ -11,12 +11,14 @@ import {
   Compass,
   SlidersHorizontal,
   Flame,
+  User,
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
 import MovieCard from "../components/movie/MovieCard";
 import {
   searchMovies,
+  searchActors,
   getRecommendedDiscoveries,
   getMovies,
 } from "../services/movieService";
@@ -53,6 +55,7 @@ export default function SearchPage() {
   const [activeGenre, setActiveGenre] = useState("All");
 
   const [searchResults, setSearchResults] = useState([]);
+  const [actorResults, setActorResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
@@ -119,6 +122,7 @@ export default function SearchPage() {
     const clean = query.trim();
     if (!clean) {
       setSearchResults([]);
+      setActorResults([]);
       setIsSearching(false);
       setSearchError("");
       setSearchParams({}, { replace: true });
@@ -147,7 +151,11 @@ export default function SearchPage() {
 
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const results = await searchMovies(clean);
+        const [results, people] = await Promise.all([
+          searchMovies(clean),
+          searchActors(clean),
+        ]);
+        setActorResults(Array.isArray(people) ? people : []);
         if (Array.isArray(results) && results.length > 0) {
           // Merge deduplicated
           const seen = new Set();
@@ -353,6 +361,45 @@ export default function SearchPage() {
                 </span>
               </div>
             </div>
+
+            {actorResults.length > 0 && (
+              <div className="search-actors-block">
+                <h3 className="search-actors-heading">
+                  <User size={15} />
+                  <span>Actors &amp; Creators</span>
+                </h3>
+                <div className="search-actors-row">
+                  {actorResults.map((person) => (
+                    <button
+                      key={`person-${person.id}`}
+                      type="button"
+                      className="search-actor-pill glass-card"
+                      onClick={() =>
+                        navigate(`/actor/${person.id}`, {
+                          state: {
+                            actor: person,
+                            from: `/search?q=${encodeURIComponent(query.trim())}`,
+                          },
+                        })
+                      }
+                    >
+                      <img
+                        src={person.profile}
+                        alt={person.name}
+                        className="search-actor-avatar"
+                        loading="lazy"
+                      />
+                      <div className="search-actor-meta">
+                        <span className="search-actor-name">{person.name}</span>
+                        <span className="search-actor-dept">
+                          {person.knownFor?.length > 0 ? person.knownFor[0] : person.department}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {filteredSearchResults.length > 0 ? (
               <div className="search-movies-grid">

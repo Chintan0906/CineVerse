@@ -1411,8 +1411,31 @@ function MovieDetails() {
                   return (
                     <div
                       key={actor.id || actor.name}
-                      className="actor-card glass-card"
+                      className="actor-card glass-card is-clickable"
                       style={{ "--stagger-idx": Math.min(actorIndex, 11) }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View ${actor.name} profile and movies`}
+                      onClick={() => {
+                        if (!actor.id) return;
+                        navigate(`/actor/${actor.id}`, {
+                          state: {
+                            actor,
+                            from: `${location.pathname}${location.search}`,
+                          },
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if ((e.key === "Enter" || e.key === " ") && actor.id) {
+                          e.preventDefault();
+                          navigate(`/actor/${actor.id}`, {
+                            state: {
+                              actor,
+                              from: `${location.pathname}${location.search}`,
+                            },
+                          });
+                        }
+                      }}
                     >
                       <div className="actor-image-wrap">
                         <img

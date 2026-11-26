@@ -1029,3 +1029,119 @@ export async function getAnimeCatalog() {
 
   return catalog;
 }
+
+export async function searchActors(query) {
+  const cleanQuery = String(query || "").trim();
+  if (!cleanQuery) return [];
+
+  try {
+    const url = `${TMDB_PROXY_URL}/search/person?query=${encodeURIComponent(cleanQuery)}&include_adult=false`;
+    const res = await fetchWithTimeout(url, {}, 5000);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return (data.results || [])
+      .filter((p) => p && p.id && p.name)
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 10)
+      .map((person) => ({
+        id: person.id,
+        name: person.name,
+        department: person.known_for_department || "Acting",
+        profile: person.profile_path
+          ? `${TMDB_IMAGE_BASE}/w185${person.profile_path}`
+          : DEFAULT_AVATAR,
+        knownFor: (person.known_for || [])
+          .map((w) => w.title || w.name)
+          .filter(Boolean)
+          .slice(0, 3),
+        popularity: person.popularity || 0,
+      }));
+  } catch (_) {
+    return [];
+  }
+}
+
+export async function getActorById(personId) {
+  const idStr = String(personId || "").trim();
+  if (!idStr) return null;
+
+  const CACHE_KEY = `cineverse_actor_v1_${idStr}`;
+  try {
+    const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (parsed && parsed.name && Array.isArray(parsed.credits)) {
+        return parsed;
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const res = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}/person/${encodeURIComponent(idStr)}?append_to_response=combined_credits`,
+      {},
+      8000
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !data.id) return null;
+
+    const rawCastCredits = Array.isArray(data.combined_credits?.cast) ? data.combined_credits.cast : [];
+    const rawCrewCredits = Array.isArray(data.combined_credits?.crew) ? data.combined_credits.crew : [];
+    const pool = rawCastCredits.length > 0 ? rawCastCredits : rawCrewCredits;
+
+    const seen = new Set();
+    const sorted = [...pool]
+      .filter((item) => item && (item.media_type === "movie" || item.media_type === "tv") && item.poster_path)
+      .sort((a, b) => {
+        const scoreA = (a.popularity || 0) + (a.vote_count || 0) * 0.02;
+        const scoreB = (b.popularity || 0) + (b.vote_count || 0) * 0.02;
+        return scoreB - scoreA;
+      });
+
+    const credits = [];
+    for (const item of sorted) {
+      const key = `${item.media_type}_${item.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const isTv = item.media_type === "tv";
+      const norm = normalizeTMDBMovie(item, isTv);
+      if (norm) {
+        credits.push({
+          ...norm,
+          character: item.character || item.job || "",
+        });
+      }
+    }
+
+    const bestBackdropItem = sorted.find((i) => i.backdrop_path);
+    const backdrop = bestBackdropItem
+      ? `${TMDB_IMAGE_BASE}/original${bestBackdropItem.backdrop_path}`
+      : "";
+
+    const actor = {
+      id: data.id,
+      name: data.name || "Actor",
+      biography: data.biography || "",
+      birthday: data.birthday || "",
+      deathday: data.deathday || "",
+      placeOfBirth: data.place_of_birth || "",
+      knownForDepartment: data.known_for_department || "Acting",
+      popularity: data.popularity || 0,
+      profile: data.profile_path
+        ? `${TMDB_IMAGE_BASE}/w500${data.profile_path}`
+        : DEFAULT_AVATAR,
+      backdrop,
+      credits,
+    };
+
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(actor));
+    } catch (_) {}
+
+    return actor;
+  } catch (_) {
+    return null;
+  }
+}

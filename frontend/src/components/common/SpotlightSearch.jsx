@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Loader2, Film, Tv, ArrowRight, Star } from "lucide-react";
-import { searchMovies } from "../../services/movieService";
+import { Search, X, Loader2, Film, Tv, ArrowRight, Star, User } from "lucide-react";
+import { searchMovies, searchActors } from "../../services/movieService";
 
 function SpotlightSearch() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [actorResults, setActorResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
@@ -38,6 +39,7 @@ function SpotlightSearch() {
     } else {
       setQuery("");
       setResults([]);
+      setActorResults([]);
     }
   }, [isOpen]);
 
@@ -46,15 +48,22 @@ function SpotlightSearch() {
     const q = query.trim();
     if (!q) {
       setResults([]);
+      setActorResults([]);
       setLoading(false);
       return undefined;
     }
 
     setLoading(true);
     debounceRef.current = setTimeout(() => {
-      searchMovies(q)
-        .then((items) => setResults((items || []).slice(0, 8)))
-        .catch(() => setResults([]))
+      Promise.all([searchMovies(q), searchActors(q)])
+        .then(([items, people]) => {
+          setResults((items || []).slice(0, 6));
+          setActorResults((people || []).slice(0, 3));
+        })
+        .catch(() => {
+          setResults([]);
+          setActorResults([]);
+        })
         .finally(() => setLoading(false));
     }, 240);
 
@@ -111,8 +120,38 @@ function SpotlightSearch() {
           </button>
         </div>
 
-        {results.length > 0 && (
+        {(actorResults.length > 0 || results.length > 0) && (
           <div className="cv-spotlight-results">
+            {actorResults.map((person) => (
+              <button
+                key={`sp-person-${person.id}`}
+                type="button"
+                className="cv-spotlight-item"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(`/actor/${person.id}`, {
+                    state: { actor: person },
+                  });
+                }}
+              >
+                <img
+                  src={person.profile}
+                  alt={person.name}
+                  className="cv-spotlight-thumb is-person"
+                  loading="lazy"
+                />
+                <div className="cv-spotlight-item-info">
+                  <span className="cv-spotlight-item-title">{person.name}</span>
+                  <span className="cv-spotlight-item-meta">
+                    <User size={11} />
+                    <span>Actor</span>
+                    {person.knownFor?.length > 0 && <span>· {person.knownFor[0]}</span>}
+                  </span>
+                </div>
+                <ArrowRight size={15} className="cv-spotlight-arrow" />
+              </button>
+            ))}
+
             {results.map((item) => {
               const isTv = Boolean(item.mediaType === "tv" || item.isTV);
               return (

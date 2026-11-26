@@ -8,6 +8,7 @@ import AuthPage from "./pages/AuthPage";
 import ReelsPage from "./pages/ReelsPage";
 import MovieReelsPage from "./pages/MovieReelsPage";
 import AnimePage from "./pages/AnimePage";
+import ActorPage from "./pages/ActorPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import SpotlightSearch from "./components/common/SpotlightSearch";
@@ -74,6 +75,7 @@ function AppRoutes() {
             <Route path="/reels" element={<ReelsPage />} />
             <Route path="/movie-reels" element={<MovieReelsPage />} />
             <Route path="/anime" element={<AnimePage />} />
+            <Route path="/actor/:id" element={<ActorPage />} />
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/register" element={<AuthPage mode="register" />} />
 
