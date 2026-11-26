@@ -142,7 +142,8 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
   }
 
   return (
-    <header className={`navbar ${isScrolled ? "scrolled" : ""}`}>
+    <>
+      <header className={`navbar ${isScrolled ? "scrolled" : ""}`}>
       {/* DESKTOP NAVIGATION */}
       <nav
         className={`nav-links ${menuOpen ? "active" : ""}`}
@@ -225,6 +226,7 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
+      </header>
 
       {/* FRAMEXTV SIGNATURE APP-LIKE FIXED MOBILE BOTTOM NAVIGATION */}
       <nav className="framex-bottom-nav" aria-label="Mobile navigation">
@@ -288,7 +290,7 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
           <span>My List</span>
         </button>
       </nav>
-    </header>
+    </>
   );
 }
 

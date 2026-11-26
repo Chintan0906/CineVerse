@@ -6324,3 +6324,67 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
   border-color: rgba(94, 234, 212, 0.45) !important;
   color: #5eead4 !important;
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE CARD & GRID OVERHAUL (DESKTOP-MATCHED CLEAN POSTERS)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .movie-details-page {
+    padding-bottom: 40px !important;
+  }
+
+  /* Desktop-matched borderless poster cards on mobile (no dark card box or bottom meta line) */
+  .movie-card {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 14px !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .movie-card .movie-poster {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42) !important;
+  }
+
+  .movie-card .movie-card-info {
+    padding: 8px 2px 0 !important;
+  }
+
+  .movie-card .movie-card-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+
+  .movie-card .movie-card-meta,
+  .movie-card .movie-card-genre {
+    display: none !important;
+  }
+
+  /* Fix 2-column grid overflow on More Like This & Catalog Grid */
+  .similar-grid,
+  .catalog-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 0 !important;
+  }
+
+  .catalog-grid {
+    padding-inline: 16px !important;
+  }
+
+  .similar-grid .movie-card-wrapper,
+  .similar-grid .movie-card,
+  .catalog-grid .movie-card-wrapper,
+  .catalog-grid .movie-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
