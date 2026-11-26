@@ -232,13 +232,14 @@ function MovieDetails() {
       setUniverseMovies([]);
       return () => {};
     }
-    getUniverseMovies(companyIds, movie?.id || movie?.tmdbId || id, isTvShow).then((list) => {
+    const isTvMedia = Boolean(movie?.mediaType === "tv" || movie?.isTV);
+    getUniverseMovies(companyIds, movie?.id || movie?.tmdbId || id, isTvMedia).then((list) => {
       if (active) setUniverseMovies(list);
     });
     return () => {
       active = false;
     };
-  }, [movie?.productionCompanyIds, movie?.id, movie?.tmdbId, id, isTvShow]);
+  }, [movie?.productionCompanyIds, movie?.id, movie?.tmdbId, movie?.mediaType, movie?.isTV, id]);
 
   // Pre-mount trailer behind the poster, then cross-fade smoothly once playback starts
   useEffect(() => {
