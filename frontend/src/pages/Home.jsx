@@ -36,6 +36,7 @@ function Home() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const hasRestoredRef = useRef(false);
+  const mainRef = useRef(null);
   const { user } = useAuth();
   const {
     watchlist,
@@ -132,6 +133,50 @@ function Home() {
       }
     }
   }, [loading, hasBooted]);
+
+  // Sticky curtain hero scroll progress + clip-path row reveals
+  useEffect(() => {
+    const root = mainRef.current;
+    if (!root) return undefined;
+
+    let rafId = 0;
+    const updateHeroProgress = () => {
+      rafId = 0;
+      const vh = window.innerHeight || 900;
+      const progress = Math.min(Math.max((window.scrollY || 0) / (vh * 0.72), 0), 1);
+      root.style.setProperty("--home-hero-progress", progress.toFixed(3));
+    };
+    const onScroll = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(updateHeroProgress);
+    };
+    updateHeroProgress();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    const targets = root.querySelectorAll("[data-reveal]");
+    let observer = null;
+    if (typeof IntersectionObserver !== "undefined" && targets.length) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-revealed");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { rootMargin: "0px 0px -40px 0px", threshold: 0.04 }
+      );
+      targets.forEach((node) => observer.observe(node));
+    } else {
+      targets.forEach((node) => node.classList.add("is-revealed"));
+    }
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+      observer?.disconnect();
+    };
+  }, [loading, activeTab, activeGenre, searchQuery]);
 
   // Restore stream on page reload if not cached in sessionStorage (runs ONCE on mount)
   useEffect(() => {
@@ -1162,19 +1207,22 @@ function getCleanMovieSynopsis(movie, genres = []) {
         </div>
       )}
 
-      <main>
-        {/* HERO SLIDESHOW - NETFLIX STYLE AUTO-PLAY (SYNCHRONOUS LOAD WITH HOMEPAGE) */}
+      <main ref={mainRef}>
+        {/* HERO SLIDESHOW - STICKY CURTAIN HERO */}
         {!searchQuery && activeTab === "Home" && !hasBrowseFilters && featuredList.length > 0 && (
-          <HeroSlideshow
-            featuredMovies={featuredList}
-            watchlist={watchlist}
-            onToggleWatchlist={toggleWatchlist}
-            onPlay={handlePlay}
-          />
+          <div className="hero-curtain-stage">
+            <HeroSlideshow
+              featuredMovies={featuredList}
+              watchlist={watchlist}
+              onToggleWatchlist={toggleWatchlist}
+              onPlay={handlePlay}
+            />
+          </div>
         )}
 
-        {/* DISCOVERY HEADER / GENRE PILLS */}
-        <section className="discovery-bar" id="discovery">
+        <div className="home-curtain-sheet">
+          {/* DISCOVERY HEADER / GENRE PILLS */}
+          <section className="discovery-bar" id="discovery" data-reveal="row">
           <div>
             <span className="section-eyebrow">
               <Sparkles size={12} />
@@ -1456,6 +1504,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
               </button>
             </div>
           )}
+        </div>
         </div>
       </main>
 

@@ -38,11 +38,24 @@
 }
 
 .hero-slide-item.active .hero-slideshow-title {
-  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: heroMaskUp 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .hero-slide-item.active .hero-slideshow-description {
-  animation: fadeInUp 0.6s 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: heroMaskUp 0.72s 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes heroMaskUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    clip-path: inset(0 0 100% 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 /* Background Images with Smooth Fade Transitions */

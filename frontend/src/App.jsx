@@ -13,16 +13,16 @@ import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import SpotlightSearch from "./components/common/SpotlightSearch";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { useLenisScroll } from "./hooks/useLenisScroll";
 import "./styles/global.css";
 import "./styles/cinematic-refresh.css";
 
 function AppRoutes() {
   const location = useLocation();
+  useLenisScroll(location.pathname);
 
   useEffect(() => {
     document.title = "CineVerse | Beyond Entertainment";
-
-    document.documentElement.style.scrollBehavior = "smooth";
 
     if (import.meta.env.PROD && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch((error) => {
