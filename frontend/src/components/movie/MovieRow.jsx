@@ -53,7 +53,6 @@ function MovieRow({
       className={`movie-section ${isTop10 ? "movie-section-top10" : ""}`}
       id={id}
       aria-label={title}
-      data-reveal="row"
     >
       {/* Section Heading */}
       <div className="movie-section-header">
