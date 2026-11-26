@@ -5649,3 +5649,236 @@ header.navbar:hover {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   COLOROS 17 LIVING FLOW: LIQUID GLASS + ELASTIC STRETCHABLE BUTTONS
+   ========================================================================== */
+
+button:not(.indicator):not(.movie-card-trigger),
+.cine-server-card {
+  --gx: 50%;
+  --gy: 50%;
+  scale: 1 1;
+  transform-origin: center center;
+  will-change: scale;
+  transition:
+    scale 0.44s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    color 0.22s ease,
+    box-shadow 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.28s ease !important;
+}
+
+/* Hover: Fluid horizontal liquid elongation */
+button:not(.indicator):not(.movie-card-trigger):not(:disabled):hover,
+.cine-server-card:hover {
+  scale: 1.045 1.015;
+}
+
+/* Active Press: ColorOS 17 Elastic Squish & Bulge (vertical squeeze + horizontal stretch) */
+button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
+.cine-server-card:active {
+  scale: 1.06 0.91 !important;
+  transition-duration: 0.14s !important;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Circular / Icon-only buttons get droplet elastic bounce */
+.icon-button,
+.movie-row-arrow,
+.hero-nav-arrow,
+.details-home-back-btn,
+.card-action-btn,
+.cine-close-btn,
+.reels-action-btn {
+  border-radius: 999px !important;
+}
+
+.icon-button:not(:disabled):hover,
+.movie-row-arrow:not(:disabled):hover,
+.hero-nav-arrow:not(:disabled):hover,
+.details-home-back-btn:not(:disabled):hover,
+.card-action-btn:not(:disabled):hover,
+.cine-close-btn:not(:disabled):hover {
+  scale: 1.08 1.06;
+}
+
+.icon-button:not(:disabled):active,
+.movie-row-arrow:not(:disabled):active,
+.hero-nav-arrow:not(:disabled):active,
+.details-home-back-btn:not(:disabled):active,
+.card-action-btn:not(:disabled):active,
+.cine-close-btn:not(:disabled):active {
+  scale: 1.08 0.9 !important;
+}
+
+/* Luminous Liquid Glass Material + Specular Refraction Rim */
+.btn-secondary,
+.hero-btn-info,
+.hero-btn-list,
+.hero-btn-sound,
+.trailer-voice-btn,
+.nav-search-button,
+.nav-profile-pill,
+.genre-filters button:not(.active),
+.movie-row-arrow,
+.hero-nav-arrow,
+.details-home-back-btn,
+.icon-button,
+.cine-close-btn,
+.cine-sub-btn-pill,
+.cine-sub-reset-btn,
+.card-action-btn,
+.reels-filter-pills button:not(.selected) {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 55%,
+    rgba(255, 255, 255, 0.09) 100%
+  ) !important;
+  backdrop-filter: blur(22px) saturate(190%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(190%) brightness(1.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.36),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.btn-secondary:hover,
+.hero-btn-info:hover,
+.hero-btn-list:hover,
+.hero-btn-sound:hover,
+.trailer-voice-btn:hover,
+.nav-search-button:hover,
+.nav-profile-pill:hover,
+.genre-filters button:not(.active):hover,
+.movie-row-arrow:hover,
+.hero-nav-arrow:hover,
+.details-home-back-btn:hover,
+.icon-button:hover,
+.cine-close-btn:hover,
+.cine-sub-btn-pill:hover,
+.card-action-btn:hover {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.24) 0%,
+    rgba(255, 255, 255, 0.09) 55%,
+    rgba(255, 255, 255, 0.15) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.38),
+    0 0 22px rgba(255, 255, 255, 0.12),
+    inset 0 1.5px 0.5px rgba(255, 255, 255, 0.52),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Primary Luminous Pill Buttons (Play, Active Filters, Sign In Submit) */
+.btn-primary,
+.hero-btn-play,
+.auth-submit-btn,
+.genre-filters button.active {
+  box-shadow:
+    0 10px 28px rgba(255, 255, 255, 0.18),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12) !important;
+}
+
+.btn-primary:hover,
+.hero-btn-play:hover,
+.auth-submit-btn:hover,
+.genre-filters button.active:hover {
+  box-shadow:
+    0 16px 36px rgba(255, 255, 255, 0.28),
+    0 0 28px rgba(255, 255, 255, 0.18),
+    inset 0 2px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Navbar Liquid Glass Pill Morphing */
+.navbar .nav-link {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+/* Dynamic Pointer-Tracking Counter Glow on Glass Pill Buttons */
+.btn-secondary,
+.btn-primary,
+.hero-btn-play,
+.hero-btn-info,
+.hero-btn-list,
+.hero-btn-sound,
+.trailer-voice-btn,
+.nav-search-button,
+.nav-profile-pill,
+.genre-filters button,
+.navbar .nav-link,
+.cine-server-card,
+.cine-sub-btn-pill {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary::after,
+.hero-btn-info::after,
+.hero-btn-list::after,
+.hero-btn-sound::after,
+.trailer-voice-btn::after,
+.nav-search-button::after,
+.nav-profile-pill::after,
+.genre-filters button::after,
+.navbar .nav-link::after,
+.cine-server-card::after,
+.cine-sub-btn-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle 90px at var(--gx, 50%) var(--gy, 50%),
+    rgba(255, 255, 255, 0.26),
+    transparent 70%
+  );
+  transition: opacity 0.28s ease;
+}
+
+.btn-secondary:hover::after,
+.hero-btn-info:hover::after,
+.hero-btn-list:hover::after,
+.hero-btn-sound:hover::after,
+.trailer-voice-btn:hover::after,
+.nav-search-button:hover::after,
+.nav-profile-pill:hover::after,
+.genre-filters button:hover::after,
+.navbar .nav-link:hover::after,
+.cine-server-card:hover::after,
+.cine-sub-btn-pill:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(.indicator):not(.movie-card-trigger),
+  .cine-server-card {
+    scale: 1 1 !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease !important;
+  }
+}

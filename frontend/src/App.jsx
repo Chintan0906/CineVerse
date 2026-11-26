@@ -26,6 +26,39 @@ function AppRoutes() {
         console.error("CineVerse offline shell registration failed:", error);
       });
     }
+
+    // ColorOS 17 Luminous Counter-Glow: track pointer coordinates on buttons
+    let rafId = 0;
+    let lastTarget = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    const handlePointerMove = (e) => {
+      const btn = e.target?.closest?.("button, .cine-server-card");
+      if (!btn) return;
+      lastTarget = btn;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(() => {
+          rafId = 0;
+          if (!lastTarget || !lastTarget.isConnected) return;
+          const rect = lastTarget.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            const px = (((lastX - rect.left) / rect.width) * 100).toFixed(1);
+            const py = (((lastY - rect.top) / rect.height) * 100).toFixed(1);
+            lastTarget.style.setProperty("--gx", `${px}%`);
+            lastTarget.style.setProperty("--gy", `${py}%`);
+          }
+        });
+      }
+    };
+
+    document.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => {
+      document.removeEventListener("pointermove", handlePointerMove);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
