@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import MovieCard from "../components/movie/MovieCard";
 import {
   searchMovies,
@@ -63,10 +64,43 @@ export default function SearchPage() {
   const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
 
   const [localCatalogue, setLocalCatalogue] = useState([]);
+  const [heroIndex, setHeroIndex] = useState(0);
   const searchInputRef = useRef(null);
   const debounceTimerRef = useRef(null);
 
   const { watchlist, toggleWatchlist } = useLibrary();
+
+  // Hero backdrop slides (movie images changing like Home hero, no trailer)
+  const heroSlides = useMemo(() => {
+    const pool = [...localCatalogue, ...recommendations];
+    const seen = new Set();
+    const valid = [];
+    for (const item of pool) {
+      if (!item || !item.backdrop || String(item.backdrop).includes("placeholder")) continue;
+      const key = String(item.id || item.tmdbId || item.title);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      valid.push(item);
+      if (valid.length >= 10) break;
+    }
+    return valid;
+  }, [localCatalogue, recommendations]);
+
+  useEffect(() => {
+    if (heroSlides.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (heroIndex >= heroSlides.length && heroSlides.length > 0) {
+      setHeroIndex(0);
+    }
+  }, [heroIndex, heroSlides.length]);
+
+  const activeHeroMovie = heroSlides[heroIndex] || null;
 
   // Load local catalogue cache for instant 0ms searches
   useEffect(() => {
@@ -250,12 +284,26 @@ export default function SearchPage() {
     <div className="search-page-root">
       <Navbar />
 
-      <main className="search-page-container">
-        {/* HERO SEARCH SECTION */}
-        <section className="search-hero-section">
+      {/* HOME-STYLE HERO WITH CYCLING MOVIE BACKDROPS (NO TRAILER) + OVAL SEARCH BAR */}
+      <section className="search-hero-stage" aria-label="Search cinema and series">
+        <div className="search-hero-backgrounds" aria-hidden="true">
+          {heroSlides.map((slide, idx) => (
+            <div
+              key={`hero-bg-${slide.id || slide.tmdbId || idx}`}
+              className={`search-hero-bg ${idx === heroIndex ? "active" : ""}`}
+              style={{ backgroundImage: `url("${slide.backdrop}")` }}
+            />
+          ))}
+        </div>
+
+        <div className="search-hero-gradient-left" aria-hidden="true" />
+        <div className="search-hero-gradient-bottom" aria-hidden="true" />
+        <div className="search-hero-vignette" aria-hidden="true" />
+
+        <div className="search-hero-inner">
           <div className="search-hero-eyebrow">
             <Sparkles size={13} className="eyebrow-sparkle" />
-            <span>DISCOVER CINEMA & TV</span>
+            <span>DISCOVER CINEMA &amp; SERIES</span>
           </div>
 
           <h1 className="search-hero-heading">
@@ -263,13 +311,13 @@ export default function SearchPage() {
           </h1>
 
           <p className="search-hero-subheading">
-            Search hundreds of thousands of films, series, anime, and directors with zero friction.
+            Search films, series, anime, and cast across the world&apos;s catalogue.
           </p>
 
-          {/* LIQUID GLASS SEARCH BAR */}
+          {/* OVAL LIQUID GLASS SEARCH BAR */}
           <div className="search-input-shell">
             <div className="search-icon-box">
-              <Search size={22} className="search-lens-icon" />
+              <Search size={21} className="search-lens-icon" />
             </div>
 
             <input
@@ -300,10 +348,61 @@ export default function SearchPage() {
               </div>
             )}
           </div>
+        </div>
 
-          {/* FILTER TOOLBAR: TYPE TOGGLE & GENRE PILLS */}
+        {/* FEATURED BACKDROP INFO + SLIDE DOTS */}
+        {activeHeroMovie && (
+          <div className="search-hero-footer-bar">
+            <button
+              type="button"
+              className="search-featured-pill"
+              onClick={() => handleSelectMovie(activeHeroMovie)}
+              title={`Open ${activeHeroMovie.title}`}
+            >
+              <span className="featured-dot" />
+              <span className="featured-label">
+                {activeHeroMovie.title}
+                {activeHeroMovie.year ? ` (${activeHeroMovie.year})` : ""}
+              </span>
+            </button>
+
+            {heroSlides.length > 1 && (
+              <div className="search-hero-dots" role="tablist" aria-label="Featured backdrop slides">
+                {heroSlides.map((slide, idx) => (
+                  <button
+                    key={`dot-${slide.id || idx}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={idx === heroIndex}
+                    aria-label={`Show ${slide.title || `slide ${idx + 1}`}`}
+                    className={`search-hero-dot ${idx === heroIndex ? "active" : ""}`}
+                    onClick={() => setHeroIndex(idx)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <main className="search-page-container">
+        {/* HOME-STYLE DISCOVERY FILTER BAR */}
+        <section className="discovery-bar search-discovery-bar">
+          <div>
+            <span className="section-eyebrow">
+              <Sparkles size={12} />
+              EXPLORE BY TYPE &amp; GENRE
+            </span>
+            <h2>
+              {query.trim()
+                ? `Searching for "${query.trim()}"`
+                : activeGenre !== "All"
+                ? `${activeGenre} Titles`
+                : "Browse Worldwide Catalogue"}
+            </h2>
+          </div>
+
           <div className="search-controls-toolbar">
-            {/* Media Type Filter */}
             <div className="search-type-toggle">
               {TYPE_FILTERS.map((type) => {
                 const Icon = type.icon;
@@ -322,7 +421,6 @@ export default function SearchPage() {
               })}
             </div>
 
-            {/* Genre Pills Slider */}
             <div className="search-genre-pills-row">
               {GENRE_PILLS.map((genre) => {
                 const isActive = activeGenre === genre;
@@ -475,6 +573,7 @@ export default function SearchPage() {
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }
