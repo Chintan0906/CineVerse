@@ -297,12 +297,16 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
     : null;
   const trailerKey = trailerVideo?.key || null;
 
-  const candidateSimilar =
-    (item.similar?.results && item.similar.results.length > 0)
-      ? item.similar.results
-      : (item.recommendations?.results && item.recommendations.results.length > 0)
-      ? item.recommendations.results
-      : [];
+  const recResults = Array.isArray(item.recommendations?.results) ? item.recommendations.results : [];
+  const simResults = Array.isArray(item.similar?.results) ? item.similar.results : [];
+  const mergedMap = new Map();
+  for (const m of [...recResults, ...simResults]) {
+    if (!m || !m.id || String(m.id) === idStr || !m.poster_path) continue;
+    if (!mergedMap.has(String(m.id))) {
+      mergedMap.set(String(m.id), m);
+    }
+  }
+  const candidateSimilar = Array.from(mergedMap.values());
 
   const rawSimilar = candidateSimilar.slice(0, 12).map((m) => normalizeTMDBMovie(m, isTv));
   const similar = rawSimilar.length > 0 ? rawSimilar : getFallbackSimilar(idStr, genres);
@@ -358,6 +362,9 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
           name: item.belongs_to_collection.name,
         }
       : null,
+    productionCompanyIds: Array.isArray(item.production_companies)
+      ? item.production_companies.map((c) => Number(c.id)).filter(Boolean)
+      : [],
     tags: genres.map((g) => g.toLowerCase()),
   };
 }
@@ -485,8 +492,8 @@ export async function getMovieById(id, type) {
 
   // 2. Fallback via secure server TMDB proxy (server injects API key; client never sees it)
   const appendParams = isTv
-    ? "credits,aggregate_credits,videos,similar"
-    : "credits,videos,similar";
+    ? "credits,aggregate_credits,videos,recommendations,similar"
+    : "credits,videos,recommendations,similar";
 
   try {
     const tmdbRes = await fetchWithTimeout(
@@ -503,8 +510,8 @@ export async function getMovieById(id, type) {
 
   try {
     const secondaryAppend = !isTv
-      ? "credits,aggregate_credits,videos,similar"
-      : "credits,videos,similar";
+      ? "credits,aggregate_credits,videos,recommendations,similar"
+      : "credits,videos,recommendations,similar";
 
     const fallbackRes = await fetchWithTimeout(
       `${TMDB_PROXY_URL}${secondaryPath}?append_to_response=${secondaryAppend}`,
@@ -1188,5 +1195,59 @@ export async function getCollectionById(collectionId) {
     return collection;
   } catch (_) {
     return null;
+  }
+}
+
+// Priority-ordered shared cinematic universe / studio company IDs
+const SHARED_UNIVERSE_COMPANY_IDS = [
+  420,    // Marvel Studios
+  19551,  // Marvel Entertainment
+  128064, // DC Studios
+  9993,   // DC Entertainment
+  1,      // Lucasfilm Ltd.
+  3,      // Pixar
+  10342,  // Studio Ghibli
+];
+
+export async function getUniverseMovies(productionCompanyIds = [], excludeId, isTv = false) {
+  if (!Array.isArray(productionCompanyIds) || productionCompanyIds.length === 0) {
+    return [];
+  }
+
+  const matchedCompanyId = SHARED_UNIVERSE_COMPANY_IDS.find((cid) =>
+    productionCompanyIds.includes(cid)
+  );
+  if (!matchedCompanyId) return [];
+
+  const mediaEndpoint = isTv ? "tv" : "movie";
+  const CACHE_KEY = `cineverse_universe_v1_${mediaEndpoint}_${matchedCompanyId}`;
+  const excludeStr = String(excludeId || "");
+
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return parsed.filter((m) => String(m.id || m.tmdbId) !== excludeStr);
+    }
+  } catch (_) {}
+
+  try {
+    const res = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}/discover/${mediaEndpoint}?with_companies=${matchedCompanyId}&sort_by=popularity.desc&page=1`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = (data.results || [])
+      .filter((item) => item && item.id && item.poster_path)
+      .map((item) => normalizeTMDBMovie(item, isTv))
+      .filter(Boolean);
+
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
+    } catch (_) {}
+
+    return list.filter((m) => String(m.id || m.tmdbId) !== excludeStr);
+  } catch (_) {
+    return [];
   }
 }

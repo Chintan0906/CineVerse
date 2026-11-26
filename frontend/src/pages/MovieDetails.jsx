@@ -28,6 +28,7 @@ import {
   getTVShowById,
   getTVSeasonEpisodes,
   getCollectionById,
+  getUniverseMovies,
   getFallbackCast,
   getFallbackSimilar,
   KNOWN_FINANCIALS,
@@ -171,6 +172,7 @@ function MovieDetails() {
   const [lightsOff, setLightsOff] = useState(false);
   const [auraRgb, setAuraRgb] = useState("94, 234, 212");
   const [collectionData, setCollectionData] = useState(null);
+  const [universeMovies, setUniverseMovies] = useState([]);
   const [showTrailer, setShowTrailer] = useState(false);
   const [isTrailerMounted, setIsTrailerMounted] = useState(false);
   const [isTrailerVisible, setIsTrailerVisible] = useState(false);
@@ -221,6 +223,22 @@ function MovieDetails() {
       active = false;
     };
   }, [movie?.collection?.id]);
+
+  // Fetch Shared Cinematic Universe titles (e.g. Marvel Studios, DC, Lucasfilm, Pixar)
+  useEffect(() => {
+    let active = true;
+    const companyIds = movie?.productionCompanyIds;
+    if (!Array.isArray(companyIds) || companyIds.length === 0) {
+      setUniverseMovies([]);
+      return () => {};
+    }
+    getUniverseMovies(companyIds, movie?.id || movie?.tmdbId || id, isTvShow).then((list) => {
+      if (active) setUniverseMovies(list);
+    });
+    return () => {
+      active = false;
+    };
+  }, [movie?.productionCompanyIds, movie?.id, movie?.tmdbId, id, isTvShow]);
 
   // Pre-mount trailer behind the poster, then cross-fade smoothly once playback starts
   useEffect(() => {
@@ -425,14 +443,50 @@ function MovieDetails() {
   }, [movie?.cast, movie?.title, movie?.name, location.state?.title, location.state?.movie?.title, id]);
 
   const displaySimilar = useMemo(() => {
-    if (movie?.similar && Array.isArray(movie.similar) && movie.similar.length > 0) {
-      return movie.similar;
+    const currentId = String(movie?.id || movie?.tmdbId || id);
+    const otherCollectionParts = (collectionData?.parts || []).filter(
+      (part) => String(part.id || part.tmdbId) !== currentId
+    );
+    const baseSimilar =
+      movie?.similar && Array.isArray(movie.similar) && movie.similar.length > 0
+        ? movie.similar
+        : getFallbackSimilar(
+            id,
+            movie?.genres || (movie?.genre ? [movie.genre] : ["Cinema"])
+          );
+
+    const dedupeAppend = (lists) => {
+      const seen = new Set([currentId]);
+      const out = [];
+      for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+          const itemId = String(item?.id || item?.tmdbId || "");
+          if (!itemId || seen.has(itemId)) continue;
+          seen.add(itemId);
+          out.push(item);
+        }
+      }
+      return out;
+    };
+
+    // Shared Cinematic Universe (e.g. Marvel Studios on The Avengers):
+    // Show only franchise/universe movies when the universe has plenty of titles.
+    if (universeMovies.length >= 6) {
+      return dedupeAppend([otherCollectionParts, universeMovies]);
     }
-    const genres = movie?.genres || (movie?.genre ? [movie.genre] : ["Cinema"]);
-    const sim = getFallbackSimilar(id, genres);
-    if (sim && sim.length > 0) return sim;
+
+    // Smaller franchise with > 1 movie (e.g. Dune with 2 movies):
+    // Include the other franchise movie(s) first, then fill with similar movies.
+    if (collectionData?.parts?.length > 1) {
+      return dedupeAppend([otherCollectionParts, universeMovies, baseSimilar]);
+    }
+
+    if (baseSimilar && baseSimilar.length > 0) {
+      return baseSimilar;
+    }
     return fallbackCatalogueMovies.filter((m) => String(m.id || m.tmdbId) !== String(id)).slice(0, 8);
-  }, [movie?.similar, movie?.genres, movie?.genre, id, fallbackCatalogueMovies]);
+  }, [movie?.similar, movie?.genres, movie?.genre, movie?.id, movie?.tmdbId, id, collectionData, universeMovies, fallbackCatalogueMovies]);
 
   const displayBudget = movie?.budget || KNOWN_FINANCIALS[String(movie?.id || id)]?.budget || null;
   const displayRevenue = movie?.revenue || KNOWN_FINANCIALS[String(movie?.id || id)]?.revenue || null;
