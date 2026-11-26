@@ -1230,27 +1230,6 @@ function CineStreamPlayer({
               referrerPolicy="origin-when-cross-origin"
             />
           </div>
-
-          {isTv && nextUpTarget && (
-            <div className="cine-upnext-bar">
-              <div className="cine-upnext-bar-info">
-                <span className="cine-upnext-pill">UP NEXT</span>
-                <span className="cine-upnext-ep-code">
-                  S{nextUpTarget.season} · E{nextUpTarget.episode}
-                </span>
-                <span className="cine-upnext-ep-title">{nextUpTarget.title}</span>
-              </div>
-              <button
-                type="button"
-                className="cine-upnext-bar-btn"
-                onClick={handlePlayNextUp}
-              >
-                <Play size={13} fill="currentColor" />
-                <span>Next Episode</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
         </div>
 
         {/* RIGHT-SIDE SERVER BOX */}
