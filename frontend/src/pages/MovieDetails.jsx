@@ -20,17 +20,20 @@ import {
   Compass,
   Bookmark,
   RotateCcw,
+  Lightbulb,
 } from "lucide-react";
 
 import {
   getMovieById,
   getTVShowById,
   getTVSeasonEpisodes,
+  getCollectionById,
   getFallbackCast,
   getFallbackSimilar,
   KNOWN_FINANCIALS,
   DEFAULT_AVATAR,
 } from "../services/movieService";
+import { extractAuraRgb } from "../utils/auraColor";
 import { movies as fallbackMovies } from "../data/movies";
 import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
@@ -165,6 +168,9 @@ function MovieDetails() {
   const [loading, setLoading] = useState(() => !movie);
   const [error, setError] = useState("");
   const [showPlayer, setShowPlayer] = useState(() => isStreamingQuery);
+  const [lightsOff, setLightsOff] = useState(false);
+  const [auraRgb, setAuraRgb] = useState("94, 234, 212");
+  const [collectionData, setCollectionData] = useState(null);
   const [showTrailer, setShowTrailer] = useState(false);
   const [isTrailerMounted, setIsTrailerMounted] = useState(false);
   const [isTrailerVisible, setIsTrailerVisible] = useState(false);
@@ -186,6 +192,35 @@ function MovieDetails() {
         movie.trailerUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1]
       : null) ||
     null;
+
+  // Extract dominant Aura Glow RGB from movie backdrop/poster
+  useEffect(() => {
+    let active = true;
+    const imgUrl = movie?.backdrop || movie?.poster;
+    if (!imgUrl) return () => {};
+    extractAuraRgb(imgUrl).then((rgb) => {
+      if (active && rgb) setAuraRgb(rgb);
+    });
+    return () => {
+      active = false;
+    };
+  }, [movie?.backdrop, movie?.poster]);
+
+  // Fetch Franchise / Saga Collection when belongs_to_collection is present
+  useEffect(() => {
+    let active = true;
+    const colId = movie?.collection?.id;
+    if (!colId) {
+      setCollectionData(null);
+      return () => {};
+    }
+    getCollectionById(colId).then((col) => {
+      if (active) setCollectionData(col);
+    });
+    return () => {
+      active = false;
+    };
+  }, [movie?.collection?.id]);
 
   // Pre-mount trailer behind the poster, then cross-fade smoothly once playback starts
   useEffect(() => {
@@ -983,9 +1018,14 @@ function MovieDetails() {
   }
 
   return (
-    <div className="movie-details-page" ref={detailsPageRef}>
+    <div
+      className="movie-details-page"
+      ref={detailsPageRef}
+      style={{ "--aura-rgb": auraRgb }}
+    >
       {/* FIXED FULL-SCREEN BACKDROP CANVAS (stretches to bottom of screen & blurs on scroll) */}
       <div className="details-fixed-backdrop" aria-hidden="true">
+        <div className="details-aura-glow" />
         <div
           className={`details-hero-bg ${isTrailerVisible && trailerKey ? "has-trailer" : ""}`}
           style={{
@@ -1467,6 +1507,43 @@ function MovieDetails() {
           </section>
         )}
 
+        {/* FRANCHISE / SAGA COLLECTION STRIP */}
+        {collectionData?.parts?.length > 1 && (
+          <section className="collection-section" data-reveal="section">
+            <div className="collection-section-header">
+              <div>
+                <span className="section-eyebrow">FRANCHISE &amp; SAGA</span>
+                <h2 className="section-title">Part of the {collectionData.name}</h2>
+              </div>
+              <span className="collection-count-badge">
+                {collectionData.parts.length} Films
+              </span>
+            </div>
+            <div className="collection-row">
+              {collectionData.parts.map((part) => {
+                const isCurrent = String(part.id || part.tmdbId) === String(movie.id || movie.tmdbId);
+                return (
+                  <div
+                    key={part.id || part.tmdbId}
+                    className={`collection-card-wrap ${isCurrent ? "is-current" : ""}`}
+                  >
+                    {isCurrent && <span className="collection-current-pill">Current</span>}
+                    <MovieCard
+                      movie={part}
+                      onPlay={() => handleOpenRecommendation(part)}
+                      onToggleWatchlist={toggleWatchlist}
+                      isSaved={watchlist.some(
+                        (saved) => String(saved.id || saved.tmdbId) === String(part.id || part.tmdbId)
+                      )}
+                      variant="row"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* SIMILAR MOVIES / RECOMMENDATIONS */}
         {displaySimilar && displaySimilar.length > 0 && (
           <section className="similar-section" data-reveal="section">
@@ -1499,13 +1576,23 @@ function MovieDetails() {
 
       {/* FULL-SCREEN VIDEO PLAYER */}
       {showPlayer && !isPlayerClosedByUserRef.current && streamMedia && (
-        <div className="player-overlay">
+        <div className={`player-overlay ${lightsOff ? "lights-off" : ""}`}>
           <div className="player-header">
             <div className="player-header-title-block">
               <span className="section-eyebrow">NOW PLAYING</span>
               <h2>{streamMedia.title}</h2>
             </div>
             <div className="player-header-actions">
+              <button
+                type="button"
+                className={`lights-toggle-btn ${lightsOff ? "active" : ""}`}
+                onClick={() => setLightsOff((prev) => !prev)}
+                aria-label={lightsOff ? "Turn lights on" : "Turn lights off"}
+                title={lightsOff ? "Lights On" : "Theater Lights Off"}
+              >
+                <Lightbulb size={16} />
+                <span>{lightsOff ? "Lights On" : "Lights Off"}</span>
+              </button>
               <button
                 className="icon-button"
                 onClick={handleClosePlayer}

@@ -14,6 +14,7 @@ import {
   Info,
   Loader2,
   Share2,
+  Lightbulb,
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
@@ -111,6 +112,7 @@ function Home() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [pendingSection, setPendingSection] = useState("");
   const [shareFeedback, setShareFeedback] = useState("");
+  const [lightsOff, setLightsOff] = useState(false);
 
   const [hasBooted, setHasBooted] = useState(() => {
     try {
@@ -1631,13 +1633,23 @@ function getCleanMovieSynopsis(movie, genres = []) {
 
       {/* VIDEO PLAYER */}
       {(playerMovie || (isStreamingQuery && !isPlayerClosedByUserRef.current)) && (
-        <div className="player-overlay">
+        <div className={`player-overlay ${lightsOff ? "lights-off" : ""}`}>
           <div className="player-header">
             <div className="player-header-title-block">
               <span className="section-eyebrow">NOW PLAYING</span>
               <h2>{playerMovie?.title || "Resuming playback..."}</h2>
             </div>
             <div className="player-header-actions">
+              <button
+                type="button"
+                className={`lights-toggle-btn ${lightsOff ? "active" : ""}`}
+                onClick={() => setLightsOff((prev) => !prev)}
+                aria-label={lightsOff ? "Turn lights on" : "Turn lights off"}
+                title={lightsOff ? "Lights On" : "Theater Lights Off"}
+              >
+                <Lightbulb size={16} />
+                <span>{lightsOff ? "Lights On" : "Lights Off"}</span>
+              </button>
               <button
                 className="icon-button"
                 onClick={handleClosePlayer}

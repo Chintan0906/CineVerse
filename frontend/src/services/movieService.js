@@ -352,6 +352,12 @@ function normalizeTMDBMovie(item, isTvOverride = false) {
     status: item.status || "Released",
     tagline: item.tagline || "",
     voteCount: item.vote_count || 0,
+    collection: item.belongs_to_collection
+      ? {
+          id: item.belongs_to_collection.id,
+          name: item.belongs_to_collection.name,
+        }
+      : null,
     tags: genres.map((g) => g.toLowerCase()),
   };
 }
@@ -1141,6 +1147,45 @@ export async function getActorById(personId) {
     } catch (_) {}
 
     return actor;
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function getCollectionById(collectionId) {
+  if (!collectionId) return null;
+  const CACHE_KEY = `cineverse_collection_v1_${collectionId}`;
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (_) {}
+
+  try {
+    const res = await fetchWithTimeout(`${TMDB_PROXY_URL}/collection/${collectionId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const parts = (data.parts || [])
+      .filter((item) => item && item.poster_path)
+      .sort((a, b) => {
+        const da = a.release_date || "9999-12-31";
+        const db = b.release_date || "9999-12-31";
+        return da.localeCompare(db);
+      })
+      .map((item) => normalizeTMDBMovie(item, false))
+      .filter(Boolean);
+
+    const collection = {
+      id: data.id,
+      name: data.name || "Movie Collection",
+      overview: data.overview || "",
+      parts,
+    };
+
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(collection));
+    } catch (_) {}
+
+    return collection;
   } catch (_) {
     return null;
   }

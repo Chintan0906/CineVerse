@@ -546,11 +546,13 @@ function CineStreamPlayer({
   const [currentPlayTime, setCurrentPlayTime] = useState(0);
   const [subPlaying, setSubPlaying] = useState(true);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [autoNextCountdown, setAutoNextCountdown] = useState(null);
   const iframeRef = useRef(null);
   const screenBoxRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRef = useRef(media);
   const onProgressRef = useRef(onProgress);
+  const nextUpTargetRef = useRef(null);
 
   mediaRef.current = media;
   onProgressRef.current = onProgress;
@@ -930,6 +932,9 @@ function CineStreamPlayer({
           }
         } else if (type === "vidrift:ended") {
           setSubPlaying(false);
+          if (nextUpTargetRef.current) {
+            setAutoNextCountdown(8);
+          }
         }
       }
     };
@@ -960,6 +965,64 @@ function CineStreamPlayer({
       liveTimeRef.current = Number(currentPlayTime);
     }
   }, [currentPlayTime]);
+
+  // Compute Next Episode target for TV/Anime Up-Next bar & auto-next countdown
+  const nextUpTarget = (() => {
+    if (!isTv) return null;
+    const nextNum = Number(currEpisode) + 1;
+    const nextEpInSeason = Array.isArray(episodeList)
+      ? episodeList.find((ep) => Number(ep.episodeNumber ?? ep.episode_number) === nextNum)
+      : null;
+    if (nextEpInSeason) {
+      return {
+        season: Number(currSeason),
+        episode: nextNum,
+        title: nextEpInSeason.name || `Episode ${nextNum}`,
+        isNewSeason: false,
+      };
+    }
+    const nextSeasonNum = Number(currSeason) + 1;
+    const hasNextSeason = Array.isArray(seasonList)
+      ? seasonList.some((s) => Number(s.season_number) === nextSeasonNum)
+      : false;
+    if (hasNextSeason) {
+      return {
+        season: nextSeasonNum,
+        episode: 1,
+        title: `Season ${nextSeasonNum} Premiere`,
+        isNewSeason: true,
+      };
+    }
+    return null;
+  })();
+  nextUpTargetRef.current = nextUpTarget;
+
+  const handlePlayNextUp = useCallback(() => {
+    const target = nextUpTargetRef.current;
+    setAutoNextCountdown(null);
+    if (!target) return;
+    if (target.isNewSeason) {
+      handleSeasonSelect(target.season);
+    } else {
+      handleEpisodeSelect(target.episode);
+    }
+  }, [currSeason, currEpisode]);
+
+  useEffect(() => {
+    setAutoNextCountdown(null);
+  }, [tmdbId, currSeason, currEpisode]);
+
+  useEffect(() => {
+    if (autoNextCountdown === null) return undefined;
+    if (autoNextCountdown <= 0) {
+      handlePlayNextUp();
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setAutoNextCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [autoNextCountdown, handlePlayNextUp]);
 
   const handleSelectServer = (server) => {
     if (server.id === activeServer.id) return;
@@ -1125,6 +1188,35 @@ function CineStreamPlayer({
               </div>
             )}
 
+            {/* AUTO-NEXT EPISODE COUNTDOWN OVERLAY */}
+            {autoNextCountdown !== null && nextUpTarget && (
+              <div className="cine-upnext-countdown" role="dialog" aria-label="Up Next Countdown">
+                <div className="cine-upnext-countdown-meta">
+                  <span className="cine-upnext-eyebrow">UP NEXT IN {autoNextCountdown}S</span>
+                  <h4>
+                    S{nextUpTarget.season} · E{nextUpTarget.episode} — {nextUpTarget.title}
+                  </h4>
+                </div>
+                <div className="cine-upnext-countdown-actions">
+                  <button
+                    type="button"
+                    className="cine-upnext-play-btn"
+                    onClick={handlePlayNextUp}
+                  >
+                    <Play size={14} fill="currentColor" />
+                    <span>Play Now</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="cine-upnext-cancel-btn"
+                    onClick={() => setAutoNextCountdown(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             <iframe
               key={`${activeServer.id}-${activeServer.id === "legacy" ? legacySubServer.id : activeServer.id === "quantum" ? quantumSubServer.id : activeServer.id === "animeembed" ? `${animeEmbedSubServer.id}-${anilistId}` : ""}-${reloadKey}-${tmdbId}-${isTv ? `${currSeason}-${currEpisode}` : "movie"}`}
               ref={iframeRef}
@@ -1138,6 +1230,27 @@ function CineStreamPlayer({
               referrerPolicy="origin-when-cross-origin"
             />
           </div>
+
+          {isTv && nextUpTarget && (
+            <div className="cine-upnext-bar">
+              <div className="cine-upnext-bar-info">
+                <span className="cine-upnext-pill">UP NEXT</span>
+                <span className="cine-upnext-ep-code">
+                  S{nextUpTarget.season} · E{nextUpTarget.episode}
+                </span>
+                <span className="cine-upnext-ep-title">{nextUpTarget.title}</span>
+              </div>
+              <button
+                type="button"
+                className="cine-upnext-bar-btn"
+                onClick={handlePlayNextUp}
+              >
+                <Play size={13} fill="currentColor" />
+                <span>Next Episode</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* RIGHT-SIDE SERVER BOX */}

@@ -6768,3 +6768,331 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
   color: rgba(255, 255, 255, 0.45) !important;
   font-size: 11px !important;
 }
+
+/* =====================================================================
+   FEATURE 1: DYNAMIC AURA GLOW COLOR MATCHING
+   ===================================================================== */
+
+.movie-details-page {
+  --aura-rgb: 94, 234, 212;
+}
+
+.details-aura-glow {
+  position: absolute;
+  inset: -12% -8% auto -8%;
+  height: 78vh;
+  background:
+    radial-gradient(
+      62% 58% at 24% 26%,
+      rgba(var(--aura-rgb), 0.24) 0%,
+      rgba(var(--aura-rgb), 0.08) 44%,
+      transparent 75%
+    ),
+    radial-gradient(
+      48% 46% at 78% 18%,
+      rgba(var(--aura-rgb), 0.16) 0%,
+      transparent 70%
+    );
+  filter: blur(54px);
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.9s ease;
+}
+
+.details-resume-track > span {
+  background: linear-gradient(90deg, rgba(var(--aura-rgb), 0.95), #ffffff) !important;
+  box-shadow: 0 0 12px rgba(var(--aura-rgb), 0.45);
+}
+
+/* =====================================================================
+   FEATURE 2: FRANCHISE / SAGA COLLECTION STRIP
+   ===================================================================== */
+
+.collection-section {
+  margin: 0 0 44px;
+  padding: 22px 24px 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(var(--aura-rgb), 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.collection-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.collection-section-header .section-title {
+  margin: 4px 0 0;
+}
+
+.collection-count-badge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(var(--aura-rgb), 0.14);
+  border: 1px solid rgba(var(--aura-rgb), 0.34);
+}
+
+.collection-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(175px, 200px);
+  gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.collection-card-wrap {
+  position: relative;
+}
+
+.collection-card-wrap.is-current .movie-card {
+  outline: 2px solid rgba(var(--aura-rgb), 0.72);
+  outline-offset: 2px;
+}
+
+.collection-current-pill {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 6;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #070a0d;
+  background: rgb(var(--aura-rgb));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .collection-section {
+    padding: 16px 14px 18px;
+    border-radius: 16px;
+  }
+
+  .collection-row {
+    grid-auto-columns: minmax(145px, 158px);
+    gap: 12px;
+  }
+}
+
+/* =====================================================================
+   FEATURE 3: THEATER LIGHTS-OFF MODE + AUTO-NEXT EPISODE BAR
+   ===================================================================== */
+
+.lights-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.lights-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.lights-toggle-btn.active {
+  background: rgba(250, 204, 21, 0.16);
+  border-color: rgba(250, 204, 21, 0.48);
+  color: #fde047;
+}
+
+.player-overlay.lights-off {
+  background: rgba(2, 2, 4, 0.985) !important;
+}
+
+.player-overlay.lights-off .player-header {
+  opacity: 0.35;
+  transition: opacity 0.25s ease;
+}
+
+.player-overlay.lights-off .player-header:hover {
+  opacity: 1;
+}
+
+.player-overlay.lights-off .cine-server-sidebox,
+.player-overlay.lights-off .cine-series-nav-container,
+.player-overlay.lights-off .stream-recs-section,
+.player-overlay.lights-off .cine-upnext-bar {
+  opacity: 0.22;
+  transition: opacity 0.28s ease;
+}
+
+.player-overlay.lights-off .cine-server-sidebox:hover,
+.player-overlay.lights-off .cine-series-nav-container:hover,
+.player-overlay.lights-off .stream-recs-section:hover,
+.player-overlay.lights-off .cine-upnext-bar:hover {
+  opacity: 0.96;
+}
+
+.player-overlay.lights-off .cine-video-stage {
+  box-shadow: 0 0 90px rgba(0, 0, 0, 0.95), 0 0 36px rgba(var(--aura-rgb, 255, 255, 255), 0.12) !important;
+}
+
+.cine-upnext-bar {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(16, 20, 26, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.cine-upnext-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cine-upnext-pill {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #070a0d;
+  background: #ffffff;
+}
+
+.cine-upnext-ep-code {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cine-upnext-ep-title {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.68);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cine-upnext-bar-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.94);
+  color: #070a0d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.cine-upnext-bar-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cine-upnext-countdown {
+  position: absolute;
+  right: 18px;
+  bottom: 22px;
+  z-index: 28;
+  max-width: min(360px, calc(100% - 36px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(10, 14, 19, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cine-upnext-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.62);
+  margin-bottom: 4px;
+}
+
+.cine-upnext-countdown-meta h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+}
+
+.cine-upnext-countdown-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cine-upnext-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #ffffff;
+  color: #070a0d;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cine-upnext-cancel-btn {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .cine-upnext-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cine-upnext-bar-btn {
+    justify-content: center;
+  }
+}
