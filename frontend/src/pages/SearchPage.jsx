@@ -64,43 +64,10 @@ export default function SearchPage() {
   const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
 
   const [localCatalogue, setLocalCatalogue] = useState([]);
-  const [heroIndex, setHeroIndex] = useState(0);
   const searchInputRef = useRef(null);
   const debounceTimerRef = useRef(null);
 
   const { watchlist, toggleWatchlist } = useLibrary();
-
-  // Hero backdrop slides (movie images changing like Home hero, no trailer)
-  const heroSlides = useMemo(() => {
-    const pool = [...localCatalogue, ...recommendations];
-    const seen = new Set();
-    const valid = [];
-    for (const item of pool) {
-      if (!item || !item.backdrop || String(item.backdrop).includes("placeholder")) continue;
-      const key = String(item.id || item.tmdbId || item.title);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      valid.push(item);
-      if (valid.length >= 10) break;
-    }
-    return valid;
-  }, [localCatalogue, recommendations]);
-
-  useEffect(() => {
-    if (heroSlides.length <= 1) return undefined;
-    const timer = setInterval(() => {
-      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, [heroSlides.length]);
-
-  useEffect(() => {
-    if (heroIndex >= heroSlides.length && heroSlides.length > 0) {
-      setHeroIndex(0);
-    }
-  }, [heroIndex, heroSlides.length]);
-
-  const activeHeroMovie = heroSlides[heroIndex] || null;
 
   // Load local catalogue cache for instant 0ms searches
   useEffect(() => {
@@ -284,110 +251,62 @@ export default function SearchPage() {
     <div className="search-page-root">
       <Navbar />
 
-      {/* HOME-STYLE HERO WITH CYCLING MOVIE BACKDROPS (NO TRAILER) + OVAL SEARCH BAR */}
-      <section className="search-hero-stage" aria-label="Search cinema and series">
-        <div className="search-hero-backgrounds" aria-hidden="true">
-          {heroSlides.map((slide, idx) => (
-            <div
-              key={`hero-bg-${slide.id || slide.tmdbId || idx}`}
-              className={`search-hero-bg ${idx === heroIndex ? "active" : ""}`}
-              style={{ backgroundImage: `url("${slide.backdrop}")` }}
-            />
-          ))}
-        </div>
-
-        <div className="search-hero-gradient-left" aria-hidden="true" />
-        <div className="search-hero-gradient-bottom" aria-hidden="true" />
-        <div className="search-hero-vignette" aria-hidden="true" />
-
-        <div className="search-hero-inner">
-          <div className="search-hero-eyebrow">
-            <Sparkles size={13} className="eyebrow-sparkle" />
-            <span>DISCOVER CINEMA &amp; SERIES</span>
-          </div>
-
-          <h1 className="search-hero-heading">
-            Find anything. Stream anywhere.
-          </h1>
-
-          <p className="search-hero-subheading">
-            Search films, series, anime, and cast across the world&apos;s catalogue.
-          </p>
-
-          {/* OVAL LIQUID GLASS SEARCH BAR */}
-          <div className="search-input-shell">
-            <div className="search-icon-box">
-              <Search size={21} className="search-lens-icon" />
+      <main className="search-page-container">
+        {/* COLOROS 17 LIQUID GLASS HERO & OVAL SEARCH BAR */}
+        <section className="search-glass-hero" aria-label="Search cinema and series">
+          <div className="search-hero-inner">
+            <div className="search-hero-eyebrow">
+              <Sparkles size={13} className="eyebrow-sparkle" />
+              <span>DISCOVER CINEMA &amp; SERIES</span>
             </div>
 
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="search-main-input"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search movies, TV shows, cast, anime, genres..."
-              autoFocus
-              autoComplete="off"
-              spellCheck="false"
-            />
+            <h1 className="search-hero-heading">
+              Find anything. Stream anywhere.
+            </h1>
 
-            {query ? (
-              <button
-                type="button"
-                className="search-clear-btn"
-                onClick={handleClearSearch}
-                aria-label="Clear search"
-                title="Clear search"
-              >
-                <X size={18} />
-              </button>
-            ) : (
-              <div className="search-shortcut-hint" title="Press / anywhere to focus">
-                <span className="shortcut-key">/</span>
+            <p className="search-hero-subheading">
+              Search films, series, anime, and cast across the world&apos;s catalogue.
+            </p>
+
+            {/* OVAL LIQUID GLASS SEARCH BAR */}
+            <div className="search-input-shell">
+              <div className="search-icon-box">
+                <Search size={21} className="search-lens-icon" />
               </div>
-            )}
+
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="search-main-input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search movies, TV shows, cast, anime, genres..."
+                autoFocus
+                autoComplete="off"
+                spellCheck="false"
+              />
+
+              {query ? (
+                <button
+                  type="button"
+                  className="search-clear-btn"
+                  onClick={handleClearSearch}
+                  aria-label="Clear search"
+                  title="Clear search"
+                >
+                  <X size={18} />
+                </button>
+              ) : (
+                <div className="search-shortcut-hint" title="Press / anywhere to focus">
+                  <span className="shortcut-key">/</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* FEATURED BACKDROP INFO + SLIDE DOTS */}
-        {activeHeroMovie && (
-          <div className="search-hero-footer-bar">
-            <button
-              type="button"
-              className="search-featured-pill"
-              onClick={() => handleSelectMovie(activeHeroMovie)}
-              title={`Open ${activeHeroMovie.title}`}
-            >
-              <span className="featured-dot" />
-              <span className="featured-label">
-                {activeHeroMovie.title}
-                {activeHeroMovie.year ? ` (${activeHeroMovie.year})` : ""}
-              </span>
-            </button>
-
-            {heroSlides.length > 1 && (
-              <div className="search-hero-dots" role="tablist" aria-label="Featured backdrop slides">
-                {heroSlides.map((slide, idx) => (
-                  <button
-                    key={`dot-${slide.id || idx}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={idx === heroIndex}
-                    aria-label={`Show ${slide.title || `slide ${idx + 1}`}`}
-                    className={`search-hero-dot ${idx === heroIndex ? "active" : ""}`}
-                    onClick={() => setHeroIndex(idx)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      <main className="search-page-container">
-        {/* HOME-STYLE DISCOVERY FILTER BAR */}
-        <section className="discovery-bar search-discovery-bar">
+        {/* COLOROS 17 LIQUID GLASS DISCOVERY FILTER PANEL */}
+        <section className="search-glass-panel search-discovery-bar">
           <div>
             <span className="section-eyebrow">
               <Sparkles size={12} />
@@ -442,7 +361,7 @@ export default function SearchPage() {
 
         {/* SEARCH RESULTS SECTION (If Query is Active) */}
         {query.trim().length > 0 && (
-          <section className="search-results-section">
+          <section className="search-glass-panel search-results-section">
             <div className="search-section-header">
               <div className="search-section-title-wrap">
                 <h2 className="search-section-title">
@@ -530,7 +449,7 @@ export default function SearchPage() {
         )}
 
         {/* DYNAMIC AUTO-REFRESHING RECOMMENDATIONS SECTION */}
-        <section className="search-recommendations-section">
+        <section className="search-glass-panel search-recommendations-section">
           <div className="search-section-header">
             <div className="search-section-title-wrap">
               <div className="section-eyebrow-tag">
