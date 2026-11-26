@@ -6306,3 +6306,21 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
     bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Compact Circular + Button on MovieDetails */
+.movie-details-page .details-btn-icon-only {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.movie-details-page .details-btn-icon-only.saved {
+  border-color: rgba(94, 234, 212, 0.45) !important;
+  color: #5eead4 !important;
+}

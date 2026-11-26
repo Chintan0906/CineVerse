@@ -26,7 +26,19 @@ function AnimePage() {
 
   const [catalog, setCatalog] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState(() => {
+    try {
+      return sessionStorage.getItem("cineverse_anime_filter_v1") || "All";
+    } catch (_) {
+      return "All";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("cineverse_anime_filter_v1", activeFilter);
+    } catch (_) {}
+  }, [activeFilter]);
 
   useEffect(() => {
     let active = true;
@@ -147,6 +159,7 @@ function AnimePage() {
         movie,
         mediaType: isTv ? "tv" : "movie",
         isTV: isTv,
+        from: "/anime",
       },
     });
   };
@@ -162,6 +175,7 @@ function AnimePage() {
           mediaType: isTv ? "tv" : "movie",
           isTV: isTv,
           autoPlay: true,
+          from: "/anime",
         },
       }
     );

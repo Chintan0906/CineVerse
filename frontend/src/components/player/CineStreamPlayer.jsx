@@ -137,10 +137,11 @@ const STREAM_SERVERS = [
     quality: "1080p Full HD",
     speed: "Ultra Fast CDN",
     badge: "Fast Mirror",
-    getUrl: (tmdbId, isTv, season, episode) => {
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const startParam = currentTime && Number(currentTime) >= 15 ? `?startAt=${Math.floor(Number(currentTime))}` : "";
       return isTv
-        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`
-        : `https://vidfast.vc/movie/${tmdbId}`;
+        ? `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}${startParam}`
+        : `https://vidfast.vc/movie/${tmdbId}${startParam}`;
     },
   },
   {
@@ -160,10 +161,11 @@ const STREAM_SERVERS = [
     quality: "1080p Ultra HD / Auto-Skip",
     speed: "VIP Mirror",
     badge: "VIP Stream",
-    getUrl: (tmdbId, isTv, season, episode) => {
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const startParam = currentTime && Number(currentTime) >= 15 ? `&t=${Math.floor(Number(currentTime))}` : "";
       return isTv
-        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true`
-        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true`;
+        ? `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23ffffff&autoplay=true&autonext=true&autoskip=true${startParam}`
+        : `https://cinesrc.st/embed/movie/${tmdbId}?color=%23ffffff&autoplay=true&autoskip=true${startParam}`;
     },
   },
   {
@@ -172,10 +174,11 @@ const STREAM_SERVERS = [
     quality: "1080p / 4K Ultra HD",
     speed: "Multi-CDN HLS",
     badge: "Multi-CDN",
-    getUrl: (tmdbId, isTv, season, episode) => {
+    getUrl: (tmdbId, isTv, season, episode, currentTime) => {
+      const startParam = currentTime && Number(currentTime) >= 15 ? `&progress=${Math.floor(Number(currentTime))}` : "";
       return isTv
-        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0`
-        : `https://framextv.xyz/embed/${tmdbId}?autoplay=1&muted=0`;
+        ? `https://framextv.xyz/embed/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&muted=0${startParam}`
+        : `https://framextv.xyz/embed/${tmdbId}?autoplay=1&muted=0${startParam}`;
     },
   },
   {
@@ -419,6 +422,23 @@ function CineStreamPlayer({
     }
     return STREAM_SERVERS[0];
   });
+
+  const [serverStartTime, setServerStartTime] = useState(() =>
+    media?.resumePlayback ? Number(media?.currentTime || 0) : 0
+  );
+  const liveTimeRef = useRef(media?.resumePlayback ? Number(media?.currentTime || 0) : 0);
+
+  // Lock background document scroll while player overlay is open so only 1 scrollbar exists
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, []);
 
   const [framexSubServer, setFramexSubServer] = useState(() => {
     try {
@@ -934,8 +954,17 @@ function CineStreamPlayer({
   );
   const activeSubtitleText = activeCue ? activeCue.text : "";
 
+  // Keep liveTimeRef synced with currentPlayTime so switching servers preserves exact playback position
+  useEffect(() => {
+    if (Number(currentPlayTime) > 0) {
+      liveTimeRef.current = Number(currentPlayTime);
+    }
+  }, [currentPlayTime]);
+
   const handleSelectServer = (server) => {
     if (server.id === activeServer.id) return;
+    const resumeAt = Math.max(Number(liveTimeRef.current) || 0, Number(currentPlayTime) || 0);
+    setServerStartTime(resumeAt);
     setIsChanging(true);
     setActiveServer(server);
     try {
@@ -1040,7 +1069,7 @@ function CineStreamPlayer({
         isTv,
         currSeason,
         currEpisode,
-        media?.currentTime || 0,
+        serverStartTime,
         media,
         anilistId
       );

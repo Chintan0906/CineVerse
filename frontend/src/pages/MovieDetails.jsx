@@ -19,6 +19,7 @@ import {
   Home,
   Compass,
   Bookmark,
+  RotateCcw,
 } from "lucide-react";
 
 import {
@@ -769,13 +770,25 @@ function MovieDetails() {
 
   const streamMedia = playerMedia;
 
-  const handleStartPlay = (s = selectedSeason, e = selectedEpisode) => {
+  const handleGoBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const handleStartPlay = (s = selectedSeason, e = selectedEpisode, forceFromBeginning = false) => {
     isPlayerClosedByUserRef.current = false;
     const isMatchingEpisode =
       !isTvShow ||
       (Number(savedHistory?.season) === Number(s) &&
         Number(savedHistory?.episode) === Number(e));
-    const resumeTime = isMatchingEpisode ? Number(savedHistory?.currentTime) || 0 : 0;
+    const resumeTime = forceFromBeginning
+      ? 0
+      : (isMatchingEpisode ? Number(savedHistory?.currentTime) || 0 : 0);
 
     const playMedia = {
       ...(movie || activeStreamMovie || {}),
@@ -785,6 +798,7 @@ function MovieDetails() {
       isTV: isTvShow,
       mediaType: isTvShow ? "tv" : "movie",
       currentTime: resumeTime,
+      resumePlayback: !forceFromBeginning && resumeTime >= 15,
     };
     recordPlay(playMedia, { season: s, episode: e });
     setActiveStreamMovie(playMedia);
@@ -1022,13 +1036,13 @@ function MovieDetails() {
         <div className="details-scroll-veil" />
       </div>
 
-      {/* Compact home control over the movie backdrop */}
+      {/* Compact back control over the movie backdrop (remembers previous page like Anime/Search) */}
       <header className="details-header">
         <button
           className="btn-secondary back-btn details-home-back-btn"
-          onClick={() => navigate("/")}
-          aria-label="Back to home"
-          title="Back to home"
+          onClick={handleGoBack}
+          aria-label="Go back"
+          title="Go back"
         >
           <ArrowLeft size={20} aria-hidden="true" />
         </button>
@@ -1141,6 +1155,17 @@ function MovieDetails() {
               </button>
 
               <div className="details-actions-secondary">
+                {savedHistory && !savedHistory.completed && Number(savedHistory.progressPercent) > 0 && (
+                  <button
+                    className="btn-secondary details-btn-restart"
+                    onClick={() => handleStartPlay(selectedSeason, selectedEpisode, true)}
+                    title="Start from Beginning"
+                  >
+                    <RotateCcw size={15} />
+                    <span>Start from Beginning</span>
+                  </button>
+                )}
+
                 {movie.trailerUrl && (
                   <button
                     className="btn-secondary"
@@ -1152,11 +1177,12 @@ function MovieDetails() {
                 )}
 
                 <button
-                  className="btn-secondary"
+                  className={`btn-secondary details-btn-icon-only ${isSaved ? "saved" : ""}`}
                   onClick={() => toggleWatchlist(movie)}
+                  aria-label={isSaved ? "Remove from My List" : "Add to List"}
+                  title={isSaved ? "In My List" : "Add to List"}
                 >
-                  {isSaved ? <Check size={16} /> : <Plus size={16} />}
-                  <span>{isSaved ? "In My List" : "Add to List"}</span>
+                  {isSaved ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2.4} />}
                 </button>
 
                 {trailerKey && (
