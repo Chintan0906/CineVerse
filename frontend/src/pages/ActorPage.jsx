@@ -100,10 +100,10 @@ function ActorPage() {
   }, [actor?.id]);
 
   const handleGoBack = () => {
-    if (location.state?.from) {
-      navigate(location.state.from);
-    } else if (window.history.length > 1) {
+    if (location.key !== "default") {
       navigate(-1);
+    } else if (location.state?.from) {
+      navigate(location.state.from);
     } else {
       navigate("/");
     }
