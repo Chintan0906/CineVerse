@@ -7109,3 +7109,24 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
     justify-content: center;
   }
 }
+
+/* =====================================================================
+   ANIME PAGE FILTERED CATALOG GRID (DESKTOP + TABLET)
+   ===================================================================== */
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 26px 20px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 12px 4% 72px;
+}
+
+.catalog-grid .movie-card-wrapper,
+.catalog-grid .movie-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}

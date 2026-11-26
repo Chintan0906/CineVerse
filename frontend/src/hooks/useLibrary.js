@@ -151,6 +151,7 @@ export function useLibrary() {
         key: mediaId,
         season: s,
         episode: e,
+        watchedEpisodes: Array.isArray(existing?.watchedEpisodes) ? existing.watchedEpisodes : [],
         watchedAt: Date.now(),
         currentTime: existing?.currentTime || 0,
         durationSeconds: existing?.durationSeconds || 0,
@@ -188,6 +189,12 @@ export function useLibrary() {
       const s = Number(episode.season || snapshot.season || existing?.season || 1);
       const e = Number(episode.episode || snapshot.episode || existing?.episode || 1);
       const progressPercent = Math.min(100, Math.round((watched / total) * 100));
+      const epKey = `S${s}E${e}`;
+      const prevWatched = Array.isArray(existing?.watchedEpisodes) ? existing.watchedEpisodes : [];
+      const watchedEpisodes =
+        progressPercent >= 85 && !prevWatched.includes(epKey)
+          ? [...prevWatched, epKey]
+          : prevWatched;
 
       const nextItem = {
         ...existing,
@@ -198,6 +205,7 @@ export function useLibrary() {
         key: mediaId,
         season: s,
         episode: e,
+        watchedEpisodes,
         currentTime: watched,
         durationSeconds: total,
         progressPercent,

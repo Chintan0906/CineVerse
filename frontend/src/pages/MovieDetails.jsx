@@ -1416,11 +1416,15 @@ function MovieDetails() {
                 ).map((ep, epIndex) => {
                   const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
                   const isCurrent = epNum === Number(selectedEpisode);
+                  const epKey = `S${Number(selectedSeason)}E${epNum}`;
+                  const watchedList = Array.isArray(savedHistory?.watchedEpisodes)
+                    ? savedHistory.watchedEpisodes
+                    : [];
                   const isWatched = Boolean(
                     savedHistory &&
-                      Number(savedHistory.season) === Number(selectedSeason) &&
-                      (epNum < Number(savedHistory.episode) ||
-                        (epNum === Number(savedHistory.episode) &&
+                      (watchedList.includes(epKey) ||
+                        (Number(savedHistory.season) === Number(selectedSeason) &&
+                          epNum === Number(savedHistory.episode) &&
                           (savedHistory.completed || Number(savedHistory.progressPercent) >= 85)))
                   );
                   const stillImg = ep.still || ep.still_path || movie?.backdrop || movie?.poster;
