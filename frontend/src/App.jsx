@@ -9,6 +9,8 @@ import ReelsPage from "./pages/ReelsPage";
 import MovieReelsPage from "./pages/MovieReelsPage";
 import AnimePage from "./pages/AnimePage";
 import { AuthProvider } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
+import SpotlightSearch from "./components/common/SpotlightSearch";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/cinematic-refresh.css";
@@ -87,9 +89,12 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <SpotlightSearch />
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

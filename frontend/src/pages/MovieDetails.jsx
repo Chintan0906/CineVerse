@@ -35,6 +35,7 @@ import MovieCard from "../components/movie/MovieCard";
 import CineStreamPlayer from "../components/player/CineStreamPlayer";
 import StreamRecommendations from "../components/player/StreamRecommendations";
 import { useLibrary } from "../hooks/useLibrary";
+import { useToast } from "../context/ToastContext";
 
 function MovieDetailsSkeleton({ onBack }) {
   return (
@@ -98,6 +99,8 @@ function MovieDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { showToast } = useToast();
+  const [episodeRange, setEpisodeRange] = useState(0);
   const hasRestoredPlayRef = useRef(false);
   const isPlayerClosedByUserRef = useRef(false);
 
@@ -700,7 +703,24 @@ function MovieDetails() {
     return () => observer.disconnect();
   }, [movie?.id, episodes.length, displayCast.length, showPlayer]);
 
-  const toggleWatchlist = (media) => updateWatchlist(media);
+  const toggleWatchlist = (media) => {
+    const target = media || movie;
+    const alreadySaved = target
+      ? watchlist.some((saved) => String(saved.id) === String(target.id))
+      : false;
+    updateWatchlist(target);
+    if (target?.title) {
+      showToast(
+        alreadySaved
+          ? `Removed "${target.title}" from My List`
+          : `Added "${target.title}" to My List`,
+        {
+          type: alreadySaved ? "info" : "success",
+          onUndo: () => updateWatchlist(target),
+        }
+      );
+    }
+  };
   const handlePlayerProgress = useCallback((media, currentTime, duration, episode) => {
     saveProgress(media, currentTime, duration, episode);
   }, [saveProgress]);
@@ -1232,6 +1252,7 @@ function MovieDetails() {
                     const s = Number(e.target.value);
                     setSelectedSeason(s);
                     setSelectedEpisode(1);
+                    setEpisodeRange(0);
                   }}
                 >
                   {availableSeasons.map((season) => (
@@ -1243,12 +1264,44 @@ function MovieDetails() {
               </div>
             </div>
 
+            {/* Range Tabs for long seasons/anime (> 24 episodes) */}
+            {episodes.length > 24 && (
+              <div className="cv-ep-ranges" role="tablist" aria-label="Episode ranges">
+                {Array.from({ length: Math.ceil(episodes.length / 24) }).map((_, rIdx) => {
+                  const start = rIdx * 24 + 1;
+                  const end = Math.min((rIdx + 1) * 24, episodes.length);
+                  return (
+                    <button
+                      key={`ep-range-${rIdx}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={episodeRange === rIdx}
+                      className={`cv-ep-range-pill ${episodeRange === rIdx ? "active" : ""}`}
+                      onClick={() => setEpisodeRange(rIdx)}
+                    >
+                      {start}–{end}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Episodes List / Cards Grid */}
             <div className="episodes-grid">
               {episodes.length > 0 ? (
-                episodes.map((ep, epIndex) => {
+                (episodes.length > 24
+                  ? episodes.slice(episodeRange * 24, (episodeRange + 1) * 24)
+                  : episodes
+                ).map((ep, epIndex) => {
                   const epNum = Number(ep.episodeNumber ?? ep.episode_number ?? 1);
                   const isCurrent = epNum === Number(selectedEpisode);
+                  const isWatched = Boolean(
+                    savedHistory &&
+                      Number(savedHistory.season) === Number(selectedSeason) &&
+                      (epNum < Number(savedHistory.episode) ||
+                        (epNum === Number(savedHistory.episode) &&
+                          (savedHistory.completed || Number(savedHistory.progressPercent) >= 85)))
+                  );
                   const stillImg = ep.still || ep.still_path || movie?.backdrop || movie?.poster;
 
                   return (
@@ -1273,6 +1326,12 @@ function MovieDetails() {
                         <span className="episode-num-badge">
                           E{String(epNum).padStart(2, "0")}
                         </span>
+                        {isWatched && (
+                          <span className="episode-watched-badge" title="Watched">
+                            <Check size={11} strokeWidth={2.8} />
+                            <span>Watched</span>
+                          </span>
+                        )}
                       </div>
 
                       <div className="episode-details">

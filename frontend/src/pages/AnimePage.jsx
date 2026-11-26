@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Loader2 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import HeroSlideshow from "../components/hero/HeroSlideshow";
 import MovieRow from "../components/movie/MovieRow";
 import MovieCard from "../components/movie/MovieCard";
@@ -234,9 +235,19 @@ function AnimePage() {
         </section>
 
         {loading && !catalog ? (
-          <div className="loading-screen" style={{ minHeight: "45vh" }}>
-            <Loader2 size={34} className="spinning-loader" />
-            <p>Loading Anime Universe...</p>
+          <div className="cv-anime-skeleton" aria-busy="true" aria-label="Loading Anime Universe">
+            <div className="hero-skeleton" style={{ minHeight: "72vh", padding: "120px 5% 60px" }}>
+              <div className="hero-skeleton-shimmer hero-skeleton-badge" />
+              <div className="hero-skeleton-shimmer hero-skeleton-title" />
+              <div className="hero-skeleton-shimmer hero-skeleton-meta" />
+              <div className="hero-skeleton-shimmer hero-skeleton-desc" />
+              <div className="hero-skeleton-shimmer hero-skeleton-buttons" />
+            </div>
+            <div className="cv-skeleton-row">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={`anime-skel-${idx}`} className="cv-skeleton-card skeleton-shimmer" />
+              ))}
+            </div>
           </div>
         ) : activeFilter !== "All" ? (
           <section className="catalog-grid">
@@ -316,6 +327,8 @@ function AnimePage() {
           </>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

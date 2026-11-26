@@ -9,6 +9,7 @@ import {
   Clock3,
   Film,
 } from "lucide-react";
+import { useToast } from "../../context/ToastContext";
 
 function MovieCard({
   movie,
@@ -20,6 +21,7 @@ function MovieCard({
 }) {
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   if (!movie) return null;
 
@@ -51,6 +53,15 @@ function MovieCard({
 
     if (onToggleWatchlist) {
       onToggleWatchlist(movie);
+      showToast(
+        isSaved
+          ? `Removed "${movie.title}" from My List`
+          : `Added "${movie.title}" to My List`,
+        {
+          type: isSaved ? "info" : "success",
+          onUndo: () => onToggleWatchlist(movie),
+        }
+      );
     }
   };
 
@@ -264,12 +275,6 @@ function MovieCard({
               </>
             )}
           </div>
-
-          {movie.genre && (
-            <p className="movie-card-genre">
-              {movie.genre}
-            </p>
-          )}
         </div>
       </article>
     </div>

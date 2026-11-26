@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import MovieRow from "../components/movie/MovieRow";
 import MovieCard from "../components/movie/MovieCard";
 import HeroSlideshow from "../components/hero/HeroSlideshow";
@@ -1470,13 +1471,7 @@ function getCleanMovieSynopsis(movie, genres = []) {
       </div>
 
       {/* FOOTER */}
-      <footer className="footer">
-        <a className="brand-logo-link" href="#home" aria-label="Back to top">
-          <CineVerseLogo size="md" />
-        </a>
-        <p>Discover movies and web series with live TMDB data.</p>
-        <span>© 2026 CineVerse · Powered by The Movie Database</span>
-      </footer>
+      <Footer />
 
       {/* GLASS DETAILS MODAL */}
       {selectedMovie && (

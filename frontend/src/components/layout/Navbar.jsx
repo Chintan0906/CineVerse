@@ -240,22 +240,22 @@ function Navbar({ onSearch, onWatchlist, onHistory, onHome, onDiscover, onTrendi
 
         <button
           type="button"
+          onClick={() => handleNavigation("Anime", "/anime")}
+          className={`framex-nav-tab ${activeLink === "Anime" ? "active" : ""}`}
+          aria-label="Anime"
+        >
+          <Tv size={18} strokeWidth={activeLink === "Anime" ? 2.4 : 1.8} />
+          <span>Anime</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => handleNavigation("Discover", "#discovery")}
           className={`framex-nav-tab ${activeLink === "Discover" ? "active" : ""}`}
           aria-label="Discover Movies"
         >
           <Compass size={18} strokeWidth={activeLink === "Discover" ? 2.4 : 1.8} />
-          <span>Movies</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleNavigation("Trending", "#trending-now")}
-          className={`framex-nav-tab ${activeLink === "Trending" ? "active" : ""}`}
-          aria-label="Trending Series"
-        >
-          <Sparkles size={18} strokeWidth={activeLink === "Trending" ? 2.4 : 1.8} />
-          <span>Series</span>
+          <span>Discover</span>
         </button>
 
         <button
