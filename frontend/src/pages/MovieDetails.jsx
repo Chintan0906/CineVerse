@@ -852,8 +852,8 @@ function MovieDetails() {
     ...(movie || {}),
     ...(activeStreamMovie || {}),
     id: (movie?.id || activeStreamMovie?.id || id),
-    season: selectedSeason,
-    episode: selectedEpisode,
+    season: Number(activeStreamMovie?.season || selectedSeason),
+    episode: Number(activeStreamMovie?.episode || selectedEpisode),
     isTV: isTvShow,
     mediaType: isTvShow ? "tv" : "movie",
   } : null;
@@ -871,11 +871,15 @@ function MovieDetails() {
   };
 
   const handleStartPlay = (s = selectedSeason, e = selectedEpisode, forceFromBeginning = false) => {
+    const targetSeason = Number(s) || 1;
+    const targetEpisode = Number(e) || 1;
+    setSelectedSeason(targetSeason);
+    setSelectedEpisode(targetEpisode);
     isPlayerClosedByUserRef.current = false;
     const isMatchingEpisode =
       !isTvShow ||
-      (Number(savedHistory?.season) === Number(s) &&
-        Number(savedHistory?.episode) === Number(e));
+      (Number(savedHistory?.season) === targetSeason &&
+        Number(savedHistory?.episode) === targetEpisode);
     const resumeTime = forceFromBeginning
       ? 0
       : (isMatchingEpisode ? Number(savedHistory?.currentTime) || 0 : 0);
@@ -883,14 +887,14 @@ function MovieDetails() {
     const playMedia = {
       ...(movie || activeStreamMovie || {}),
       id: (movie?.id || activeStreamMovie?.id || id),
-      season: s,
-      episode: e,
+      season: targetSeason,
+      episode: targetEpisode,
       isTV: isTvShow,
       mediaType: isTvShow ? "tv" : "movie",
       currentTime: resumeTime,
       resumePlayback: !forceFromBeginning && resumeTime >= 15,
     };
-    recordPlay(playMedia, { season: s, episode: e });
+    recordPlay(playMedia, { season: targetSeason, episode: targetEpisode });
     setActiveStreamMovie(playMedia);
     setShowPlayer(true);
     try {
@@ -902,8 +906,8 @@ function MovieDetails() {
       const next = new URLSearchParams(prev);
       next.set("play", "true");
       if (isTvShow) {
-        next.set("season", String(s));
-        next.set("episode", String(e));
+        next.set("season", String(targetSeason));
+        next.set("episode", String(targetEpisode));
       }
       return next;
     }, { replace: true });
