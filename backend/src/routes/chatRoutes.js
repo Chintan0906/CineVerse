@@ -543,19 +543,17 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ success: false, message: "Message is required." });
   }
 
-  const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+  const pythonChatbotUrl = process.env.PYTHON_CHATBOT_URL;
 
-  if (n8nWebhookUrl) {
+  if (pythonChatbotUrl) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const n8nRes = await fetch(n8nWebhookUrl, {
+      const timeout = setTimeout(() => controller.abort(), 14000);
+      const pyRes = await fetch(pythonChatbotUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chatInput: message,
           message,
-          query: message,
           sessionId,
           history,
         }),
@@ -563,51 +561,19 @@ router.post("/", async (req, res) => {
       });
       clearTimeout(timeout);
 
-      if (n8nRes.ok) {
-        const rawText = await n8nRes.text();
-        let parsed = null;
-        try {
-          parsed = JSON.parse(rawText);
-        } catch (_) {
-          parsed = null;
+      if (pyRes.ok) {
+        const data = await pyRes.json().catch(() => null);
+        if (data && data.reply) {
+          return res.json({
+            success: true,
+            reply: data.reply,
+            movies: Array.isArray(data.movies) ? data.movies : [],
+            source: data.source || "python-flask",
+          });
         }
-
-        const payload = Array.isArray(parsed) ? parsed[0] : parsed;
-        const inner =
-          payload?.movies && typeof payload.movies === "object" && !Array.isArray(payload.movies) && payload.movies.type
-            ? payload.movies
-            : payload;
-
-        // Handle CineSphere n8n structured output:
-        // { movies: { type: "movies" | "details" | "text", ... } }
-        const structured = await formatStructuredChatReply(inner, "n8n");
-        if (structured) {
-          return res.json({ success: true, ...structured });
-        }
-
-        const replyText =
-          (typeof payload === "string" ? payload : null) ||
-          payload?.reply ||
-          payload?.output ||
-          payload?.text ||
-          payload?.response ||
-          payload?.message ||
-          rawText ||
-          "Here are my recommendations:";
-
-        const explicitMovies = Array.isArray(payload?.movies) ? payload.movies : [];
-        const extractedTitles = explicitMovies.length > 0 ? explicitMovies : extractTitleCandidates(replyText);
-        const movies = await resolveTitlesToMovies(extractedTitles);
-
-        return res.json({
-          success: true,
-          reply: String(replyText).trim(),
-          movies,
-          source: "n8n",
-        });
       }
     } catch (err) {
-      console.warn("n8n webhook failed, falling back:", err.message);
+      console.warn("Python Flask chatbot unreachable, falling back:", err.message);
     }
   }
 
