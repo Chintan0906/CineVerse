@@ -12,6 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const recommendationRoutes = require("./routes/recommendationRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const streamRoutes = require("./routes/streamRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 const { getTrendingMovies } = require("../services/tmdbService");
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/stream", streamRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
