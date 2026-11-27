@@ -328,6 +328,67 @@ router.post("/", async (req, res) => {
         }
 
         const payload = Array.isArray(parsed) ? parsed[0] : parsed;
+        const inner =
+          payload?.movies && typeof payload.movies === "object" && !Array.isArray(payload.movies) && payload.movies.type
+            ? payload.movies
+            : payload;
+
+        // Handle CineSphere n8n structured output:
+        // { movies: { type: "movies" | "details" | "text", ... } }
+        if (inner && typeof inner === "object" && inner.type) {
+          if (inner.type === "details" && inner.title) {
+            const meta = [inner.year, inner.genre].filter(Boolean).join(" · ");
+            const castLine = Array.isArray(inner.cast) && inner.cast.length > 0
+              ? `Cast: ${inner.cast.join(", ")}`
+              : null;
+            const dirLine = inner.director ? `Director: ${inner.director}` : null;
+            const replyText = [
+              `${inner.title}${meta ? ` (${meta})` : ""}`,
+              inner.summary || "",
+              [dirLine, castLine].filter(Boolean).join("\n"),
+            ]
+              .filter(Boolean)
+              .join("\n\n");
+            const movies = await resolveTitlesToMovies([inner.title]);
+            return res.json({
+              success: true,
+              reply: replyText,
+              movies: movies.slice(0, 1),
+              source: "n8n",
+            });
+          }
+
+          if (inner.type === "movies" && Array.isArray(inner.movies)) {
+            const list = inner.movies;
+            const lines = list
+              .map((m, idx) => {
+                const name = m?.name || m?.title || "";
+                const reason = m?.reason ? ` — ${m.reason}` : "";
+                return name ? `${idx + 1}. ${name}${reason}` : null;
+              })
+              .filter(Boolean);
+            const replyText = lines.length
+              ? `Here are my picks — click any card to stream:\n\n${lines.join("\n")}`
+              : "Here are my recommendations:";
+            const movies = await resolveTitlesToMovies(list);
+            return res.json({
+              success: true,
+              reply: replyText,
+              movies,
+              source: "n8n",
+            });
+          }
+
+          if (inner.type === "text" && inner.message) {
+            return res.json({
+              success: true,
+              reply: String(inner.message).trim(),
+              movies: [],
+              source: "n8n",
+            });
+          }
+        }
+
         const replyText =
           (typeof payload === "string" ? payload : null) ||
           payload?.reply ||
