@@ -1149,6 +1149,66 @@ export async function searchActors(query) {
 
 const actorMemoryCache = new Map();
 const actorInflightCache = new Map();
+const actorSpotlightCache = new Map();
+
+// Signature iconic roles for popular actors (RDJ -> Iron Man, Heath Ledger -> Dark Knight, etc.)
+const ACTOR_SIGNATURE_TITLES = {
+  "3223": { id: 1726, type: "movie", title: "Iron Man" },
+  "1810": { id: 155, type: "movie", title: "The Dark Knight" },
+  "2037": { id: 872585, type: "movie", title: "Oppenheimer" },
+  "17419": { id: 1396, type: "tv", title: "Breaking Bad" },
+  "6384": { id: 245891, type: "movie", title: "John Wick" },
+  "1892": { id: 286217, type: "movie", title: "The Martian" },
+  "6193": { id: 27205, type: "movie", title: "Inception" },
+  "3894": { id: 272, type: "movie", title: "Batman Begins" },
+  "500": { id: 361743, type: "movie", title: "Top Gun: Maverick" },
+  "1245": { id: 299534, type: "movie", title: "Avengers: Endgame" },
+  "1190668": { id: 693134, type: "movie", title: "Dune: Part Two" },
+  "505710": { id: 693134, type: "movie", title: "Dune: Part Two" },
+};
+
+export async function getActorSpotlightVideo(actor) {
+  const actorId = String(actor?.id || "").trim();
+  if (!actorId) return null;
+  if (actorSpotlightCache.has(actorId)) {
+    return actorSpotlightCache.get(actorId);
+  }
+
+  const signature = ACTOR_SIGNATURE_TITLES[actorId];
+  const topCredit = Array.isArray(actor?.credits) ? actor.credits[0] : null;
+  const target = signature || (topCredit ? {
+    id: topCredit.tmdbId || topCredit.id,
+    type: topCredit.mediaType === "tv" || topCredit.isTV ? "tv" : "movie",
+    title: topCredit.title || "",
+  } : null);
+
+  if (!target?.id) return null;
+
+  try {
+    const res = await fetchWithTimeout(
+      `${TMDB_PROXY_URL}/${target.type}/${encodeURIComponent(target.id)}/videos`,
+      {},
+      5000
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const vids = Array.isArray(data?.results) ? data.results : [];
+    const ytVids = vids.filter((v) => v?.site === "YouTube" && v?.key);
+    const chosen =
+      ytVids.find((v) => v.type === "Clip") ||
+      ytVids.find((v) => v.type === "Featurette") ||
+      ytVids.find((v) => v.type === "Teaser") ||
+      ytVids.find((v) => v.type === "Trailer") ||
+      ytVids[0];
+
+    if (!chosen?.key) return null;
+    const result = { key: chosen.key, title: target.title || "" };
+    actorSpotlightCache.set(actorId, result);
+    return result;
+  } catch (_) {
+    return null;
+  }
+}
 
 export function getCachedActorById(personId) {
   const idStr = String(personId || "").trim();

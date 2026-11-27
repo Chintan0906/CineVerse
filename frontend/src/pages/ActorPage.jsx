@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, Film, MapPin, Sparkles, Tv, User } from "lucide-react";
+import { ArrowLeft, Calendar, Film, MapPin, Sparkles, Tv, User, Volume2, VolumeX } from "lucide-react";
 
 import MovieCard from "../components/movie/MovieCard";
 import Footer from "../components/layout/Footer";
-import { DEFAULT_AVATAR, getActorById, getCachedActorById } from "../services/movieService";
+import {
+  DEFAULT_AVATAR,
+  getActorById,
+  getCachedActorById,
+  getActorSpotlightVideo,
+} from "../services/movieService";
 import { useLibrary } from "../hooks/useLibrary";
 import { useToast } from "../context/ToastContext";
 
@@ -50,6 +55,18 @@ function ActorPage() {
   const [creditFilter, setCreditFilter] = useState("all");
   const [bioExpanded, setBioExpanded] = useState(false);
 
+  // Background acting moment video (YouTube clip/trailer)
+  const [spotlightVideo, setSpotlightVideo] = useState(null);
+  const [isVideoMounted, setIsVideoMounted] = useState(false);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const isVideoMutedRef = useRef(true);
+  const isVideoVisibleRef = useRef(false);
+  const isVideoLoopingRef = useRef(false);
+  const videoMountTimerRef = useRef(null);
+  const videoRevealTimerRef = useRef(null);
+  const videoIframeRef = useRef(null);
+
   useEffect(() => {
     let active = true;
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -86,6 +103,121 @@ function ActorPage() {
       document.title = "CineVerse | Beyond Entertainment";
     };
   }, [id]);
+
+  // Fetch & play actor's iconic acting moment clip/trailer in the background
+  useEffect(() => {
+    let active = true;
+    setSpotlightVideo(null);
+    setIsVideoMounted(false);
+    setIsVideoVisible(false);
+    isVideoVisibleRef.current = false;
+    isVideoLoopingRef.current = false;
+    setIsVideoMuted(true);
+    isVideoMutedRef.current = true;
+    if (videoMountTimerRef.current) clearTimeout(videoMountTimerRef.current);
+    if (videoRevealTimerRef.current) clearTimeout(videoRevealTimerRef.current);
+
+    if (!actor?.id || !Array.isArray(actor?.credits) || actor.credits.length === 0) {
+      return () => { active = false; };
+    }
+
+    getActorSpotlightVideo(actor).then((vid) => {
+      if (!active || !vid?.key) return;
+      setSpotlightVideo(vid);
+      videoMountTimerRef.current = setTimeout(() => {
+        if (active) setIsVideoMounted(true);
+      }, 650);
+    });
+
+    return () => {
+      active = false;
+      if (videoMountTimerRef.current) clearTimeout(videoMountTimerRef.current);
+      if (videoRevealTimerRef.current) clearTimeout(videoRevealTimerRef.current);
+    };
+  }, [actor?.id, actor?.credits?.length]);
+
+  const sendYouTubeCommand = (func, args = []) => {
+    try {
+      if (videoIframeRef.current?.contentWindow) {
+        videoIframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    const handleMessage = (e) => {
+      try {
+        if (e.source !== videoIframeRef.current?.contentWindow) return;
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        const stateCode =
+          data?.event === "onStateChange"
+            ? Number(data?.info)
+            : data?.info?.playerState !== undefined
+            ? Number(data?.info?.playerState)
+            : null;
+
+        if (stateCode === 1) {
+          if (!isVideoMutedRef.current) {
+            sendYouTubeCommand("unMute");
+            sendYouTubeCommand("setVolume", [100]);
+          }
+          if (!videoRevealTimerRef.current && !isVideoVisibleRef.current) {
+            const delay = isVideoLoopingRef.current ? 1800 : 3200;
+            videoRevealTimerRef.current = setTimeout(() => {
+              videoRevealTimerRef.current = null;
+              isVideoLoopingRef.current = false;
+              isVideoVisibleRef.current = true;
+              setIsVideoVisible(true);
+            }, delay);
+          }
+        }
+
+        if (stateCode === 2) {
+          if (videoRevealTimerRef.current) {
+            clearTimeout(videoRevealTimerRef.current);
+            videoRevealTimerRef.current = null;
+          }
+          isVideoLoopingRef.current = true;
+          isVideoVisibleRef.current = false;
+          setIsVideoVisible(false);
+        }
+
+        if (stateCode === 0) {
+          if (videoRevealTimerRef.current) {
+            clearTimeout(videoRevealTimerRef.current);
+            videoRevealTimerRef.current = null;
+          }
+          isVideoLoopingRef.current = true;
+          isVideoVisibleRef.current = false;
+          setIsVideoVisible(false);
+          sendYouTubeCommand("seekTo", [0, true]);
+          sendYouTubeCommand("playVideo");
+        }
+      } catch (_) {}
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  const handleToggleMomentVoice = () => {
+    if (!spotlightVideo?.key) return;
+    const nextMuted = !isVideoMutedRef.current;
+    isVideoMutedRef.current = nextMuted;
+    setIsVideoMuted(nextMuted);
+
+    if (!nextMuted) {
+      if (videoMountTimerRef.current) clearTimeout(videoMountTimerRef.current);
+      setIsVideoMounted(true);
+      sendYouTubeCommand("unMute");
+      sendYouTubeCommand("setVolume", [100]);
+      sendYouTubeCommand("playVideo");
+    } else {
+      sendYouTubeCommand("mute");
+    }
+  };
 
   // Progressive scroll blur for actor backdrop
   useEffect(() => {
@@ -193,7 +325,7 @@ function ActorPage() {
       {/* Fixed Backdrop Canvas */}
       <div className="details-fixed-backdrop" aria-hidden="true">
         <div
-          className="details-hero-bg"
+          className={`details-hero-bg ${isVideoVisible && spotlightVideo?.key ? "has-trailer" : ""}`}
           style={{
             backgroundImage: actor?.backdrop
               ? `url("${actor.backdrop}")`
@@ -202,6 +334,39 @@ function ActorPage() {
               : "none",
           }}
         />
+        {isVideoMounted && spotlightVideo?.key && (
+          <div className={`details-hero-trailer-wrap ${isVideoVisible ? "visible" : ""}`}>
+            <iframe
+              ref={videoIframeRef}
+              className="details-hero-trailer-iframe"
+              src={`https://www.youtube.com/embed/${spotlightVideo.key}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&iv_load_policy=3&origin=${encodeURIComponent(window.location.origin)}`}
+              title={`${actor?.name || "Actor"} Acting Moment`}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              tabIndex="-1"
+              onLoad={(e) => {
+                try {
+                  e.target?.contentWindow?.postMessage(
+                    JSON.stringify({ event: "listening", id: "actor-moment" }),
+                    "*"
+                  );
+                  e.target?.contentWindow?.postMessage(
+                    JSON.stringify({
+                      event: "command",
+                      func: "addEventListener",
+                      args: ["onStateChange"],
+                    }),
+                    "*"
+                  );
+                } catch (_) {}
+                if (!isVideoMutedRef.current) {
+                  sendYouTubeCommand("unMute");
+                  sendYouTubeCommand("setVolume", [100]);
+                }
+              }}
+            />
+            <div className="details-hero-trailer-shield" />
+          </div>
+        )}
         <div className="details-hero-gradient-left" />
         <div className="details-hero-gradient-bottom" />
         <div className="details-hero-vignette" />
@@ -240,6 +405,21 @@ function ActorPage() {
                 <Sparkles size={13} />
                 {actor?.knownForDepartment ? `${actor.knownForDepartment.toUpperCase()} PROFILE` : "ACTOR PROFILE"}
               </span>
+              {spotlightVideo?.key && (
+                <button
+                  type="button"
+                  className={`btn-secondary trailer-voice-btn ${!isVideoMuted ? "voice-active" : ""}`}
+                  onClick={handleToggleMomentVoice}
+                  title={isVideoMuted ? "Unmute acting moment" : "Mute acting moment"}
+                  style={{ marginLeft: "auto" }}
+                >
+                  {isVideoMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  <span>
+                    {isVideoMuted ? "Voice Off" : "Voice On"}
+                    {spotlightVideo.title ? ` · ${spotlightVideo.title}` : ""}
+                  </span>
+                </button>
+              )}
             </div>
 
             <h1 className="details-title actor-page-title">
