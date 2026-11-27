@@ -133,10 +133,65 @@ async function buildTmdbFallbackReply(userMessage) {
   const limit = countMatch ? Math.min(Math.max(Number(countMatch[1]), 3), 10) : 8;
 
   const matchedGenre = GENRE_KEYWORDS.find((g) => g.keys.some((k) => qLower.includes(k)));
-  const likeMatch = q.match(/(?:like|similar to|about|tell me about)\s+["']?([^?!.\n]{2,55})["']?/i);
+  const isLikeQuery = /\b(?:like|similar to)\b/i.test(qLower);
+  const aboutMatch = !isLikeQuery
+    ? q.match(/(?:tell me about|more about|info(?:rmation)? (?:on|about)|what is|about)\s+["']?([^?!.\n]{2,65})["']?/i)
+    : null;
+  const likeMatch = isLikeQuery
+    ? q.match(/(?:like|similar to)\s+["']?([^?!.\n]{2,55})["']?/i)
+    : null;
 
-  // 1. "Movies like X" or "Tell me about X"
-  if (likeMatch && !matchedGenre) {
+  // 0. "Tell me about <title>" -> Rich info text + ONLY that 1 particular movie/series card
+  if (aboutMatch) {
+    const targetTitle = aboutMatch[1].replace(/\babout\s*$/i, "").trim();
+    const searchRes = await tmdbFetch("search/multi", { query: targetTitle, include_adult: "false" });
+    const seed = (searchRes?.results || []).find(
+      (r) => r && (r.media_type === "movie" || r.media_type === "tv")
+    );
+    if (seed) {
+      const isTv = seed.media_type === "tv";
+      const details = await tmdbFetch(`${isTv ? "tv" : "movie"}/${seed.id}`, {
+        append_to_response: "credits",
+      });
+      const sourceObj = details || seed;
+      const seedCard = normalizeCard(sourceObj, isTv ? "tv" : "movie");
+      const genreNames = Array.isArray(details?.genres)
+        ? details.genres.map((g) => g.name).filter(Boolean).slice(0, 3).join(", ")
+        : "";
+      const runtimeText = isTv
+        ? details?.number_of_seasons
+          ? `${details.number_of_seasons} Season${details.number_of_seasons > 1 ? "s" : ""}`
+          : ""
+        : details?.runtime
+        ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
+        : "";
+      const castNames = Array.isArray(details?.credits?.cast)
+        ? details.credits.cast.slice(0, 4).map((c) => c.name).filter(Boolean).join(", ")
+        : "";
+
+      const metaParts = [
+        seedCard.year || null,
+        seedCard.rating ? `★ ${seedCard.rating}/10` : null,
+        runtimeText || null,
+        genreNames || null,
+      ].filter(Boolean);
+
+      const lines = [
+        `${seedCard.title}${metaParts.length ? ` (${metaParts.join(" · ")})` : ""}`,
+        seedCard.overview || "Click below to view full details or start streaming.",
+        castNames ? `Cast: ${castNames}` : null,
+      ].filter(Boolean);
+
+      return {
+        reply: lines.join("\n\n"),
+        movies: [seedCard],
+        source: "tmdb-assistant",
+      };
+    }
+  }
+
+  // 1. "Movies like X"
+  if (likeMatch) {
     const targetTitle = likeMatch[1].trim();
     const searchRes = await tmdbFetch("search/multi", { query: targetTitle, include_adult: "false" });
     const seed = (searchRes?.results || []).find(
@@ -152,15 +207,6 @@ async function buildTmdbFallbackReply(userMessage) {
         .filter(Boolean);
 
       const seedCard = normalizeCard(seed, isTv ? "tv" : "movie");
-      if (qLower.includes("about")) {
-        const cards = [seedCard, ...recs.slice(0, 4)].filter(Boolean);
-        return {
-          reply: `${seedCard.title}${seedCard.year ? ` (${seedCard.year})` : ""} — Rated ${seedCard.rating || "N/A"}/10.\n\n${seedCard.overview || "Click below to view details or start streaming."}`,
-          movies: cards,
-          source: "tmdb-assistant",
-        };
-      }
-
       if (recs.length > 0) {
         return {
           reply: `Here are top recommendations similar to ${seedCard.title} — click any card to view details or stream:`,
@@ -173,12 +219,17 @@ async function buildTmdbFallbackReply(userMessage) {
 
   // 2. Genre / Anime / Top N query
   if (matchedGenre) {
-    const mediaType = matchedGenre.isAnime || wantsTv ? "tv" : "movie";
+    const wantsMoviesExplicitly = /\b(movie|movies|film|films)\b/i.test(qLower);
+    const mediaType = wantsMoviesExplicitly
+      ? "movie"
+      : matchedGenre.isAnime || wantsTv
+      ? "tv"
+      : "movie";
     const genreId = mediaType === "tv" ? matchedGenre.tvId || matchedGenre.id : matchedGenre.id;
     const discoverParams = {
       with_genres: String(genreId),
       sort_by: qLower.includes("top") || qLower.includes("best") ? "vote_average.desc" : "popularity.desc",
-      "vote_count.gte": matchedGenre.isAnime ? "120" : "400",
+      "vote_count.gte": matchedGenre.isAnime ? "250" : "400",
       page: "1",
     };
     if (matchedGenre.isAnime) {
@@ -193,7 +244,7 @@ async function buildTmdbFallbackReply(userMessage) {
 
     if (movies.length > 0) {
       return {
-        reply: `Here are the top ${movies.length} ${matchedGenre.name} ${mediaType === "tv" ? "series" : "movies"} right now — click any title to stream:`,
+        reply: `Here are the top ${movies.length} ${matchedGenre.name} ${mediaType === "tv" ? "series" : "movies"} — click any title to stream:`,
         movies,
         source: "tmdb-assistant",
       };
