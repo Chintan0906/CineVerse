@@ -374,9 +374,37 @@ Respond ONLY with valid raw JSON (no markdown fences, no extra prose outside JSO
   "message": "Friendly concise response"
 }`;
 
+function collectApiKeys(baseName) {
+  const keys = [];
+  const multi = process.env[`${baseName}S`];
+  if (multi) {
+    for (const k of String(multi).split(",")) {
+      const trimmed = k.trim();
+      if (trimmed) keys.push(trimmed);
+    }
+  }
+  for (const suffix of ["", "_1", "_2", "_3", "_4", "_5"]) {
+    const val = process.env[`${baseName}${suffix}`];
+    if (val && String(val).trim()) {
+      const trimmed = String(val).trim();
+      if (!keys.includes(trimmed)) keys.push(trimmed);
+    }
+  }
+  return keys;
+}
+
+function parseJsonAgentReply(rawText) {
+  if (!rawText) return null;
+  const cleaned = String(rawText)
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  return JSON.parse(cleaned);
+}
+
 async function askGeminiAgent(message, history = []) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  const apiKeys = collectApiKeys("GEMINI_API_KEY");
+  if (apiKeys.length === 0) return null;
 
   const historyLines = history
     .slice(-6)
@@ -388,20 +416,67 @@ async function askGeminiAgent(message, history = []) {
     : `${CINEBOT_SYSTEM_PROMPT}\n\nUser: ${message}`;
 
   const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
-  for (const model of models) {
+  for (const apiKey of apiKeys) {
+    for (const model of models) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 11000);
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: promptText }] }],
+            generationConfig: {
+              temperature: 0.4,
+              responseMimeType: "application/json",
+            },
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (!res.ok) continue;
+
+        const data = await res.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parsed = parseJsonAgentReply(rawText);
+        const formatted = await formatStructuredChatReply(parsed, "gemini");
+        if (formatted) return formatted;
+      } catch (_) {
+        clearTimeout(timer);
+      }
+    }
+  }
+  return null;
+}
+
+async function callOpenAICompatibleAgent({ endpoint, apiKeys, model, message, history = [], source }) {
+  if (!apiKeys.length) return null;
+
+  const messages = [
+    { role: "system", content: CINEBOT_SYSTEM_PROMPT },
+    ...history.slice(-6).map((h) => ({
+      role: h.role === "user" ? "user" : "assistant",
+      content: h.text,
+    })),
+    { role: "user", content: message },
+  ];
+
+  for (const apiKey of apiKeys) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), 11000);
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url, {
+      const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: promptText }] }],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json",
-          },
+          model,
+          messages,
+          temperature: 0.4,
+          response_format: { type: "json_object" },
         }),
         signal: controller.signal,
       });
@@ -409,19 +484,52 @@ async function askGeminiAgent(message, history = []) {
       if (!res.ok) continue;
 
       const data = await res.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) continue;
-
-      const cleaned = rawText
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "")
-        .trim();
-      const parsed = JSON.parse(cleaned);
-      const formatted = await formatStructuredChatReply(parsed, "gemini");
+      const rawText = data?.choices?.[0]?.message?.content;
+      const parsed = parseJsonAgentReply(rawText);
+      const formatted = await formatStructuredChatReply(parsed, source);
       if (formatted) return formatted;
     } catch (_) {
       clearTimeout(timer);
     }
+  }
+  return null;
+}
+
+async function askFallbackAiAgents(message, history = []) {
+  const providers = [
+    () => askGeminiAgent(message, history),
+    () =>
+      callOpenAICompatibleAgent({
+        endpoint: "https://api.groq.com/openai/v1/chat/completions",
+        apiKeys: collectApiKeys("GROQ_API_KEY"),
+        model: "llama-3.3-70b-versatile",
+        message,
+        history,
+        source: "groq",
+      }),
+    () =>
+      callOpenAICompatibleAgent({
+        endpoint: "https://openrouter.ai/api/v1/chat/completions",
+        apiKeys: collectApiKeys("OPENROUTER_API_KEY"),
+        model: "meta-llama/llama-3.3-70b-instruct:free",
+        message,
+        history,
+        source: "openrouter",
+      }),
+    () =>
+      callOpenAICompatibleAgent({
+        endpoint: "https://api.openai.com/v1/chat/completions",
+        apiKeys: collectApiKeys("OPENAI_API_KEY"),
+        model: "gpt-4o-mini",
+        message,
+        history,
+        source: "openai",
+      }),
+  ];
+
+  for (const runProvider of providers) {
+    const result = await runProvider();
+    if (result) return result;
   }
   return null;
 }
@@ -503,17 +611,17 @@ router.post("/", async (req, res) => {
     }
   }
 
-  // Built-in Google Gemini AI Agent (mirrors the n8n workflow directly inside CineVerse-api)
+  // Built-in Multi-Key / Multi-Provider AI Agent failover (Gemini -> Groq -> OpenRouter -> OpenAI)
   try {
-    const geminiReply = await askGeminiAgent(message, history);
-    if (geminiReply) {
+    const aiReply = await askFallbackAiAgents(message, history);
+    if (aiReply) {
       return res.json({
         success: true,
-        ...geminiReply,
+        ...aiReply,
       });
     }
   } catch (err) {
-    console.warn("Gemini agent failed, falling back to TMDB assistant:", err.message);
+    console.warn("AI agents failed, falling back to TMDB assistant:", err.message);
   }
 
   try {
