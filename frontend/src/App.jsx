@@ -1,20 +1,21 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
 import Home from "./pages/Home";
-import MovieDetails from "./pages/MovieDetails";
-import SearchPage from "./pages/SearchPage";
-import AuthPage from "./pages/AuthPage";
-import ReelsPage from "./pages/ReelsPage";
-import MovieReelsPage from "./pages/MovieReelsPage";
-import AnimePage from "./pages/AnimePage";
-import ActorPage from "./pages/ActorPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import SpotlightSearch from "./components/common/SpotlightSearch";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/cinematic-refresh.css";
+
+const MovieDetails = lazy(() => import("./pages/MovieDetails"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const ReelsPage = lazy(() => import("./pages/ReelsPage"));
+const MovieReelsPage = lazy(() => import("./pages/MovieReelsPage"));
+const AnimePage = lazy(() => import("./pages/AnimePage"));
+const ActorPage = lazy(() => import("./pages/ActorPage"));
 
 function AppRoutes() {
   const location = useLocation();
@@ -68,20 +69,22 @@ function AppRoutes() {
     <div className="app">
       <div key={location.pathname} className="route-transition">
         <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/movie/:id" element={<MovieDetails />} />
-            <Route path="/reels" element={<ReelsPage />} />
-            <Route path="/movie-reels" element={<MovieReelsPage />} />
-            <Route path="/anime" element={<AnimePage />} />
-            <Route path="/actor/:id" element={<ActorPage />} />
-            <Route path="/login" element={<AuthPage mode="login" />} />
-            <Route path="/register" element={<AuthPage mode="register" />} />
+          <Suspense fallback={<div className="movie-details-page" style={{ minHeight: "100vh", background: "#070a0d" }} />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/movie/:id" element={<MovieDetails />} />
+              <Route path="/reels" element={<ReelsPage />} />
+              <Route path="/movie-reels" element={<MovieReelsPage />} />
+              <Route path="/anime" element={<AnimePage />} />
+              <Route path="/actor/:id" element={<ActorPage />} />
+              <Route path="/login" element={<AuthPage mode="login" />} />
+              <Route path="/register" element={<AuthPage mode="register" />} />
 
-            {/* Fallback for unknown routes */}
-            <Route path="*" element={<Home />} />
-          </Routes>
+              {/* Fallback for unknown routes */}
+              <Route path="*" element={<Home />} />
+            </Routes>
+          </Suspense>
         </ErrorBoundary>
       </div>
     </div>

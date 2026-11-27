@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
@@ -10,6 +10,7 @@ import {
   Film,
 } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
+import { prefetchMediaDetails } from "../../services/movieService";
 
 function MovieCard({
   movie,
@@ -20,8 +21,24 @@ function MovieCard({
   rank,
 }) {
   const [imageError, setImageError] = useState(false);
+  const prefetchTimerRef = useRef(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const schedulePrefetch = () => {
+    if (!movie?.id && !movie?.tmdbId) return;
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+    prefetchTimerRef.current = setTimeout(() => {
+      prefetchMediaDetails(movie);
+    }, 65);
+  };
+
+  const cancelPrefetch = () => {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current);
+      prefetchTimerRef.current = null;
+    }
+  };
 
   if (!movie) return null;
 
@@ -90,6 +107,10 @@ function MovieCard({
         style={{
           "--poster-glow-image": movie.poster ? `url("${movie.poster}")` : "none",
         }}
+        onMouseEnter={schedulePrefetch}
+        onMouseLeave={cancelPrefetch}
+        onTouchStart={() => prefetchMediaDetails(movie)}
+        onFocus={schedulePrefetch}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         role="button"

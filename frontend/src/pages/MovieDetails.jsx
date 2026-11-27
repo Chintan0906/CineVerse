@@ -30,6 +30,7 @@ import {
   getCollectionById,
   getUniverseMovies,
   prefetchActorById,
+  getCachedMediaDetails,
   getFallbackCast,
   getFallbackSimilar,
   KNOWN_FINANCIALS,
@@ -124,7 +125,11 @@ function MovieDetails() {
 
   const isStreamingQuery = searchParams.get("play") === "true";
   const [movie, setMovie] = useState(() => {
-    // 0. Instant full details cache for this specific title
+    // 0. Instant in-memory cache (from card hover prefetch or prior visit)
+    const memCached = getCachedMediaDetails(id, requestedType);
+    if (memCached) return memCached;
+
+    // 0b. Instant full details cache from sessionStorage
     try {
       const cachedDetails = sessionStorage.getItem(`cineverse_details_${id}`);
       if (cachedDetails) {

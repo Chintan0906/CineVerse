@@ -459,149 +459,221 @@ export async function getKinoCheckMovieReels({ feed = "trending", page = 1, limi
   };
 }
 
+const mediaDetailsMemoryCache = new Map();
+const mediaDetailsInflight = new Map();
+
+export function getCachedMediaDetails(id, type) {
+  const idStr = String(id || "").trim();
+  if (!idStr) return null;
+  const key = `${type === "tv" ? "tv" : "movie"}_${idStr}`;
+  if (mediaDetailsMemoryCache.has(key)) return mediaDetailsMemoryCache.get(key);
+  if (!type) {
+    return (
+      mediaDetailsMemoryCache.get(`movie_${idStr}`) ||
+      mediaDetailsMemoryCache.get(`tv_${idStr}`) ||
+      null
+    );
+  }
+  return null;
+}
+
+export function prefetchMediaDetails(movieOrId, explicitType) {
+  const id = typeof movieOrId === "object" ? movieOrId?.tmdbId || movieOrId?.id : movieOrId;
+  if (!id) return;
+  const isTv =
+    explicitType === "tv" ||
+    (typeof movieOrId === "object" && Boolean(movieOrId?.mediaType === "tv" || movieOrId?.isTV));
+  const type = isTv ? "tv" : "movie";
+  if (getCachedMediaDetails(id, type)) return;
+  (isTv ? getTVShowById(id) : getMovieById(id, type)).catch(() => {});
+}
+
+function storeMediaDetailsCache(idStr, isTv, data) {
+  if (!data) return data;
+  const key = `${isTv ? "tv" : "movie"}_${idStr}`;
+  mediaDetailsMemoryCache.set(key, data);
+  if (typeof window !== "undefined" && data.backdrop && !String(data.backdrop).includes("placeholder")) {
+    const img = new Image();
+    img.src = data.backdrop;
+  }
+  return data;
+}
+
 export async function getMovieById(id, type) {
   const idStr = String(id);
   const isTv = type === "tv";
-  const primaryPath = isTv ? `/tv/${id}` : `/movie/${id}`;
-  const secondaryPath = isTv ? `/movie/${id}` : `/tv/${id}`;
-  const cached = findMovieInCache(id);
+  const cacheKey = `${isTv ? "tv" : "movie"}_${idStr}`;
 
-  // 1. Try backend API first
-  try {
-    const query = type ? `?type=${encodeURIComponent(type)}` : "";
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/movies/${encodeURIComponent(id)}${query}`,
-      {},
-      8000
-    );
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data) {
-        const d = result.data;
-        const genres = d.genres || (d.genre ? [d.genre] : ["Cinema"]);
-        return {
-          ...d,
-          cast: Array.isArray(d.cast) && d.cast.length > 0 ? d.cast : getFallbackCast(d.title || d.name, idStr),
-          similar: Array.isArray(d.similar) && d.similar.length > 0 ? d.similar : getFallbackSimilar(idStr, genres),
-          budget: d.budget || KNOWN_FINANCIALS[idStr]?.budget || null,
-          revenue: d.revenue || KNOWN_FINANCIALS[idStr]?.revenue || null,
-        };
+  const memCached = getCachedMediaDetails(idStr, type);
+  if (memCached) return memCached;
+
+  if (mediaDetailsInflight.has(cacheKey)) {
+    return mediaDetailsInflight.get(cacheKey);
+  }
+
+  const task = (async () => {
+    const primaryPath = isTv ? `/tv/${id}` : `/movie/${id}`;
+    const secondaryPath = isTv ? `/movie/${id}` : `/tv/${id}`;
+    const cached = findMovieInCache(id);
+
+    // 1. Try backend API first
+    try {
+      const query = type ? `?type=${encodeURIComponent(type)}` : "";
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/movies/${encodeURIComponent(id)}${query}`,
+        {},
+        5000
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data) {
+          const d = result.data;
+          const genres = d.genres || (d.genre ? [d.genre] : ["Cinema"]);
+          return storeMediaDetailsCache(idStr, Boolean(d.isTV || d.mediaType === "tv" || isTv), {
+            ...d,
+            cast: Array.isArray(d.cast) && d.cast.length > 0 ? d.cast : getFallbackCast(d.title || d.name, idStr),
+            similar: Array.isArray(d.similar) && d.similar.length > 0 ? d.similar : getFallbackSimilar(idStr, genres),
+            budget: d.budget || KNOWN_FINANCIALS[idStr]?.budget || null,
+            revenue: d.revenue || KNOWN_FINANCIALS[idStr]?.revenue || null,
+          });
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
 
-  // 2. Fallback via secure server TMDB proxy (server injects API key; client never sees it)
-  const appendParams = isTv
-    ? "credits,aggregate_credits,videos,recommendations,similar"
-    : "credits,videos,recommendations,similar";
-
-  try {
-    const tmdbRes = await fetchWithTimeout(
-      `${TMDB_PROXY_URL}${primaryPath}?append_to_response=${appendParams}`,
-      {},
-      4000
-    ).catch(() => null);
-
-    if (tmdbRes && tmdbRes.ok) {
-      const data = await tmdbRes.json();
-      return normalizeTMDBMovie(data, isTv);
-    }
-  } catch (_) {}
-
-  try {
-    const secondaryAppend = !isTv
+    // 2. Fallback via secure server TMDB proxy (server injects API key; client never sees it)
+    const appendParams = isTv
       ? "credits,aggregate_credits,videos,recommendations,similar"
       : "credits,videos,recommendations,similar";
 
-    const fallbackRes = await fetchWithTimeout(
-      `${TMDB_PROXY_URL}${secondaryPath}?append_to_response=${secondaryAppend}`,
-      {},
-      4000
-    ).catch(() => null);
+    try {
+      const tmdbRes = await fetchWithTimeout(
+        `${TMDB_PROXY_URL}${primaryPath}?append_to_response=${appendParams}`,
+        {},
+        4000
+      ).catch(() => null);
 
-    if (fallbackRes && fallbackRes.ok) {
-      const data = await fallbackRes.json();
-      return normalizeTMDBMovie(data, !isTv);
+      if (tmdbRes && tmdbRes.ok) {
+        const data = await tmdbRes.json();
+        return storeMediaDetailsCache(idStr, isTv, normalizeTMDBMovie(data, isTv));
+      }
+    } catch (_) {}
+
+    try {
+      const secondaryAppend = !isTv
+        ? "credits,aggregate_credits,videos,recommendations,similar"
+        : "credits,videos,recommendations,similar";
+
+      const fallbackRes = await fetchWithTimeout(
+        `${TMDB_PROXY_URL}${secondaryPath}?append_to_response=${secondaryAppend}`,
+        {},
+        4000
+      ).catch(() => null);
+
+      if (fallbackRes && fallbackRes.ok) {
+        const data = await fallbackRes.json();
+        return storeMediaDetailsCache(idStr, !isTv, normalizeTMDBMovie(data, !isTv));
+      }
+    } catch (_) {}
+
+    // 3. Fallback to cached catalogue version if found, enriched with full cast & similar
+    if (cached) {
+      const genres = cached.genres || (cached.genre ? [cached.genre] : ["Cinema"]);
+      return {
+        ...cached,
+        cast: Array.isArray(cached.cast) && cached.cast.length > 0 ? cached.cast : getFallbackCast(cached.title || cached.name, idStr),
+        similar: Array.isArray(cached.similar) && cached.similar.length > 0 ? cached.similar : getFallbackSimilar(idStr, genres),
+        budget: cached.budget || KNOWN_FINANCIALS[idStr]?.budget || null,
+        revenue: cached.revenue || KNOWN_FINANCIALS[idStr]?.revenue || null,
+      };
     }
-  } catch (_) {}
 
-  // 3. Fallback to cached catalogue version if found, enriched with full cast & similar
-  if (cached) {
-    const genres = cached.genres || (cached.genre ? [cached.genre] : ["Cinema"]);
+    // 4. Synthesize clean title from known list or generic ID
+    const knownDesc = KNOWN_SYNOPSES[idStr];
+    let knownTitle = "Featured Cinema";
+    if (idStr === "969681") knownTitle = "Spider-Man: Brand New Day";
+    else if (idStr === "1170608") knownTitle = "Dune: Part Three";
+    else if (idStr === "569094") knownTitle = "Spider-Man: Beyond the Spider-Verse";
+    else if (idStr === "1022789") knownTitle = "Avengers: Secret Wars";
+    else if (idStr === "1003596") knownTitle = "Avengers: Doomsday";
+
     return {
-      ...cached,
-      cast: Array.isArray(cached.cast) && cached.cast.length > 0 ? cached.cast : getFallbackCast(cached.title || cached.name, idStr),
-      similar: Array.isArray(cached.similar) && cached.similar.length > 0 ? cached.similar : getFallbackSimilar(idStr, genres),
-      budget: cached.budget || KNOWN_FINANCIALS[idStr]?.budget || null,
-      revenue: cached.revenue || KNOWN_FINANCIALS[idStr]?.revenue || null,
+      id: idStr,
+      tmdbId: Number(id) || idStr,
+      title: knownTitle,
+      year: "2024",
+      rating: "8.2",
+      genre: "Action",
+      genres: ["Action", "Sci-Fi", "Cinema"],
+      duration: "2h 18m",
+      description:
+        knownDesc ||
+        "An acclaimed cinematic story exploring high-stakes conflict, profound emotional journeys, and celebrated storytelling.",
+      overview:
+        knownDesc ||
+        "An acclaimed cinematic story exploring high-stakes conflict, profound emotional journeys, and celebrated storytelling.",
+      poster: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+      backdrop: "https://image.tmdb.org/t/p/original/zViRwl3ySscZnbXZJ2Q9wq3SeUG.jpg",
+      mediaType: isTv ? "tv" : "movie",
+      isTV: isTv,
+      cast: getFallbackCast(knownTitle, idStr),
+      similar: getFallbackSimilar(idStr, ["Action", "Sci-Fi"]),
+      budget: KNOWN_FINANCIALS[idStr]?.budget || null,
+      revenue: KNOWN_FINANCIALS[idStr]?.revenue || null,
+      seasons: [],
+      numberOfSeasons: 0,
+      status: "Released",
+      tagline: "",
+      voteCount: 1000,
     };
-  }
+  })().finally(() => {
+    mediaDetailsInflight.delete(cacheKey);
+  });
 
-  // 4. Synthesize clean title from known list or generic ID
-  const knownDesc = KNOWN_SYNOPSES[idStr];
-  let knownTitle = "Featured Cinema";
-  if (idStr === "969681") knownTitle = "Spider-Man: Brand New Day";
-  else if (idStr === "1170608") knownTitle = "Dune: Part Three";
-  else if (idStr === "569094") knownTitle = "Spider-Man: Beyond the Spider-Verse";
-  else if (idStr === "1022789") knownTitle = "Avengers: Secret Wars";
-  else if (idStr === "1003596") knownTitle = "Avengers: Doomsday";
-
-  return {
-    id: idStr,
-    tmdbId: Number(id) || idStr,
-    title: knownTitle,
-    year: "2024",
-    rating: "8.2",
-    genre: "Action",
-    genres: ["Action", "Sci-Fi", "Cinema"],
-    duration: "2h 18m",
-    description:
-      knownDesc ||
-      "An acclaimed cinematic story exploring high-stakes conflict, profound emotional journeys, and celebrated storytelling.",
-    overview:
-      knownDesc ||
-      "An acclaimed cinematic story exploring high-stakes conflict, profound emotional journeys, and celebrated storytelling.",
-    poster: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
-    backdrop: "https://image.tmdb.org/t/p/original/zViRwl3ySscZnbXZJ2Q9wq3SeUG.jpg",
-    mediaType: isTv ? "tv" : "movie",
-    isTV: isTv,
-    cast: getFallbackCast(knownTitle, idStr),
-    similar: getFallbackSimilar(idStr, ["Action", "Sci-Fi"]),
-    budget: KNOWN_FINANCIALS[idStr]?.budget || null,
-    revenue: KNOWN_FINANCIALS[idStr]?.revenue || null,
-    seasons: [],
-    numberOfSeasons: 0,
-    status: "Released",
-    tagline: "",
-    voteCount: 1000,
-  };
+  mediaDetailsInflight.set(cacheKey, task);
+  return task;
 }
 
 export async function getTVShowById(id) {
   const idStr = String(id);
-  try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`,
-      {},
-      8000
-    );
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data) {
-        const d = result.data;
-        const genres = d.genres || (d.genre ? [d.genre] : ["TV Series"]);
-        return {
-          ...d,
-          isTV: true,
-          mediaType: "tv",
-          cast: Array.isArray(d.cast) && d.cast.length > 0 ? d.cast : getFallbackCast(d.title || d.name, idStr),
-          similar: Array.isArray(d.similar) && d.similar.length > 0 ? d.similar : getFallbackSimilar(idStr, genres),
-        };
-      }
-    }
-  } catch (_) {}
+  const memCached = getCachedMediaDetails(idStr, "tv");
+  if (memCached) return memCached;
 
-  return getMovieById(id, "tv");
+  const cacheKey = `tv_${idStr}`;
+  if (mediaDetailsInflight.has(cacheKey)) {
+    return mediaDetailsInflight.get(cacheKey);
+  }
+
+  const task = (async () => {
+    try {
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/movies/tv/${encodeURIComponent(id)}`,
+        {},
+        5000
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data) {
+          const d = result.data;
+          const genres = d.genres || (d.genre ? [d.genre] : ["TV Series"]);
+          return storeMediaDetailsCache(idStr, true, {
+            ...d,
+            isTV: true,
+            mediaType: "tv",
+            cast: Array.isArray(d.cast) && d.cast.length > 0 ? d.cast : getFallbackCast(d.title || d.name, idStr),
+            similar: Array.isArray(d.similar) && d.similar.length > 0 ? d.similar : getFallbackSimilar(idStr, genres),
+          });
+        }
+      }
+    } catch (_) {}
+
+    mediaDetailsInflight.delete(cacheKey);
+    return getMovieById(id, "tv");
+  })().finally(() => {
+    mediaDetailsInflight.delete(cacheKey);
+  });
+
+  mediaDetailsInflight.set(cacheKey, task);
+  return task;
 }
 
 const seasonEpisodesCache = new Map();
