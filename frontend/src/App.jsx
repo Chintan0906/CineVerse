@@ -12,7 +12,6 @@ import ActorPage from "./pages/ActorPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import SpotlightSearch from "./components/common/SpotlightSearch";
-import CineBotWidget from "./components/chat/CineBotWidget";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/global.css";
 import "./styles/cinematic-refresh.css";
@@ -96,7 +95,6 @@ function App() {
         <BrowserRouter>
           <AppRoutes />
           <SpotlightSearch />
-          <CineBotWidget />
         </BrowserRouter>
       </ToastProvider>
     </AuthProvider>
