@@ -29,6 +29,7 @@ import {
   getTVSeasonEpisodes,
   getCollectionById,
   getUniverseMovies,
+  prefetchActorById,
   getFallbackCast,
   getFallbackSimilar,
   KNOWN_FINANCIALS,
@@ -442,6 +443,17 @@ function MovieDetails() {
     const title = movie?.title || movie?.name || location.state?.title || location.state?.movie?.title || "";
     return getFallbackCast(title, id);
   }, [movie?.cast, movie?.title, movie?.name, location.state?.title, location.state?.movie?.title, id]);
+
+  // Quietly prefetch top 4 billed cast profiles so clicking any actor opens instantly
+  useEffect(() => {
+    if (!Array.isArray(displayCast) || displayCast.length === 0) return undefined;
+    const timer = setTimeout(() => {
+      displayCast.slice(0, 4).forEach((actor) => {
+        if (actor?.id) prefetchActorById(actor.id);
+      });
+    }, 260);
+    return () => clearTimeout(timer);
+  }, [displayCast]);
 
   const displaySimilar = useMemo(() => {
     const currentId = String(movie?.id || movie?.tmdbId || id);
@@ -1519,6 +1531,9 @@ function MovieDetails() {
                       role="button"
                       tabIndex={0}
                       aria-label={`View ${actor.name} profile and movies`}
+                      onMouseEnter={() => { if (actor.id) prefetchActorById(actor.id); }}
+                      onFocus={() => { if (actor.id) prefetchActorById(actor.id); }}
+                      onTouchStart={() => { if (actor.id) prefetchActorById(actor.id); }}
                       onClick={() => {
                         if (!actor.id) return;
                         navigate(`/actor/${actor.id}`, {

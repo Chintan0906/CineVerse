@@ -22,6 +22,7 @@ import {
   searchActors,
   getRecommendedDiscoveries,
   getMovies,
+  prefetchActorById,
 } from "../services/movieService";
 import { useLibrary } from "../hooks/useLibrary";
 import "./SearchPage.css";
@@ -157,6 +158,11 @@ export default function SearchPage() {
           searchActors(clean),
         ]);
         setActorResults(Array.isArray(people) ? people : []);
+        if (Array.isArray(people)) {
+          people.slice(0, 2).forEach((p) => {
+            if (p?.id) prefetchActorById(p.id);
+          });
+        }
         if (Array.isArray(results) && results.length > 0) {
           // Merge deduplicated
           const seen = new Set();
@@ -391,6 +397,9 @@ export default function SearchPage() {
                       key={`person-${person.id}`}
                       type="button"
                       className="search-actor-pill glass-card"
+                      onMouseEnter={() => prefetchActorById(person.id)}
+                      onFocus={() => prefetchActorById(person.id)}
+                      onTouchStart={() => prefetchActorById(person.id)}
                       onClick={() =>
                         navigate(`/actor/${person.id}`, {
                           state: {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, X, Loader2, Film, Tv, ArrowRight, Star, User } from "lucide-react";
-import { searchMovies, searchActors } from "../../services/movieService";
+import { searchMovies, searchActors, prefetchActorById } from "../../services/movieService";
 
 function SpotlightSearch() {
   const navigate = useNavigate();
@@ -127,6 +127,8 @@ function SpotlightSearch() {
                 key={`sp-person-${person.id}`}
                 type="button"
                 className="cv-spotlight-item"
+                onMouseEnter={() => prefetchActorById(person.id)}
+                onFocus={() => prefetchActorById(person.id)}
                 onClick={() => {
                   setIsOpen(false);
                   navigate(`/actor/${person.id}`, {

@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, Film, MapPin, Sparkles, Tv, User } from "lucide-re
 
 import MovieCard from "../components/movie/MovieCard";
 import Footer from "../components/layout/Footer";
-import { DEFAULT_AVATAR, getActorById } from "../services/movieService";
+import { DEFAULT_AVATAR, getActorById, getCachedActorById } from "../services/movieService";
 import { useLibrary } from "../hooks/useLibrary";
 import { useToast } from "../context/ToastContext";
 
@@ -31,15 +31,22 @@ function ActorPage() {
   const { showToast } = useToast();
 
   const preloaded = location.state?.actor || null;
-  const [actor, setActor] = useState(preloaded ? {
-    id: preloaded.id || id,
-    name: preloaded.name || "",
-    profile: preloaded.profile || DEFAULT_AVATAR,
-    knownForDepartment: preloaded.department || "Acting",
-    biography: "",
-    credits: [],
-  } : null);
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedActorById(id);
+  const [actor, setActor] = useState(() => {
+    if (initialCached) return initialCached;
+    if (preloaded) {
+      return {
+        id: preloaded.id || id,
+        name: preloaded.name || "",
+        profile: preloaded.profile || DEFAULT_AVATAR,
+        knownForDepartment: preloaded.department || "Acting",
+        biography: "",
+        credits: [],
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => !initialCached);
   const [creditFilter, setCreditFilter] = useState("all");
   const [bioExpanded, setBioExpanded] = useState(false);
 
@@ -48,8 +55,19 @@ function ActorPage() {
     window.scrollTo({ top: 0, behavior: "instant" });
     setBioExpanded(false);
     setCreditFilter("all");
-    setLoading(true);
 
+    const cached = getCachedActorById(id);
+    if (cached) {
+      setActor(cached);
+      setLoading(false);
+      document.title = `${cached.name} | CineVerse`;
+      return () => {
+        active = false;
+        document.title = "CineVerse | Beyond Entertainment";
+      };
+    }
+
+    setLoading(true);
     getActorById(id)
       .then((data) => {
         if (!active) return;

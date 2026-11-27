@@ -1075,88 +1075,129 @@ export async function searchActors(query) {
   }
 }
 
-export async function getActorById(personId) {
+const actorMemoryCache = new Map();
+const actorInflightCache = new Map();
+
+export function getCachedActorById(personId) {
   const idStr = String(personId || "").trim();
   if (!idStr) return null;
-
-  const CACHE_KEY = `cineverse_actor_v1_${idStr}`;
+  if (actorMemoryCache.has(idStr)) {
+    return actorMemoryCache.get(idStr);
+  }
+  const CACHE_KEY = `cineverse_actor_v2_${idStr}`;
   try {
     const cachedRaw = sessionStorage.getItem(CACHE_KEY);
     if (cachedRaw) {
       const parsed = JSON.parse(cachedRaw);
       if (parsed && parsed.name && Array.isArray(parsed.credits)) {
+        actorMemoryCache.set(idStr, parsed);
         return parsed;
       }
     }
   } catch (_) {}
+  return null;
+}
 
-  try {
-    const res = await fetchWithTimeout(
-      `${TMDB_PROXY_URL}/person/${encodeURIComponent(idStr)}?append_to_response=combined_credits`,
-      {},
-      8000
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || !data.id) return null;
+export function prefetchActorById(personId) {
+  const idStr = String(personId || "").trim();
+  if (!idStr || getCachedActorById(idStr)) return;
+  getActorById(idStr).catch(() => {});
+}
 
-    const rawCastCredits = Array.isArray(data.combined_credits?.cast) ? data.combined_credits.cast : [];
-    const rawCrewCredits = Array.isArray(data.combined_credits?.crew) ? data.combined_credits.crew : [];
-    const pool = rawCastCredits.length > 0 ? rawCastCredits : rawCrewCredits;
+export async function getActorById(personId) {
+  const idStr = String(personId || "").trim();
+  if (!idStr) return null;
 
-    const seen = new Set();
-    const sorted = [...pool]
-      .filter((item) => item && (item.media_type === "movie" || item.media_type === "tv") && item.poster_path)
-      .sort((a, b) => {
-        const scoreA = (a.popularity || 0) + (a.vote_count || 0) * 0.02;
-        const scoreB = (b.popularity || 0) + (b.vote_count || 0) * 0.02;
-        return scoreB - scoreA;
-      });
+  const existing = getCachedActorById(idStr);
+  if (existing) return existing;
 
-    const credits = [];
-    for (const item of sorted) {
-      const key = `${item.media_type}_${item.id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const isTv = item.media_type === "tv";
-      const norm = normalizeTMDBMovie(item, isTv);
-      if (norm) {
-        credits.push({
-          ...norm,
-          character: item.character || item.job || "",
-        });
-      }
-    }
-
-    const bestBackdropItem = sorted.find((i) => i.backdrop_path);
-    const backdrop = bestBackdropItem
-      ? `${TMDB_IMAGE_BASE}/original${bestBackdropItem.backdrop_path}`
-      : "";
-
-    const actor = {
-      id: data.id,
-      name: data.name || "Actor",
-      biography: data.biography || "",
-      birthday: data.birthday || "",
-      deathday: data.deathday || "",
-      placeOfBirth: data.place_of_birth || "",
-      knownForDepartment: data.known_for_department || "Acting",
-      popularity: data.popularity || 0,
-      profile: data.profile_path
-        ? `${TMDB_IMAGE_BASE}/w500${data.profile_path}`
-        : DEFAULT_AVATAR,
-      backdrop,
-      credits,
-    };
-
-    try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(actor));
-    } catch (_) {}
-
-    return actor;
-  } catch (_) {
-    return null;
+  if (actorInflightCache.has(idStr)) {
+    return actorInflightCache.get(idStr);
   }
+
+  const CACHE_KEY = `cineverse_actor_v2_${idStr}`;
+
+  const task = (async () => {
+    try {
+      const res = await fetchWithTimeout(
+        `${TMDB_PROXY_URL}/person/${encodeURIComponent(idStr)}?append_to_response=combined_credits`,
+        {},
+        7000
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || !data.id) return null;
+
+      const rawCastCredits = Array.isArray(data.combined_credits?.cast) ? data.combined_credits.cast : [];
+      const rawCrewCredits = Array.isArray(data.combined_credits?.crew) ? data.combined_credits.crew : [];
+      const pool = rawCastCredits.length > 0 ? rawCastCredits : rawCrewCredits;
+
+      const seen = new Set();
+      const sorted = [...pool]
+        .filter((item) => item && (item.media_type === "movie" || item.media_type === "tv") && item.poster_path)
+        .sort((a, b) => {
+          const scoreA = (a.popularity || 0) + (a.vote_count || 0) * 0.02;
+          const scoreB = (b.popularity || 0) + (b.vote_count || 0) * 0.02;
+          return scoreB - scoreA;
+        });
+
+      const credits = [];
+      for (const item of sorted) {
+        if (credits.length >= 48) break;
+        const key = `${item.media_type}_${item.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const isTv = item.media_type === "tv";
+        const norm = normalizeTMDBMovie(item, isTv);
+        if (norm) {
+          credits.push({
+            ...norm,
+            character: item.character || item.job || "",
+          });
+        }
+      }
+
+      const bestBackdropItem = sorted.find((i) => i.backdrop_path);
+      const backdrop = bestBackdropItem
+        ? `${TMDB_IMAGE_BASE}/w1280${bestBackdropItem.backdrop_path}`
+        : "";
+
+      const actor = {
+        id: data.id,
+        name: data.name || "Actor",
+        biography: data.biography || "",
+        birthday: data.birthday || "",
+        deathday: data.deathday || "",
+        placeOfBirth: data.place_of_birth || "",
+        knownForDepartment: data.known_for_department || "Acting",
+        popularity: data.popularity || 0,
+        profile: data.profile_path
+          ? `${TMDB_IMAGE_BASE}/w500${data.profile_path}`
+          : DEFAULT_AVATAR,
+        backdrop,
+        credits,
+      };
+
+      actorMemoryCache.set(idStr, actor);
+      if (typeof window !== "undefined" && backdrop) {
+        const warm = new Image();
+        warm.src = backdrop;
+      }
+
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(actor));
+      } catch (_) {}
+
+      return actor;
+    } catch (_) {
+      return null;
+    } finally {
+      actorInflightCache.delete(idStr);
+    }
+  })();
+
+  actorInflightCache.set(idStr, task);
+  return task;
 }
 
 export async function getCollectionById(collectionId) {
