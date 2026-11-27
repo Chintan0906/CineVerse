@@ -6949,7 +6949,6 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
 }
 
 .player-overlay.lights-off .cine-server-sidebox,
-.player-overlay.lights-off .cine-series-nav-container,
 .player-overlay.lights-off .stream-recs-section,
 .player-overlay.lights-off .cine-upnext-bar {
   opacity: 0.22;
@@ -6957,10 +6956,52 @@ button:not(.indicator):not(.movie-card-trigger):not(:disabled):active,
 }
 
 .player-overlay.lights-off .cine-server-sidebox:hover,
-.player-overlay.lights-off .cine-series-nav-container:hover,
 .player-overlay.lights-off .stream-recs-section:hover,
 .player-overlay.lights-off .cine-upnext-bar:hover {
   opacity: 0.96;
+}
+
+/* Keep the Episodes container dark on hover; spotlight ONLY the hovered episode card */
+.player-overlay.lights-off .cine-series-nav-container {
+  background: rgba(3, 4, 6, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.player-overlay.lights-off .cine-series-nav-header {
+  opacity: 0.22;
+  transition: opacity 0.25s ease;
+}
+
+.player-overlay.lights-off .cine-series-nav-header:hover {
+  opacity: 0.88;
+}
+
+.player-overlay.lights-off .cine-player-episode-card {
+  opacity: 0.22;
+  filter: brightness(0.72);
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.24s ease,
+    filter 0.26s ease,
+    transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.32s ease,
+    border-color 0.26s ease !important;
+}
+
+.player-overlay.lights-off .cine-player-episode-card:hover,
+.player-overlay.lights-off .cine-player-episode-card:focus-visible {
+  position: relative;
+  z-index: 6;
+  opacity: 1 !important;
+  filter: brightness(1.06) !important;
+  transform: translateY(-8px) scale(1.035) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.86),
+    0 0 28px rgba(var(--aura-rgb, 255, 255, 255), 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
 }
 
 .player-overlay.lights-off .cine-video-stage {
