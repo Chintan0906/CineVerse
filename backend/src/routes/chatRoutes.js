@@ -289,6 +289,143 @@ async function buildTmdbFallbackReply(userMessage) {
   };
 }
 
+async function formatStructuredChatReply(inner, source = "gemini") {
+  if (!inner || typeof inner !== "object" || !inner.type) return null;
+
+  if (inner.type === "details" && inner.title) {
+    const meta = [inner.year, inner.genre].filter(Boolean).join(" · ");
+    const castLine =
+      Array.isArray(inner.cast) && inner.cast.length > 0
+        ? `Cast: ${inner.cast.join(", ")}`
+        : null;
+    const dirLine = inner.director ? `Director: ${inner.director}` : null;
+    const replyText = [
+      `${inner.title}${meta ? ` (${meta})` : ""}`,
+      inner.summary || "",
+      [dirLine, castLine].filter(Boolean).join("\n"),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    const movies = await resolveTitlesToMovies([inner.title]);
+    return {
+      reply: replyText,
+      movies: movies.slice(0, 1),
+      source,
+    };
+  }
+
+  if (inner.type === "movies" && Array.isArray(inner.movies)) {
+    const list = inner.movies;
+    const lines = list
+      .map((m, idx) => {
+        const name = m?.name || m?.title || "";
+        const reason = m?.reason ? ` — ${m.reason}` : "";
+        return name ? `${idx + 1}. ${name}${reason}` : null;
+      })
+      .filter(Boolean);
+    const replyText = lines.length
+      ? `Here are my picks — click any card to stream:\n\n${lines.join("\n")}`
+      : "Here are my recommendations:";
+    const movies = await resolveTitlesToMovies(list);
+    return {
+      reply: replyText,
+      movies,
+      source,
+    };
+  }
+
+  if (inner.type === "text" && inner.message) {
+    return {
+      reply: String(inner.message).trim(),
+      movies: [],
+      source,
+    };
+  }
+
+  return null;
+}
+
+const CINEBOT_SYSTEM_PROMPT = `You are CineBot, an expert AI movie, TV series, and anime concierge for CineVerse.
+Respond ONLY with valid raw JSON (no markdown fences, no extra prose outside JSON) matching ONE of these three schemas:
+
+1. For movie/series/anime recommendations or top-N lists (e.g. "top 10 horror movies", "top 10 anime series", "movies like Inception"):
+{
+  "type": "movies",
+  "movies": [
+    { "name": "Exact Title", "genre": "Primary Genre", "reason": "Short 1-sentence reason" }
+  ]
+}
+(Include the exact number of items requested, e.g. 10 for "top 10", otherwise 6-8.)
+
+2. When the user asks about ONE specific movie, series, or anime (e.g. "tell me about Avengers Endgame", "what is Dark about"):
+{
+  "type": "details",
+  "title": "Exact Title",
+  "year": "Release Year",
+  "genre": "Genres",
+  "summary": "2-3 sentence engaging summary",
+  "cast": ["Actor 1", "Actor 2", "Actor 3", "Actor 4"],
+  "director": "Director or Creator Name"
+}
+
+3. For greetings or general non-title questions:
+{
+  "type": "text",
+  "message": "Friendly concise response"
+}`;
+
+async function askGeminiAgent(message, history = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const historyLines = history
+    .slice(-6)
+    .map((h) => `${h.role === "user" ? "User" : "CineBot"}: ${h.text}`)
+    .join("\n");
+
+  const promptText = historyLines
+    ? `${CINEBOT_SYSTEM_PROMPT}\n\nRecent conversation:\n${historyLines}\n\nUser: ${message}`
+    : `${CINEBOT_SYSTEM_PROMPT}\n\nUser: ${message}`;
+
+  const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
+  for (const model of models) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig: {
+            temperature: 0.4,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) continue;
+
+      const cleaned = rawText
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+      const parsed = JSON.parse(cleaned);
+      const formatted = await formatStructuredChatReply(parsed, "gemini");
+      if (formatted) return formatted;
+    } catch (_) {
+      clearTimeout(timer);
+    }
+  }
+  return null;
+}
+
 router.post("/", async (req, res) => {
   const message = String(req.body?.message || "").trim();
   const sessionId = String(req.body?.sessionId || "cineverse-guest");
@@ -335,58 +472,9 @@ router.post("/", async (req, res) => {
 
         // Handle CineSphere n8n structured output:
         // { movies: { type: "movies" | "details" | "text", ... } }
-        if (inner && typeof inner === "object" && inner.type) {
-          if (inner.type === "details" && inner.title) {
-            const meta = [inner.year, inner.genre].filter(Boolean).join(" · ");
-            const castLine = Array.isArray(inner.cast) && inner.cast.length > 0
-              ? `Cast: ${inner.cast.join(", ")}`
-              : null;
-            const dirLine = inner.director ? `Director: ${inner.director}` : null;
-            const replyText = [
-              `${inner.title}${meta ? ` (${meta})` : ""}`,
-              inner.summary || "",
-              [dirLine, castLine].filter(Boolean).join("\n"),
-            ]
-              .filter(Boolean)
-              .join("\n\n");
-            const movies = await resolveTitlesToMovies([inner.title]);
-            return res.json({
-              success: true,
-              reply: replyText,
-              movies: movies.slice(0, 1),
-              source: "n8n",
-            });
-          }
-
-          if (inner.type === "movies" && Array.isArray(inner.movies)) {
-            const list = inner.movies;
-            const lines = list
-              .map((m, idx) => {
-                const name = m?.name || m?.title || "";
-                const reason = m?.reason ? ` — ${m.reason}` : "";
-                return name ? `${idx + 1}. ${name}${reason}` : null;
-              })
-              .filter(Boolean);
-            const replyText = lines.length
-              ? `Here are my picks — click any card to stream:\n\n${lines.join("\n")}`
-              : "Here are my recommendations:";
-            const movies = await resolveTitlesToMovies(list);
-            return res.json({
-              success: true,
-              reply: replyText,
-              movies,
-              source: "n8n",
-            });
-          }
-
-          if (inner.type === "text" && inner.message) {
-            return res.json({
-              success: true,
-              reply: String(inner.message).trim(),
-              movies: [],
-              source: "n8n",
-            });
-          }
+        const structured = await formatStructuredChatReply(inner, "n8n");
+        if (structured) {
+          return res.json({ success: true, ...structured });
         }
 
         const replyText =
@@ -411,8 +499,21 @@ router.post("/", async (req, res) => {
         });
       }
     } catch (err) {
-      console.warn("n8n webhook failed, falling back to TMDB assistant:", err.message);
+      console.warn("n8n webhook failed, falling back:", err.message);
     }
+  }
+
+  // Built-in Google Gemini AI Agent (mirrors the n8n workflow directly inside CineVerse-api)
+  try {
+    const geminiReply = await askGeminiAgent(message, history);
+    if (geminiReply) {
+      return res.json({
+        success: true,
+        ...geminiReply,
+      });
+    }
+  } catch (err) {
+    console.warn("Gemini agent failed, falling back to TMDB assistant:", err.message);
   }
 
   try {
