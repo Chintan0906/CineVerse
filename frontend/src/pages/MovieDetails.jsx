@@ -126,7 +126,11 @@ function MovieDetails() {
   const isStreamingQuery = searchParams.get("play") === "true";
   const [movie, setMovie] = useState(() => {
     // 0. Instant in-memory cache (from card hover prefetch or prior visit)
-    const memCached = getCachedMediaDetails(id, requestedType);
+    const initialType =
+      searchParams.get("type") ||
+      location.state?.mediaType ||
+      (location.state?.isTV ? "tv" : undefined);
+    const memCached = getCachedMediaDetails(id, initialType);
     if (memCached) return memCached;
 
     // 0b. Instant full details cache from sessionStorage
